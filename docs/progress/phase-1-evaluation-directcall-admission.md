@@ -265,3 +265,29 @@ whitespace PASS; no Graphify or new candidate worker was launched by that repair
 These add nine tests, making current integrated inventory **375**, pending primary
 full rerun and fresh independent review of the process-ownership repair. Prior
 integration review does not stand in for reviewing this additional lifecycle code.
+
+## Final exact-head review and complete verification
+
+Exact implementation plus retained-owner repair:
+`37c52add67c8916765b93fe94c85eddcedb5ef26`. Joffrey freshly reviewed the
+additional lifecycle changes against previously reviewed `07e1c802...` with
+surrounding contracts: **no substantive findings**. Independently passed **185
+tests** (extraction 17, host isolation 25, runner 25, candidate 39, directcall 79),
+including both actual SMALL candidate-worker cases; clean checkout and whitespace.
+The earlier exact integration review remains recorded separately above.
+
+Primary subsequently ran the **entire existing workflow** on this exact commit:
+**375 tests PASS** (295 Python + 80 Node), plus actual synthetic macOS guard PASS.
+The previously failing extraction suite passed all 17 with retained ownership and
+no ResourceWarnings. Foundation, cached cargo-deny, tracked secrets PASS; staged
+whitespace checked before this evidence-only follow-up. No test thresholds or
+Graphify result claims were changed. Actual worker conformance does not establish
+retrieval quality, source execution, inference or Graphify adoption.
+
+Base PR19 post-merge CI was verified on exact
+`45ceb932bad8dea1213f2633173d422c968c88cb`: foundation
+[43296440711](https://github.com/suhaasbadada/threadmark/actions/runs/43296440711)
+and integrated
+[43296440731](https://github.com/suhaasbadada/threadmark/actions/runs/43296440731)
+SUCCESS. Those are base evidence, not final-head CI for this unit. Native final
+PR/head runs remain pending publication. Full product scope and Phase 1 stay open.
