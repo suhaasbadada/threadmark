@@ -6,7 +6,7 @@ Traceability: Phase 0, TM-01–TM-10, P0-A1/P0-A2/P0-A3/P0-A4.
 
 Rustup, Git, Python 3.11+; Rust is pinned to 1.97.1 with rustfmt/Clippy.
 Development targets: macOS (Apple Silicon) and Linux x86_64. CI declares
-macos-14 and ubuntu-24.04 checks, not released end-user platform support.
+macos-15 and ubuntu-24.04 checks, not released end-user platform support.
 No Docker, model download, provider login or private repository is needed.
 
 ```sh

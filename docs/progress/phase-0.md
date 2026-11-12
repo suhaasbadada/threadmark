@@ -49,6 +49,18 @@ Gitleaks history/tracked-file scans with an intentional synthetic failure probe.
   probes. Independent review: Joffrey; both actionable findings repaired and
   reproduced checks pass. No runtime or host certification follows from this.
 
+## First remote run — infrastructure blocker repaired
+
+PR: <https://github.com/suhaasbadada/threadmark/pull/1>.
+Head: `50ab9748de0f469a8bbaf550bd6fc98d4bb635b7`.
+PR CI run: <https://github.com/suhaasbadada/threadmark/actions/runs/43180646494>.
+macOS job `131055486101` was canceled before execution with the failure annotation
+`The configuration 'macos-14-arm64-us-default' is not supported`. This is not a
+passing macOS gate. Changed the declared runner to macos-15 and removed duplicate
+feature-branch push runs (PR runs still required; main push checks remain).
+Linux and security jobs were in progress when this blocker was diagnosed; this
+run is superseded by the repair head, not acceptance evidence for it.
+
 ## Exit decision
 
 **No-go for Phase 1 execution until P0 checks and review evidence are accepted.**
