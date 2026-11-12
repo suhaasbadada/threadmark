@@ -1,0 +1,1802 @@
+{
+  "platform": "Darwin",
+  "machine": "arm64",
+  "runs": [
+    {
+      "project": "orbit",
+      "stage": "cold",
+      "seconds": 0.2411,
+      "admission": "accepted",
+      "envelope": {
+        "schema": 1,
+        "scope": [
+          "orbit",
+          "synthetic-worktree",
+          "cold"
+        ],
+        "complete": true,
+        "manifest": [
+          "lib.rs",
+          "service.py"
+        ],
+        "graph": {
+          "nodes": [
+            {
+              "id": "lib",
+              "label": "lib.rs",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L1",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib_normalize",
+              "label": "normalize()",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L2",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib_submit",
+              "label": "submit()",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib_macro_generated",
+              "label": "generated!",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L4",
+              "_origin": "ast"
+            },
+            {
+              "id": "service",
+              "label": "service.py",
+              "file_type": "code",
+              "source_file": "service.py",
+              "source_location": "L1",
+              "_origin": "ast"
+            },
+            {
+              "id": "service_normalize",
+              "label": "normalize()",
+              "file_type": "code",
+              "source_file": "service.py",
+              "source_location": "L4",
+              "_callable": true,
+              "_origin": "ast"
+            },
+            {
+              "id": "service_submit",
+              "label": "submit()",
+              "file_type": "code",
+              "source_file": "service.py",
+              "source_location": "L8",
+              "_callable": true,
+              "_origin": "ast"
+            },
+            {
+              "id": "service_dynamic",
+              "label": "dynamic()",
+              "file_type": "code",
+              "source_file": "service.py",
+              "source_location": "L12",
+              "_callable": true,
+              "_origin": "ast"
+            },
+            {
+              "id": "service_rationale_1",
+              "label": "Synthetic project: retain records for seven days.",
+              "file_type": "rationale",
+              "source_file": "service.py",
+              "source_location": "L1",
+              "_origin": "ast"
+            }
+          ],
+          "edges": [
+            {
+              "source": "lib",
+              "target": "lib_normalize",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L2",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "lib",
+              "target": "lib_submit",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "lib",
+              "target": "lib_macro_generated",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L4",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "lib_submit",
+              "target": "lib_normalize",
+              "relation": "calls",
+              "context": "call",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "service",
+              "target": "service_normalize",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "service.py",
+              "source_location": "L4",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "service",
+              "target": "service_submit",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "service.py",
+              "source_location": "L8",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "service",
+              "target": "service_dynamic",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "service.py",
+              "source_location": "L12",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "service_submit",
+              "target": "service_normalize",
+              "relation": "calls",
+              "context": "call",
+              "confidence": "EXTRACTED",
+              "source_file": "service.py",
+              "source_location": "L9",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "service_rationale_1",
+              "target": "service",
+              "relation": "rationale_for",
+              "confidence": "EXTRACTED",
+              "source_file": "service.py",
+              "source_location": "L1",
+              "weight": 1.0,
+              "_origin": "ast"
+            }
+          ],
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "failed_sources": [],
+          "skipped_sources": [],
+          "extracted_sources": [
+            "lib.rs",
+            "service.py"
+          ]
+        }
+      },
+      "baseline": {
+        "lexical_normalize": [
+          "lib.rs:2",
+          "lib.rs:3",
+          "service.py:4",
+          "service.py:9"
+        ],
+        "symbols": [
+          "lib.rs:2:normalize",
+          "lib.rs:3:submit",
+          "lib.rs:4:hidden",
+          "service.py:4:normalize",
+          "service.py:8:submit",
+          "service.py:12:dynamic"
+        ],
+        "errors": []
+      },
+      "licenses_sha256": {
+        "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "LICENSE-MIT": "36ecff6bbb97aca1be64e95f42538cf796adde5864edac583e620643c096931a",
+        "NOTICE": "3448ea175bba09f6fed8a743000139fb4c7112de83f164355b5540b158576621"
+      },
+      "dependencies": {
+        "tree-sitter": "0.25.2",
+        "tree-sitter-python": "0.25.0",
+        "tree-sitter-rust": "0.24.2",
+        "networkx": "3.6.1",
+        "numpy": "2.5.1",
+        "rapidfuzz": "3.14.6",
+        "pyyaml": "6.0.3"
+      },
+      "python": "3.12.6",
+      "maxrss_native": 51232768
+    },
+    {
+      "project": "orbit",
+      "stage": "warm",
+      "seconds": 0.2573,
+      "admission": "accepted",
+      "envelope": {
+        "schema": 1,
+        "scope": [
+          "orbit",
+          "synthetic-worktree",
+          "warm"
+        ],
+        "complete": true,
+        "manifest": [
+          "lib.rs",
+          "service.py"
+        ],
+        "graph": {
+          "nodes": [
+            {
+              "id": "lib",
+              "label": "lib.rs",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L1",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib_normalize",
+              "label": "normalize()",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L2",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib_submit",
+              "label": "submit()",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib_macro_generated",
+              "label": "generated!",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L4",
+              "_origin": "ast"
+            },
+            {
+              "id": "service",
+              "label": "service.py",
+              "file_type": "code",
+              "source_file": "service.py",
+              "source_location": "L1",
+              "_origin": "ast"
+            },
+            {
+              "id": "service_normalize",
+              "label": "normalize()",
+              "file_type": "code",
+              "source_file": "service.py",
+              "source_location": "L4",
+              "_callable": true,
+              "_origin": "ast"
+            },
+            {
+              "id": "service_submit",
+              "label": "submit()",
+              "file_type": "code",
+              "source_file": "service.py",
+              "source_location": "L8",
+              "_callable": true,
+              "_origin": "ast"
+            },
+            {
+              "id": "service_dynamic",
+              "label": "dynamic()",
+              "file_type": "code",
+              "source_file": "service.py",
+              "source_location": "L12",
+              "_callable": true,
+              "_origin": "ast"
+            },
+            {
+              "id": "service_rationale_1",
+              "label": "Synthetic project: retain records for seven days.",
+              "file_type": "rationale",
+              "source_file": "service.py",
+              "source_location": "L1",
+              "_origin": "ast"
+            }
+          ],
+          "edges": [
+            {
+              "source": "lib",
+              "target": "lib_normalize",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L2",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "lib",
+              "target": "lib_submit",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "lib",
+              "target": "lib_macro_generated",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L4",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "lib_submit",
+              "target": "lib_normalize",
+              "relation": "calls",
+              "context": "call",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "service",
+              "target": "service_normalize",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "service.py",
+              "source_location": "L4",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "service",
+              "target": "service_submit",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "service.py",
+              "source_location": "L8",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "service",
+              "target": "service_dynamic",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "service.py",
+              "source_location": "L12",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "service_submit",
+              "target": "service_normalize",
+              "relation": "calls",
+              "context": "call",
+              "confidence": "EXTRACTED",
+              "source_file": "service.py",
+              "source_location": "L9",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "service_rationale_1",
+              "target": "service",
+              "relation": "rationale_for",
+              "confidence": "EXTRACTED",
+              "source_file": "service.py",
+              "source_location": "L1",
+              "weight": 1.0,
+              "_origin": "ast"
+            }
+          ],
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "failed_sources": [],
+          "skipped_sources": [],
+          "extracted_sources": [
+            "lib.rs",
+            "service.py"
+          ]
+        }
+      },
+      "baseline": {
+        "lexical_normalize": [
+          "lib.rs:2",
+          "lib.rs:3",
+          "service.py:4",
+          "service.py:9"
+        ],
+        "symbols": [
+          "lib.rs:2:normalize",
+          "lib.rs:3:submit",
+          "lib.rs:4:hidden",
+          "service.py:4:normalize",
+          "service.py:8:submit",
+          "service.py:12:dynamic"
+        ],
+        "errors": []
+      },
+      "licenses_sha256": {
+        "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "LICENSE-MIT": "36ecff6bbb97aca1be64e95f42538cf796adde5864edac583e620643c096931a",
+        "NOTICE": "3448ea175bba09f6fed8a743000139fb4c7112de83f164355b5540b158576621"
+      },
+      "dependencies": {
+        "tree-sitter": "0.25.2",
+        "tree-sitter-python": "0.25.0",
+        "tree-sitter-rust": "0.24.2",
+        "networkx": "3.6.1",
+        "numpy": "2.5.1",
+        "rapidfuzz": "3.14.6",
+        "pyyaml": "6.0.3"
+      },
+      "python": "3.12.6",
+      "maxrss_native": 50528256
+    },
+    {
+      "project": "orbit",
+      "stage": "renamed",
+      "seconds": 0.258,
+      "admission": "accepted",
+      "envelope": {
+        "schema": 1,
+        "scope": [
+          "orbit",
+          "synthetic-worktree",
+          "renamed"
+        ],
+        "complete": true,
+        "manifest": [
+          "lib.rs",
+          "renamed.py"
+        ],
+        "graph": {
+          "nodes": [
+            {
+              "id": "lib",
+              "label": "lib.rs",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L1",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib_normalize",
+              "label": "normalize()",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L2",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib_submit",
+              "label": "submit()",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib_macro_generated",
+              "label": "generated!",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L4",
+              "_origin": "ast"
+            },
+            {
+              "id": "renamed",
+              "label": "renamed.py",
+              "file_type": "code",
+              "source_file": "renamed.py",
+              "source_location": "L1",
+              "_origin": "ast"
+            },
+            {
+              "id": "renamed_normalize",
+              "label": "normalize()",
+              "file_type": "code",
+              "source_file": "renamed.py",
+              "source_location": "L4",
+              "_callable": true,
+              "_origin": "ast"
+            },
+            {
+              "id": "renamed_submit",
+              "label": "submit()",
+              "file_type": "code",
+              "source_file": "renamed.py",
+              "source_location": "L8",
+              "_callable": true,
+              "_origin": "ast"
+            },
+            {
+              "id": "renamed_dynamic",
+              "label": "dynamic()",
+              "file_type": "code",
+              "source_file": "renamed.py",
+              "source_location": "L12",
+              "_callable": true,
+              "_origin": "ast"
+            },
+            {
+              "id": "renamed_rationale_1",
+              "label": "Synthetic project: retain records for seven days.",
+              "file_type": "rationale",
+              "source_file": "renamed.py",
+              "source_location": "L1",
+              "_origin": "ast"
+            }
+          ],
+          "edges": [
+            {
+              "source": "lib",
+              "target": "lib_normalize",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L2",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "lib",
+              "target": "lib_submit",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "lib",
+              "target": "lib_macro_generated",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L4",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "lib_submit",
+              "target": "lib_normalize",
+              "relation": "calls",
+              "context": "call",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "renamed",
+              "target": "renamed_normalize",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "renamed.py",
+              "source_location": "L4",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "renamed",
+              "target": "renamed_submit",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "renamed.py",
+              "source_location": "L8",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "renamed",
+              "target": "renamed_dynamic",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "renamed.py",
+              "source_location": "L12",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "renamed_submit",
+              "target": "renamed_normalize",
+              "relation": "calls",
+              "context": "call",
+              "confidence": "EXTRACTED",
+              "source_file": "renamed.py",
+              "source_location": "L9",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "renamed_rationale_1",
+              "target": "renamed",
+              "relation": "rationale_for",
+              "confidence": "EXTRACTED",
+              "source_file": "renamed.py",
+              "source_location": "L1",
+              "weight": 1.0,
+              "_origin": "ast"
+            }
+          ],
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "failed_sources": [],
+          "skipped_sources": [],
+          "extracted_sources": [
+            "lib.rs",
+            "renamed.py"
+          ]
+        }
+      },
+      "baseline": {
+        "lexical_normalize": [
+          "lib.rs:2",
+          "lib.rs:3",
+          "renamed.py:4",
+          "renamed.py:9"
+        ],
+        "symbols": [
+          "lib.rs:2:normalize",
+          "lib.rs:3:submit",
+          "lib.rs:4:hidden",
+          "renamed.py:4:normalize",
+          "renamed.py:8:submit",
+          "renamed.py:12:dynamic"
+        ],
+        "errors": []
+      },
+      "licenses_sha256": {
+        "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "LICENSE-MIT": "36ecff6bbb97aca1be64e95f42538cf796adde5864edac583e620643c096931a",
+        "NOTICE": "3448ea175bba09f6fed8a743000139fb4c7112de83f164355b5540b158576621"
+      },
+      "dependencies": {
+        "tree-sitter": "0.25.2",
+        "tree-sitter-python": "0.25.0",
+        "tree-sitter-rust": "0.24.2",
+        "networkx": "3.6.1",
+        "numpy": "2.5.1",
+        "rapidfuzz": "3.14.6",
+        "pyyaml": "6.0.3"
+      },
+      "python": "3.12.6",
+      "maxrss_native": 50413568
+    },
+    {
+      "project": "orbit",
+      "stage": "deleted",
+      "seconds": 0.2651,
+      "admission": "accepted",
+      "envelope": {
+        "schema": 1,
+        "scope": [
+          "orbit",
+          "synthetic-worktree",
+          "deleted"
+        ],
+        "complete": true,
+        "manifest": [
+          "lib.rs"
+        ],
+        "graph": {
+          "nodes": [
+            {
+              "id": "lib",
+              "label": "lib.rs",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L1",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib_normalize",
+              "label": "normalize()",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L2",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib_submit",
+              "label": "submit()",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib_macro_generated",
+              "label": "generated!",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L4",
+              "_origin": "ast"
+            }
+          ],
+          "edges": [
+            {
+              "source": "lib",
+              "target": "lib_normalize",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L2",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "lib",
+              "target": "lib_submit",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "lib",
+              "target": "lib_macro_generated",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L4",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "lib_submit",
+              "target": "lib_normalize",
+              "relation": "calls",
+              "context": "call",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "weight": 1.0,
+              "_origin": "ast"
+            }
+          ],
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "failed_sources": [],
+          "skipped_sources": [],
+          "extracted_sources": [
+            "lib.rs"
+          ]
+        }
+      },
+      "baseline": {
+        "lexical_normalize": [
+          "lib.rs:2",
+          "lib.rs:3"
+        ],
+        "symbols": [
+          "lib.rs:2:normalize",
+          "lib.rs:3:submit",
+          "lib.rs:4:hidden"
+        ],
+        "errors": []
+      },
+      "licenses_sha256": {
+        "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "LICENSE-MIT": "36ecff6bbb97aca1be64e95f42538cf796adde5864edac583e620643c096931a",
+        "NOTICE": "3448ea175bba09f6fed8a743000139fb4c7112de83f164355b5540b158576621"
+      },
+      "dependencies": {
+        "tree-sitter": "0.25.2",
+        "tree-sitter-python": "0.25.0",
+        "tree-sitter-rust": "0.24.2",
+        "networkx": "3.6.1",
+        "numpy": "2.5.1",
+        "rapidfuzz": "3.14.6",
+        "pyyaml": "6.0.3"
+      },
+      "python": "3.12.6",
+      "maxrss_native": 50528256
+    },
+    {
+      "project": "orbit",
+      "stage": "damaged",
+      "seconds": 0.258,
+      "admission": "accepted",
+      "envelope": {
+        "schema": 1,
+        "scope": [
+          "orbit",
+          "synthetic-worktree",
+          "damaged"
+        ],
+        "complete": true,
+        "manifest": [
+          "broken.py",
+          "lib.rs"
+        ],
+        "graph": {
+          "nodes": [
+            {
+              "id": "broken",
+              "label": "broken.py",
+              "file_type": "code",
+              "source_file": "broken.py",
+              "source_location": "L1",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib",
+              "label": "lib.rs",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L1",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib_normalize",
+              "label": "normalize()",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L2",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib_submit",
+              "label": "submit()",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib_macro_generated",
+              "label": "generated!",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L4",
+              "_origin": "ast"
+            }
+          ],
+          "edges": [
+            {
+              "source": "lib",
+              "target": "lib_normalize",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L2",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "lib",
+              "target": "lib_submit",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "lib",
+              "target": "lib_macro_generated",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L4",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "lib_submit",
+              "target": "lib_normalize",
+              "relation": "calls",
+              "context": "call",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "weight": 1.0,
+              "_origin": "ast"
+            }
+          ],
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "failed_sources": [],
+          "skipped_sources": [],
+          "extracted_sources": [
+            "broken.py",
+            "lib.rs"
+          ]
+        }
+      },
+      "baseline": {
+        "lexical_normalize": [
+          "lib.rs:2",
+          "lib.rs:3"
+        ],
+        "symbols": [
+          "lib.rs:2:normalize",
+          "lib.rs:3:submit",
+          "lib.rs:4:hidden"
+        ],
+        "errors": [
+          "broken.py: SyntaxError"
+        ]
+      },
+      "licenses_sha256": {
+        "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "LICENSE-MIT": "36ecff6bbb97aca1be64e95f42538cf796adde5864edac583e620643c096931a",
+        "NOTICE": "3448ea175bba09f6fed8a743000139fb4c7112de83f164355b5540b158576621"
+      },
+      "dependencies": {
+        "tree-sitter": "0.25.2",
+        "tree-sitter-python": "0.25.0",
+        "tree-sitter-rust": "0.24.2",
+        "networkx": "3.6.1",
+        "numpy": "2.5.1",
+        "rapidfuzz": "3.14.6",
+        "pyyaml": "6.0.3"
+      },
+      "python": "3.12.6",
+      "maxrss_native": 50479104
+    },
+    {
+      "project": "orbit-next",
+      "stage": "cold",
+      "seconds": 0.257,
+      "admission": "accepted",
+      "envelope": {
+        "schema": 1,
+        "scope": [
+          "orbit-next",
+          "synthetic-worktree",
+          "cold"
+        ],
+        "complete": true,
+        "manifest": [
+          "lib.rs",
+          "service.py"
+        ],
+        "graph": {
+          "nodes": [
+            {
+              "id": "lib",
+              "label": "lib.rs",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L1",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib_normalize",
+              "label": "normalize()",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L2",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib_submit",
+              "label": "submit()",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "_origin": "ast"
+            },
+            {
+              "id": "service",
+              "label": "service.py",
+              "file_type": "code",
+              "source_file": "service.py",
+              "source_location": "L1",
+              "_origin": "ast"
+            },
+            {
+              "id": "service_normalize",
+              "label": "normalize()",
+              "file_type": "code",
+              "source_file": "service.py",
+              "source_location": "L4",
+              "_callable": true,
+              "_origin": "ast"
+            },
+            {
+              "id": "service_submit",
+              "label": "submit()",
+              "file_type": "code",
+              "source_file": "service.py",
+              "source_location": "L8",
+              "_callable": true,
+              "_origin": "ast"
+            },
+            {
+              "id": "service_rationale_1",
+              "label": "Synthetic different project: retain records for thirty days.",
+              "file_type": "rationale",
+              "source_file": "service.py",
+              "source_location": "L1",
+              "_origin": "ast"
+            }
+          ],
+          "edges": [
+            {
+              "source": "lib",
+              "target": "lib_normalize",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L2",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "lib",
+              "target": "lib_submit",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "lib_submit",
+              "target": "lib_normalize",
+              "relation": "calls",
+              "context": "call",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "service",
+              "target": "service_normalize",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "service.py",
+              "source_location": "L4",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "service",
+              "target": "service_submit",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "service.py",
+              "source_location": "L8",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "service_submit",
+              "target": "service_normalize",
+              "relation": "calls",
+              "context": "call",
+              "confidence": "EXTRACTED",
+              "source_file": "service.py",
+              "source_location": "L9",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "service_rationale_1",
+              "target": "service",
+              "relation": "rationale_for",
+              "confidence": "EXTRACTED",
+              "source_file": "service.py",
+              "source_location": "L1",
+              "weight": 1.0,
+              "_origin": "ast"
+            }
+          ],
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "failed_sources": [],
+          "skipped_sources": [],
+          "extracted_sources": [
+            "lib.rs",
+            "service.py"
+          ]
+        }
+      },
+      "baseline": {
+        "lexical_normalize": [
+          "lib.rs:2",
+          "lib.rs:3",
+          "service.py:4",
+          "service.py:9"
+        ],
+        "symbols": [
+          "lib.rs:2:normalize",
+          "lib.rs:3:submit",
+          "service.py:4:normalize",
+          "service.py:8:submit"
+        ],
+        "errors": []
+      },
+      "licenses_sha256": {
+        "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "LICENSE-MIT": "36ecff6bbb97aca1be64e95f42538cf796adde5864edac583e620643c096931a",
+        "NOTICE": "3448ea175bba09f6fed8a743000139fb4c7112de83f164355b5540b158576621"
+      },
+      "dependencies": {
+        "tree-sitter": "0.25.2",
+        "tree-sitter-python": "0.25.0",
+        "tree-sitter-rust": "0.24.2",
+        "networkx": "3.6.1",
+        "numpy": "2.5.1",
+        "rapidfuzz": "3.14.6",
+        "pyyaml": "6.0.3"
+      },
+      "python": "3.12.6",
+      "maxrss_native": 50987008
+    },
+    {
+      "project": "orbit-next",
+      "stage": "warm",
+      "seconds": 0.2505,
+      "admission": "accepted",
+      "envelope": {
+        "schema": 1,
+        "scope": [
+          "orbit-next",
+          "synthetic-worktree",
+          "warm"
+        ],
+        "complete": true,
+        "manifest": [
+          "lib.rs",
+          "service.py"
+        ],
+        "graph": {
+          "nodes": [
+            {
+              "id": "lib",
+              "label": "lib.rs",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L1",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib_normalize",
+              "label": "normalize()",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L2",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib_submit",
+              "label": "submit()",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "_origin": "ast"
+            },
+            {
+              "id": "service",
+              "label": "service.py",
+              "file_type": "code",
+              "source_file": "service.py",
+              "source_location": "L1",
+              "_origin": "ast"
+            },
+            {
+              "id": "service_normalize",
+              "label": "normalize()",
+              "file_type": "code",
+              "source_file": "service.py",
+              "source_location": "L4",
+              "_callable": true,
+              "_origin": "ast"
+            },
+            {
+              "id": "service_submit",
+              "label": "submit()",
+              "file_type": "code",
+              "source_file": "service.py",
+              "source_location": "L8",
+              "_callable": true,
+              "_origin": "ast"
+            },
+            {
+              "id": "service_rationale_1",
+              "label": "Synthetic different project: retain records for thirty days.",
+              "file_type": "rationale",
+              "source_file": "service.py",
+              "source_location": "L1",
+              "_origin": "ast"
+            }
+          ],
+          "edges": [
+            {
+              "source": "lib",
+              "target": "lib_normalize",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L2",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "lib",
+              "target": "lib_submit",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "lib_submit",
+              "target": "lib_normalize",
+              "relation": "calls",
+              "context": "call",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "service",
+              "target": "service_normalize",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "service.py",
+              "source_location": "L4",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "service",
+              "target": "service_submit",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "service.py",
+              "source_location": "L8",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "service_submit",
+              "target": "service_normalize",
+              "relation": "calls",
+              "context": "call",
+              "confidence": "EXTRACTED",
+              "source_file": "service.py",
+              "source_location": "L9",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "service_rationale_1",
+              "target": "service",
+              "relation": "rationale_for",
+              "confidence": "EXTRACTED",
+              "source_file": "service.py",
+              "source_location": "L1",
+              "weight": 1.0,
+              "_origin": "ast"
+            }
+          ],
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "failed_sources": [],
+          "skipped_sources": [],
+          "extracted_sources": [
+            "lib.rs",
+            "service.py"
+          ]
+        }
+      },
+      "baseline": {
+        "lexical_normalize": [
+          "lib.rs:2",
+          "lib.rs:3",
+          "service.py:4",
+          "service.py:9"
+        ],
+        "symbols": [
+          "lib.rs:2:normalize",
+          "lib.rs:3:submit",
+          "service.py:4:normalize",
+          "service.py:8:submit"
+        ],
+        "errors": []
+      },
+      "licenses_sha256": {
+        "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "LICENSE-MIT": "36ecff6bbb97aca1be64e95f42538cf796adde5864edac583e620643c096931a",
+        "NOTICE": "3448ea175bba09f6fed8a743000139fb4c7112de83f164355b5540b158576621"
+      },
+      "dependencies": {
+        "tree-sitter": "0.25.2",
+        "tree-sitter-python": "0.25.0",
+        "tree-sitter-rust": "0.24.2",
+        "networkx": "3.6.1",
+        "numpy": "2.5.1",
+        "rapidfuzz": "3.14.6",
+        "pyyaml": "6.0.3"
+      },
+      "python": "3.12.6",
+      "maxrss_native": 50561024
+    },
+    {
+      "project": "orbit-next",
+      "stage": "renamed",
+      "seconds": 0.2578,
+      "admission": "accepted",
+      "envelope": {
+        "schema": 1,
+        "scope": [
+          "orbit-next",
+          "synthetic-worktree",
+          "renamed"
+        ],
+        "complete": true,
+        "manifest": [
+          "lib.rs",
+          "renamed.py"
+        ],
+        "graph": {
+          "nodes": [
+            {
+              "id": "lib",
+              "label": "lib.rs",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L1",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib_normalize",
+              "label": "normalize()",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L2",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib_submit",
+              "label": "submit()",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "_origin": "ast"
+            },
+            {
+              "id": "renamed",
+              "label": "renamed.py",
+              "file_type": "code",
+              "source_file": "renamed.py",
+              "source_location": "L1",
+              "_origin": "ast"
+            },
+            {
+              "id": "renamed_normalize",
+              "label": "normalize()",
+              "file_type": "code",
+              "source_file": "renamed.py",
+              "source_location": "L4",
+              "_callable": true,
+              "_origin": "ast"
+            },
+            {
+              "id": "renamed_submit",
+              "label": "submit()",
+              "file_type": "code",
+              "source_file": "renamed.py",
+              "source_location": "L8",
+              "_callable": true,
+              "_origin": "ast"
+            },
+            {
+              "id": "renamed_rationale_1",
+              "label": "Synthetic different project: retain records for thirty days.",
+              "file_type": "rationale",
+              "source_file": "renamed.py",
+              "source_location": "L1",
+              "_origin": "ast"
+            }
+          ],
+          "edges": [
+            {
+              "source": "lib",
+              "target": "lib_normalize",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L2",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "lib",
+              "target": "lib_submit",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "lib_submit",
+              "target": "lib_normalize",
+              "relation": "calls",
+              "context": "call",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "renamed",
+              "target": "renamed_normalize",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "renamed.py",
+              "source_location": "L4",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "renamed",
+              "target": "renamed_submit",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "renamed.py",
+              "source_location": "L8",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "renamed_submit",
+              "target": "renamed_normalize",
+              "relation": "calls",
+              "context": "call",
+              "confidence": "EXTRACTED",
+              "source_file": "renamed.py",
+              "source_location": "L9",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "renamed_rationale_1",
+              "target": "renamed",
+              "relation": "rationale_for",
+              "confidence": "EXTRACTED",
+              "source_file": "renamed.py",
+              "source_location": "L1",
+              "weight": 1.0,
+              "_origin": "ast"
+            }
+          ],
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "failed_sources": [],
+          "skipped_sources": [],
+          "extracted_sources": [
+            "lib.rs",
+            "renamed.py"
+          ]
+        }
+      },
+      "baseline": {
+        "lexical_normalize": [
+          "lib.rs:2",
+          "lib.rs:3",
+          "renamed.py:4",
+          "renamed.py:9"
+        ],
+        "symbols": [
+          "lib.rs:2:normalize",
+          "lib.rs:3:submit",
+          "renamed.py:4:normalize",
+          "renamed.py:8:submit"
+        ],
+        "errors": []
+      },
+      "licenses_sha256": {
+        "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "LICENSE-MIT": "36ecff6bbb97aca1be64e95f42538cf796adde5864edac583e620643c096931a",
+        "NOTICE": "3448ea175bba09f6fed8a743000139fb4c7112de83f164355b5540b158576621"
+      },
+      "dependencies": {
+        "tree-sitter": "0.25.2",
+        "tree-sitter-python": "0.25.0",
+        "tree-sitter-rust": "0.24.2",
+        "networkx": "3.6.1",
+        "numpy": "2.5.1",
+        "rapidfuzz": "3.14.6",
+        "pyyaml": "6.0.3"
+      },
+      "python": "3.12.6",
+      "maxrss_native": 50167808
+    },
+    {
+      "project": "orbit-next",
+      "stage": "deleted",
+      "seconds": 0.2408,
+      "admission": "accepted",
+      "envelope": {
+        "schema": 1,
+        "scope": [
+          "orbit-next",
+          "synthetic-worktree",
+          "deleted"
+        ],
+        "complete": true,
+        "manifest": [
+          "lib.rs"
+        ],
+        "graph": {
+          "nodes": [
+            {
+              "id": "lib",
+              "label": "lib.rs",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L1",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib_normalize",
+              "label": "normalize()",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L2",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib_submit",
+              "label": "submit()",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "_origin": "ast"
+            }
+          ],
+          "edges": [
+            {
+              "source": "lib",
+              "target": "lib_normalize",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L2",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "lib",
+              "target": "lib_submit",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "lib_submit",
+              "target": "lib_normalize",
+              "relation": "calls",
+              "context": "call",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "weight": 1.0,
+              "_origin": "ast"
+            }
+          ],
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "failed_sources": [],
+          "skipped_sources": [],
+          "extracted_sources": [
+            "lib.rs"
+          ]
+        }
+      },
+      "baseline": {
+        "lexical_normalize": [
+          "lib.rs:2",
+          "lib.rs:3"
+        ],
+        "symbols": [
+          "lib.rs:2:normalize",
+          "lib.rs:3:submit"
+        ],
+        "errors": []
+      },
+      "licenses_sha256": {
+        "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "LICENSE-MIT": "36ecff6bbb97aca1be64e95f42538cf796adde5864edac583e620643c096931a",
+        "NOTICE": "3448ea175bba09f6fed8a743000139fb4c7112de83f164355b5540b158576621"
+      },
+      "dependencies": {
+        "tree-sitter": "0.25.2",
+        "tree-sitter-python": "0.25.0",
+        "tree-sitter-rust": "0.24.2",
+        "networkx": "3.6.1",
+        "numpy": "2.5.1",
+        "rapidfuzz": "3.14.6",
+        "pyyaml": "6.0.3"
+      },
+      "python": "3.12.6",
+      "maxrss_native": 49872896
+    },
+    {
+      "project": "orbit-next",
+      "stage": "damaged",
+      "seconds": 0.2462,
+      "admission": "accepted",
+      "envelope": {
+        "schema": 1,
+        "scope": [
+          "orbit-next",
+          "synthetic-worktree",
+          "damaged"
+        ],
+        "complete": true,
+        "manifest": [
+          "broken.py",
+          "lib.rs"
+        ],
+        "graph": {
+          "nodes": [
+            {
+              "id": "broken",
+              "label": "broken.py",
+              "file_type": "code",
+              "source_file": "broken.py",
+              "source_location": "L1",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib",
+              "label": "lib.rs",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L1",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib_normalize",
+              "label": "normalize()",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L2",
+              "_origin": "ast"
+            },
+            {
+              "id": "lib_submit",
+              "label": "submit()",
+              "file_type": "code",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "_origin": "ast"
+            }
+          ],
+          "edges": [
+            {
+              "source": "lib",
+              "target": "lib_normalize",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L2",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "lib",
+              "target": "lib_submit",
+              "relation": "contains",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "weight": 1.0,
+              "_origin": "ast"
+            },
+            {
+              "source": "lib_submit",
+              "target": "lib_normalize",
+              "relation": "calls",
+              "context": "call",
+              "confidence": "EXTRACTED",
+              "source_file": "lib.rs",
+              "source_location": "L3",
+              "weight": 1.0,
+              "_origin": "ast"
+            }
+          ],
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "failed_sources": [],
+          "skipped_sources": [],
+          "extracted_sources": [
+            "broken.py",
+            "lib.rs"
+          ]
+        }
+      },
+      "baseline": {
+        "lexical_normalize": [
+          "lib.rs:2",
+          "lib.rs:3"
+        ],
+        "symbols": [
+          "lib.rs:2:normalize",
+          "lib.rs:3:submit"
+        ],
+        "errors": [
+          "broken.py: SyntaxError"
+        ]
+      },
+      "licenses_sha256": {
+        "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "LICENSE-MIT": "36ecff6bbb97aca1be64e95f42538cf796adde5864edac583e620643c096931a",
+        "NOTICE": "3448ea175bba09f6fed8a743000139fb4c7112de83f164355b5540b158576621"
+      },
+      "dependencies": {
+        "tree-sitter": "0.25.2",
+        "tree-sitter-python": "0.25.0",
+        "tree-sitter-rust": "0.24.2",
+        "networkx": "3.6.1",
+        "numpy": "2.5.1",
+        "rapidfuzz": "3.14.6",
+        "pyyaml": "6.0.3"
+      },
+      "python": "3.12.6",
+      "maxrss_native": 50151424
+    }
+  ],
+  "cleanup": "experiment temporary directory removed"
+}
