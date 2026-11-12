@@ -8,6 +8,25 @@ control. This change does not complete an acceptance gate or phase. Phase 0
 remains a finite offline foundation; [Phase 1](../spec/phase-1-feasibility.md)
 remains OPEN, not host validation or a working companion.
 
+## Parent finalization
+
+Full committed implementation: `3ad909b43604a2908a1250345c8e95da449293b2`.
+Primary reviewed the entire workflow and the exact one-line removal, independently
+parsed both versions with installed PyYAML BaseLoader and asserted that removal
+of the PR base filter was the only text/parsed difference. Main-only push,
+unprivileged PR event and read-only permissions were explicitly checked.
+Primary reran offline foundation, cached cargo-deny, staged secrets and whitespace
+checks on the same implementation tree before committing: all passed.
+
+This small trigger-only change received primary source review, not a claimed
+new delegated safety review. Existing jobs and their trust boundaries are
+unchanged. The sections below retain the delegate's uncommitted snapshot.
+This follow-up changes only the evidence record. Parent publishes a separate
+dependent PR on unmerged PR #8 and records its own final head/run; automatic
+attachment is not established until GitHub actually runs the changed workflow.
+PR #10's watch remains intact; its supplemental run was not queried or retried.
+No automatic retarget/restart, merge, publication of the site or phase closure.
+
 ## Problem and event semantics
 
 The parent reported that PRs #9/#10 target `t3/phase-0-rust-foundation` rather
