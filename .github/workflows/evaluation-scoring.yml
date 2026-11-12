@@ -1,0 +1,35 @@
+name: Prospective evaluation scoring
+on:
+  pull_request:
+    paths:
+      - 'experiments/evaluation-scoring/**'
+      - 'docs/progress/phase-1-evaluation-scoring.md'
+      - 'docs/decisions/0006-phase-1-evaluation-protocol.md'
+      - '.github/workflows/evaluation-scoring.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/evaluation-scoring/**'
+      - 'docs/progress/phase-1-evaluation-scoring.md'
+      - 'docs/decisions/0006-phase-1-evaluation-protocol.md'
+      - '.github/workflows/evaluation-scoring.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scoring:
+    name: Pure scorer (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Synthetic contract tests only
+        run: python3 -B -m unittest discover -s experiments/evaluation-scoring -v
