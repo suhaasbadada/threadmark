@@ -1,0 +1,33 @@
+name: OpenCode offline feasibility
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/opencode/**'
+      - '.github/workflows/opencode-feasibility.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/opencode/**'
+      - '.github/workflows/opencode-feasibility.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  offline:
+    name: Offline contract (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 3
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Test synthetic contract with existing Node (no installs)
+        run: |
+          node --version
+          node --test experiments/opencode/contract.test.mjs
