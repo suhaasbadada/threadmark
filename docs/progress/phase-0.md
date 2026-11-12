@@ -40,7 +40,14 @@ Gitleaks history/tracked-file scans with an intentional synthetic failure probe.
   8 integration tests, 1 doctest, rustdoc, CLI/daemon finite smokes, local links and
   intentional assertion failure passed. cargo-deny 0.20.2 advisory/bans/licenses/
   sources checks and Gitleaks 8.30.1 history/tracked-file/negative probe passed
-  after the above repairs. Final committed-revision rerun remains required.
+  after the above repairs.
+- Committed code revision `07029c02edb81e9b5f1ccf52c5bf5f6176d7069f`:
+  `python3 scripts/check.py`, `python3 scripts/secrets.py`, and
+  `cargo deny --locked check` all rerun successfully on macOS Apple Silicon,
+  Rust 1.97.1, Python 3.12.6. This includes 2 unit tests, 8 integration tests,
+  1 doctest, warning-denied lint/docs, build, all diagnostics and both negative
+  probes. Independent review: Joffrey; both actionable findings repaired and
+  reproduced checks pass. No runtime or host certification follows from this.
 
 ## Exit decision
 
