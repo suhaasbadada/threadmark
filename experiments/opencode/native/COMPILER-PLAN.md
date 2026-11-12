@@ -93,6 +93,12 @@ inventory may be a discovery candidate, never a claim of complete type closure.
 Environment is replaced, never inherited: owned HOME, TMPDIR, XDG config/cache/
 data/state, C locale, fixed `/usr/bin:/bin` PATH. No NODE_OPTIONS, NODE_PATH,
 TS_NODE variables, auth, credentials, user npm configuration or provider state.
+The fixed candidate also sets `NODE_DISABLE_COMPILE_CACHE=1`: authentic pinned
+`tsc.js` attempts `enableCompileCache()` unconditionally. This documented Node
+control is not yet measured; absence of NODE_ENV avoids the development-only
+source-map-support branch. The separate fixed Node-only guard must observe
+`getCompileCacheDir() === undefined` and the named `compileCacheStatus.DISABLED`
+result before any later compiler authorization. No numeric enum is assumed.
 The fixed PATH is not spawn permission. Read/write names are typed JSON strings
 and argv arrays, not interpolated shell or SBPL. Quotes are preserved as data;
 controls reject. A later policy serializer must use reviewed SBPL string escaping

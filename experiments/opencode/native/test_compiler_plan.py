@@ -95,13 +95,15 @@ class CompilerPlanTests(unittest.TestCase):
 
     def test_environment_is_complete_allowlist_not_inherited(self):
         with patch.dict(os.environ, {"NODE_OPTIONS": "--require=/forbidden", "NODE_PATH": "/forbidden",
-                                     "TS_NODE_PROJECT": "/forbidden", "SECRET_FIXTURE": "not inherited"}):
+                                     "TS_NODE_PROJECT": "/forbidden", "SECRET_FIXTURE": "not inherited",
+                                     "NODE_DISABLE_COMPILE_CACHE": "0"}):
             d = self.build()
         self.assertFalse(d["inheritEnvironment"])
         self.assertEqual(d["environment"], {"HOME": str(self.workspace / "home"),
             "TMPDIR": str(self.workspace / "tmp"), "XDG_CONFIG_HOME": str(self.workspace / "config"),
             "XDG_CACHE_HOME": str(self.workspace / "cache"), "XDG_DATA_HOME": str(self.workspace / "data"),
-            "XDG_STATE_HOME": str(self.workspace / "state"), "LANG": "C", "LC_ALL": "C", "PATH": "/usr/bin:/bin"})
+            "XDG_STATE_HOME": str(self.workspace / "state"), "LANG": "C", "LC_ALL": "C", "PATH": "/usr/bin:/bin",
+            "NODE_DISABLE_COMPILE_CACHE": "1"})
 
     def test_policy_is_typed_pending_no_broad_read_roots(self):
         d = self.build()

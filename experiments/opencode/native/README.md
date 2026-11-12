@@ -53,7 +53,10 @@ reviewed authentic declaration-only mechanism, or seek upstream packaging fixes.
 No blanket license allowance, invented attribution or dependency removal applied.
 
 This lock is still **not proven type-closure-complete**: web-tree-sitter declares
-`@types/emscripten ^1.40.0`, currently absent; further authentic declaration needs
+the **optional** peer `@types/emscripten ^1.40.0`, currently absent. Its actual
+`web-tree-sitter.d.ts:136` references global `EmscriptenModule` (not a direct module
+import), so consuming that declaration still needs an authentic definition;
+optional peer metadata is not proof of a complete strict type graph. Further authentic declaration needs
 have not been compiler-tested. No further acquisition/install was attempted after
 the notice/provenance stop. Legacy-peer resolution is not closure proof.
 Node 24.10.0 / OpenTUI's Node >=26.4.0 mismatch remains a runtime blocker.
@@ -291,3 +294,69 @@ This synthetic pass cannot establish Node plugins/loaders, ambient
 compiler config, actual consumed-file/type closure, V8/total memory containment,
 native OpenCode admission, SDK/TUI capture or full product acceptance. Those
 gates, runtime provenance and Phase 1 remain OPEN.
+
+## Fixed Node-only discovery candidate — NOT RUN
+
+`node_containment.py` and the separately hash-bound `node_containment_probe.cjs`
+are the next review candidate, not an execution authorization. They support
+TM-04/TM-05/TM-08/TM-10 and prerequisite work for P1-A2/P1-A5; neither acceptance
+ID is completed. No compiler, SDK, host, inference or network service is started
+by importing them or by the pure Python tests. No measured Node action is added
+to CI. There is deliberately **no CLI** and no arbitrary executable/argv/profile,
+compiler descriptor, caller script or budget input.
+
+Preparation (`prepare_review`) statically reads only the known ARM64 Node
+24.10.0 linked Mach-O closure, using installed `/usr/bin/otool -l`. It excludes
+dylib ID rows, resolves the observed loader-relative ICU dependency and the
+single Brotli rpath subset, and rejects unsupported dynamic lookup. Node's known
+binary hash is pinned; the candidate explicitly includes all 17 non-system
+dylibs, their load edges, canonical byte hashes, modes/sizes/inodes and every
+actual alias edge/metadata ancestor. Bounds are 64 non-system files, 128 MiB per
+file and 512 MiB total; this fixed runtime requires exactly 18 reachable files.
+No Homebrew install receipt is substituted for the current aliased runtime.
+Generated machine inventories stay private, unapproved and unredistributed.
+
+`run_guard(review_bytes, approved_sha256)` requires the exact bytes and a digest
+approved through an independent trusted parent/review channel. The API does not
+authenticate that caller; computing a candidate's own hash is **not approval**.
+The review binds the fixed probe, harness, shared serializer/artifact owner,
+retained process helper/supervisor, sandbox tool, OS/build, actual dyld and
+SystemVersion files. Shared-cache virtual images are explicitly **not individually
+hashed**. Full file/alias/ancestor and source/system revalidation occurs before
+launch and after every attempt, without new runtime discovery. Parents and
+Homebrew are trusted against concurrent same-UID mutation; this is not a hostile
+same-UID container boundary. Any post-launch drift retains owned artifacts and
+quarantines reuse even when the process returned zero.
+
+The typed deny-default policy reuses the existing serializer and its independent
+test oracle. Only literal Node may exec; no fork, network, Mach-service or sysctl
+allowance is added. Runtime/alias reads/maps are exact; metadata traversal is
+literal. Writes are confined to six fresh owned state directories. The explicitly
+reviewable **public-system discovery baseline**, not minimum runtime closure,
+permits `/usr/lib`, this OS's Preboot Cryptex dyld directory, and the directly
+linked CoreFoundation/Security framework subtrees. Literal `/` directory data
+read is disclosed separately and grants no recursive subtree access. No whole
+System, PrivateFrameworks, Homebrew, home, repository or private-data read is
+allowed. A bootstrap failure does not authorize a broader allowance.
+
+Only fixed Node `--max-old-space-size=64 --version` followed by the owned hashed
+CommonJS probe is proposed. Replacement environment adds
+`NODE_DISABLE_COMPILE_CACHE=1`; no ambient Node/cache/coverage/inspector/ICU/
+OpenSSL/DYLD overrides are inherited. Per-attempt budgets are 5 s and 16 KiB
+combined output, using the retained process owner and its 2 s cleanup proof; a
+110 s overall launch deadline reserves 10 s within the 120 s envelope. The V8
+old-space flag is not a total RSS bound. Fresh private artifacts use exclusive
+creation; verified ordinary failures remove them, unknown cleanup/drift retains
+them and blocks reuse. Evidence is status/count/hash/constant-label only.
+
+The proposed 29 observations cover exact ASCII version, approved read/six state
+writes, forbidden private/home/repo/config-shaped canaries and escaping symlink,
+protected writes, real unauthorized `spawnSync` (only EPERM/EACCES counts), IPv4/
+IPv6 TCP connect/UDP send/bind/listen permission denials, zero traffic at owned
+loopback receivers, and compile-cache disablement via named Node APIs. Unknown
+API behavior, nonpermission errors, stderr, partial/duplicate/extra labels or
+any malformed version fail closed. These APIs and Node bootstrap have **not
+been executed**. DNS/IPC/JIT, full system closure, publisher provenance, V8/total
+memory, compiler/consumed-file/type closure and native integration remain open.
+Independent code/policy review, exact inventory approval and explicit primary
+authorization are mandatory before the first actual Node guard execution.

@@ -245,7 +245,8 @@ def build_descriptor(review_bytes, reviewed_sha256, *, lock_bytes, projection_pl
                    "XDG_CACHE_HOME": str(workspace / "cache"),
                    "XDG_DATA_HOME": str(workspace / "data"),
                    "XDG_STATE_HOME": str(workspace / "state"),
-                   "LANG": "C", "LC_ALL": "C", "PATH": "/usr/bin:/bin"}
+                   "LANG": "C", "LC_ALL": "C", "PATH": "/usr/bin:/bin",
+                   "NODE_DISABLE_COMPILE_CACHE": "1"}
     read_files = ([str(projection / name) for name in selected_hashes]
                   + [str(sources / name) for name in roots]
                   + [str(compiler_root / name) for name in compiler["files"]]

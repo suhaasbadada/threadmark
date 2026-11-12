@@ -739,3 +739,277 @@ loader/plugins/config, V8/total memory, authentic declaration/consumed-file clos
 full runtime provenance and native capture/review/admission remain unestablished.
 No Node, TypeScript, SDK/TUI or provider ran. P1-A2/P1-A5 remain PARTIAL; Phase 1
 and the full agreed product scope remain OPEN.
+
+## Published C-only prerequisite — PR #23
+
+PR: <https://github.com/suhaasbadada/threadmark/pull/23>, target `main`.
+Full final tested implementation head:
+`8011b2967e49b15bdafb616941f58d60ce74e49e`, tree
+`156383fe1d9c6129be2a8b295b5c1a40cf555b94`. Primary final integrated verification
+passed **473 tests** (393 Python, including 90 native; 80 Node). Both actual
+macOS C guards passed; the new fixed guard repeated all 32 controls with verified
+owned-artifact removal, `host_launched: false`, `typescript_launched: false`.
+Foundation checks, cached offline cargo-deny, staged secrets and full staged
+whitespace checks passed. Joffrey independently reviewed both the core unit and
+the narrow literal-root candidate before their respective measurements.
+
+Initial PR inspection bound **12 queued/in-progress checks** to that exact head:
+
+- Foundation CI: <https://github.com/suhaasbadada/threadmark/actions/runs/43326501894>
+  — both Rust platforms and dependency/license/secret validation.
+- Integrated experiments:
+  <https://github.com/suhaasbadada/threadmark/actions/runs/43326501854>
+  — Linux/macOS, including the new fixed C action on macOS.
+- Extraction harness:
+  <https://github.com/suhaasbadada/threadmark/actions/runs/43326501874>
+  — Linux/macOS wrapper/owner regression coverage.
+- Offline OpenCode contracts:
+  <https://github.com/suhaasbadada/threadmark/actions/runs/43326501893>
+  — Linux/macOS, still abstract contracts rather than native proof.
+- Synthetic host isolation:
+  <https://github.com/suhaasbadada/threadmark/actions/runs/43326501846>
+  — two portable jobs and the unchanged older real macOS guard.
+
+Pending checks are not green. Fresh exact-head completion, review/discussions,
+target and prerequisite-only acceptance remain required before merge. This local
+progress append is not an additional published head. No native/compiler or full
+phase gate is closed by the local C result; all prior failed attempts are retained.
+
+## Offline authentic inventory continuation while PR #23 is watched
+
+Bob completed one separate bounded offline inventory unit from already-owned
+archives, without changing repository source/configuration, polling CI, acquiring
+dependencies or executing Node/TypeScript/SDK code. Original archives remain
+untouched. All **345 archive files** were rehashed twice against SHA-256 filenames
+and exact SHA-512 ledger identities, covering **364 acquired records**. Eight
+selected archives passed strict full preflight. The exact lock hash is
+`c37f2f29fe209654cdf21e04d2137c45289196f9dbe082d6d7841b8bce975c66`.
+
+Private, nonredistributed candidate JSON inventories were written into a fresh
+0700 owned root; they are **not approved**, installed, projected, executed or
+uploaded. Primary independently rehashed and parsed the compiler/native/Node/
+validation/refinement outputs against Bob's handoff identities:
+
+- Compiler inventory:
+  `0ddbaa519352d4b02cbc691a552b24936f6eb512cba9c10cd8dab6d868ad353f`.
+  **112 files**, including **107** authentic default libraries, complete metadata,
+  actual notices and both compiler entrypoints. Static dynamic-require/source-map
+  support/compile-cache findings keep runtime/helper closure UNPROVEN. No compiler
+  bytes were materialized and no compiler ran.
+- Native type inventory:
+  `122224a07e6ef46d74914ea1f5c1ce4e78a2d6d2cdfdeb89be35b89f5ff30a8b`.
+  Seven exact native packages contain **336 declarations + 11 type sources**;
+  unchanged manifest/export/peer/nested metadata and notice evidence are retained.
+  This is not official module resolution or a complete SDK projection.
+- Node inventory:
+  `c952472a8830a3cd1fe820cb60536a3108574742f4df67b1a7d66243a0ff0ddf`.
+  ARM64 regular single-link binary, mode 0555, 64,866,928 bytes, SHA-256
+  `e7daf91e350dcfc19c3f67bef0a463c1269e98e084606c2e38edf2c349e3842a`.
+  Version identity remains UNPROVEN; path labels do not authenticate a version.
+  Static Apple-tool inspection found Homebrew library dependencies; minimum
+  Node/system runtime inventory remains UNCLOSED. No Node probe was run.
+- Source refinement:
+  `aa5f3cb7c44302bd7170b7532663684e1b6e19eaac8ebe11a44b801d7d551bed`.
+  **Correction to earlier mandatory-peer shorthand:** the actual Emscripten peer
+  is optional. Actual `web-tree-sitter.d.ts:136` nevertheless references global
+  `EmscriptenModule`, with no direct emscripten import. An authentic definition is
+  still missing if that declaration is consumed; no stub or suppression supplies
+  it. Three direct OpenCode archives lack standalone notices; the pinned root
+  notice mapping still requires package-specific review.
+- Validation ledger:
+  `556bc56b724275877f019059c9c05c8a38c39a1fc7f5c560cd657a97ccefc894`.
+
+All execution/type/native approvals remain separate. Pure reader/hash/metadata
+checks passed; no code suite was duplicated for this read-only inventory unit.
+Primary corrected current README peer wording while preserving historical failure
+evidence. PR #23 remains watched at unchanged head
+`8011b2967e49b15bdafb616941f58d60ce74e49e`; this local evidence/doc correction is
+not pushed or claimed as checked by its pending CI. No duplicate worker, reminder,
+new spending, credential use, host/binary deployment or phase closure occurred.
+
+## PR #23 qualified merge and runtime-inventory continuation
+
+Fresh inspection verified all **12** exact-head checks SUCCESS on
+`8011b2967e49b15bdafb616941f58d60ce74e49e`, with target `main`, MERGEABLE/CLEAN,
+no draft, no unresolved review threads and no additional branch-protection/ruleset
+approval gate. No forge approval was invented. The integrated macOS job trace in
+run `43326501854` was inspected: its actual fixed C guard passed all 32 controls
+on kernel **24.6.0**, with `verified-owned-artifacts-removed`, no host and no
+TypeScript launch. This is remote C evidence, not native acceptance.
+
+Under Suhaas's standing qualified-merge authorization, PR #23 was squash-merged
+at `e1d7b9c461a33d2270af35971bc8131bfe5672f2`. Its exact tree
+`156383fe1d9c6129be2a8b295b5c1a40cf555b94` matches the tested PR tree. The watch
+was stopped, and the same assigned branch integrated merged main without branch
+switch, reset or cleanup. Local README/progress corrections and inventory evidence
+were preserved. No runtime/binary deployment or phase closure followed. Post-merge
+workflows are a separate unverified gate until freshly inspected.
+
+Next bounded work reviews authentic Node linked-library inventory and the pinned
+compiler's conditional helper/compile-cache behavior, with no Node/TypeScript/SDK
+execution. C bootstrap success does not approve Node/system reads or compiler
+module execution. Any proposed Node-only diagnostic needs its own exact hash-
+bound policy review and explicit primary authorization; a compiler run remains
+a later separate gate.
+
+## Authentic runtime review — fixed Node-only implementation decision
+
+Sherlock independently re-read the exact pinned compiler archive through strict
+preflight. Authentic `lib/tsc.js:2–7` attempts `node:module.enableCompileCache()`
+unconditionally in try/catch; fixed compiler options do not prevent it.
+`lib/_tsc.js:134458–134459` enables optional source-map support only for
+`NODE_ENV=development`; replacing the environment without NODE_ENV avoids that
+branch. CPU inspector entry requires excluded generateCpuProfile settings.
+Dynamic system `require(modulePath)` is defined at lines 5008–5014; static review
+found no caller in this CLI bundle. These are static findings, not formal runtime
+closure or execution approval. The installed Node manpage documents cache
+disablement; explicit `NODE_DISABLE_COMPILE_CACHE=1` is a candidate control whose
+interaction with enableCompileCache still needs measured proof.
+
+Bounded static traversal found Node plus **17 non-system dylibs**, **111,994,336
+bytes** total. Aggregate SHA-256 over sorted canonical-path/tab/file-hash records:
+`d3f1d8c3136212ded1088e2791f6490b5dd0c30363004dc43aa54b9fe3f70520`.
+Homebrew aliases drifted from Node receipt versions (Brotli 1.1.0 → 1.2.1,
+OpenSSL 3.6.0 → 3.6.4, SQLite 3.50.4 → 3.53.4). Therefore a Node-only binary hash
+does not bind the runtime; exact canonical library hashes and alias edges must be
+reviewed/revalidated too. ICU uses system ICU 77, with its actual data dylib in
+that inventory; no extra ICU data directory is assumed necessary.
+
+Primary authorizes implementation/pure tests of an exact-runtime inventory
+preflight and **fixed Node-only** bootstrap/negative-control guard, not execution
+yet. No TypeScript entrypoint, SDK, arbitrary argv/profile or host launch may be
+accepted. A future exact inventory, external approval digest and independent
+policy/code review are required before one separately authorized measured probe.
+Version output would bind observed version to reviewed local bytes, not certify
+publisher provenance. Same-UID parents/no concurrent Homebrew mutation are an
+explicit trust boundary; immediate before/after byte/alias revalidation must fail
+closed on drift.
+
+The proposed discovery policy may name exact Node/17 dylib and alias paths plus
+metadata ancestors, fixed owned probes/canaries/state only, no recursive Homebrew,
+home/repository/private-data read, no target fork or network allowance. An explicit
+**public-system discovery baseline**, not minimum closure, may include `/usr/lib`,
+the actual OS dyld-cache directory and the two statically linked CoreFoundation/
+Security framework subtrees. Unobserved broad PrivateFrameworks/Mach-service,
+sysctl, ICU or user-data allowances are not authorized. Literal root directory
+data read remains disclosed, not a subtree permission. Public-system metadata
+and shared-cache images require honest OS/build identity; no invented image hash.
+Any additional allowance needs failure evidence and fresh review.
+
+Node-only controls must measure the candidate cache-disable behavior, version,
+permitted read/write, forbidden private read/write, child spawn and owned-loopback
+network denials using fixed hashed CommonJS source and retained-owner cleanup.
+Per-probe budgets are at most 5 s/16 KiB. Compiler/SDK/type/native acceptance and
+all existing provenance/closure blockers remain separate and CLOSED.
+
+## Exact Node-only candidate review and first-run authorization
+
+Primary freshly verified all five PR #23 merge-head workflows SUCCESS on
+`e1d7b9c461a33d2270af35971bc8131bfe5672f2`: foundation `43327960909`,
+integrated `43327961011`, extraction `43327960866`, offline OpenCode `43327961193`
+and synthetic host isolation `43327961002`. These remain prerequisite CI, not a
+runtime/binary deployment or native certification.
+
+Joffrey independently reviewed the Node-only implementation and exact initial
+candidate, revalidated the real 18-file/24-alias runtime and passed 53 pure tests.
+He found one P2: cancellation/interrupt during post-attempt validation could
+delete artifacts and leave reuse enabled without completed integrity proof.
+Primary repaired both postcheck handlers, adding cancellation/KeyboardInterrupt
+quarantine and retention. Both new regressions fail against the exact pre-fix
+implementation and pass the repair; the repaired Node-only suite passes 27 tests.
+
+The source-bound candidate was regenerated, not silently reused. New candidate
+SHA-256: `1e87d0598ab2b6dea9c616f22d0de5b92c0ef9e370ca5fbe64b2d7adef1d1fd5`.
+Joffrey independently checked its 0400 file/0700 parent and revalidated every
+actual file/alias/ancestor. Old/new candidates differ only in the expected guard
+source record; runtime, system, CJS probe, helper, supervisor, sandbox and policy
+implementation identities are unchanged. Six targeted tests passed, including
+both corrected cancellation paths. No execution was performed by either review.
+
+Primary now authorizes **one exact fixed Node-only diagnostic guard run** for that
+digest after committing the reviewed implementation. Known local bytes are
+trusted for this bounded discovery experiment, not publisher-certified. The
+guard may attempt fixed `--version`, fixed hashed CommonJS controls, exact
+reviewed read/discovery baseline and owned loopback receivers, with immediate
+before/after inventory validation and <=5 s/16 KiB per-probe budgets. A forwarding
+observer may retain only already-bounded stdout/stderr in a fresh private 0700
+directory/0600 files; argv, environment, budgets, results, source and policy must
+remain unchanged. Raw diagnostics/private paths are not public evidence.
+
+No automatic retry or permission expansion is authorized after bootstrap/control
+failure. No TypeScript/compiler, SDK/TUI, native host, provider or external network
+target is authorized. Actual outcomes, cleanup and remaining limitations must be
+recorded separately; synthetic tests cannot satisfy this measurement gate.
+
+## Fixed Node-only preflight and guard candidate — implementation, NOT RUN
+
+Bob completed the next bounded code/pure-test unit in the same assigned branch,
+based on full HEAD `4d1ee4d76a31cebb827713d82df5dab5dc4c0c9b`, which integrates
+merged main `e1d7b9c461a33d2270af35971bc8131bfe5672f2`. The primary's preexisting
+README correction and all prior progress/PR #23/failure evidence were preserved.
+There is no new commit, pushed head, PR, CI run, merge or deployment for this
+unit. Existing PR #23 results above are not evidence for these working changes.
+TM-04/TM-05/TM-08/TM-10, supporting P1-A2/P1-A5 prerequisites only; Phase 1 and
+both acceptance gates remain open, not completed by models or mocks.
+
+`node_containment.py` adds inert explicit static inventory preparation, strict
+external-digest preflight and a fixed Node-only guard API. It does not consume
+the compiler descriptor or accept an executable/script/profile/extra argv/budget;
+there is no CLI or measured CI action. The separate fixed CommonJS probe uses
+Node builtins only. Source/harness/serializer/owner/supervisor/sandbox hashes and
+OS/build, actual dyld/SystemVersion files bind the review. Shared-cache virtual
+images are honestly identified as not individually hashed. Exact Node and 17
+canonical dylibs, all 24 actual alias edges, load graph and metadata ancestors
+are revalidated before/after each future attempt; no runtime rediscovery occurs
+after approval. Identity includes mode/size/single-link/inode checks and bounded
+before/open/after reads. Same-UID/no-concurrent-Homebrew-mutation trust remains
+explicit. Post-launch drift or unknown cleanup retains owned state/quarantines
+reuse, including zero-exit cases; ordinary verified failure removes owned state.
+
+The deny-default typed policy/serializer and private artifacts/retained owner
+reuse the C prerequisite rather than broadening that guard. Only exact Node may
+exec; no fork/network/Mach/sysctl allowance exists. Runtime paths are literal,
+state writes are six owned subtrees, and the four approved public-system discovery
+baseline roots plus literal root-directory data read are disclosed separately
+from minimum system closure. No whole System/PrivateFrameworks/Homebrew/home/
+repository/private-data read is emitted. Any bootstrap failure requires evidence
+and fresh review, not automatic broadening.
+
+The future guard has 29 strict observations: separate exact ASCII v24.10.0
+version, owned read/writes, forbidden shaped/private/symlink reads and protected
+writes, actual unauthorized spawn, IPv4/IPv6 loopback TCP/UDP/bind/listen denial,
+empty owned receivers, and named compile-cache API checks. Each attempt is fixed
+to 5 s/16 KiB combined output with shared retained-owner cleanup. A 110 s launch
+deadline reserves cleanup within the 120 s envelope; 64 MiB V8 old-space is not
+total RSS. Unknown Node API/errno/output fails closed, never mocked certification.
+Compiler plan environment now explicitly adds `NODE_DISABLE_COMPILE_CACHE=1` and
+still excludes NODE_ENV and ambient overrides; its approval fields remain false.
+
+Read-only static Apple-tool preparation independently reproduced **18 files,
+111,994,336 bytes, 24 alias edges**, aggregate SHA-256
+`d3f1d8c3136212ded1088e2791f6490b5dd0c30363004dc43aa54b9fe3f70520`.
+A fresh 0700 private root contains the 0600 candidate JSON, read back and fully
+revalidated. Candidate SHA-256:
+`0333ce968d5a514b3b66b3b0a7456330b7fbd1d59fcf44a639f332d46105d5cf`.
+This is **UNAPPROVED**, not a self-authorizing digest, and was not uploaded or
+vendored. No archive was modified or compiler bytes projected. Implementation
+source SHA-256 `30cee1feebfc6d0942818ece00cd47b11deb66a45ec54e012c980d9769835286`;
+fixed probe SHA-256 `58ca2fa62e35afa2be528a6a65e72ddddaafe5b3a6f56ca54ba4d3e5821af393`.
+
+Verification on the working changes: **498 offline tests PASS** = **418 Python**
+(including **115 native**, 25 new pure Node-candidate tests) + **80 existing Node
+offline contract tests**. Python 3.12.6 ran the full integrated suite; native
+discovery additionally passed with the default Python. Foundation checks passed
+(fmt/build/clippy/tests/docs/offline smoke/intentional failing-test rejection),
+as did cached `cargo deny --locked --offline check`. Staged secrets, full staged
+whitespace and local documentation link checks also passed. No C guard measurement was
+duplicated; no Node version/diagnostic/guard, TypeScript, SDK, host, sandbox target
+or compiler ran. The existing Node offline contract command was the only Node
+execution in this unit; it is abstract-contract evidence, not this guard.
+
+Next mandatory gate: independent exact code/policy and private inventory review,
+then **explicit primary authorization for the first fixed Node-only measurement**.
+Node bootstrap and compile-cache API semantics are unmeasured and may fail closed;
+no guessed OS permission has been added to make them pass. DNS/IPC/JIT, minimum
+system/runtime closure, publisher provenance, total memory, compiler declarations/
+consumed-file/type closure and native capture/review/admission remain unproved.
