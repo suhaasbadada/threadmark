@@ -84,3 +84,10 @@ probe. `cargo deny --locked check` passed advisories/bans/licenses/sources;
 the synthetic sentinel; `git diff --cached --check` passed. Remote link content
 is not checked by the local link test. No representative corpus or benchmark
 was run, and none is required to validate this explicitly prospective document.
+
+Full committed documentation revision tested again with `scripts/check.py`:
+`caeb871d8d627c19abb47c47edfbfe06652864e9`, passed. This subsequent evidence-only
+addition does not change the protocol. The final PR head needs its own CI; its
+exact run/head record will be attached to the PR without rewriting historical
+experiment evidence. Review remains primary-only; protocol acceptance and
+independent review before a future runner remain pending.
