@@ -25,6 +25,14 @@ The new standalone `Extraction experiment harness` CI workflow runs these tests
 on Linux/macOS without Graphify, packages or provider access. The optional actual
 extraction experiment remains outside default runtime/foundation commands.
 
+Full committed code revision after incorporating current main:
+`f228adc5dea7b388d7fac879a28d6c077a615721`. Parent reran all eight harness tests
+and `python3 scripts/check.py` successfully on this exact revision. cargo-deny
+and staged/history secret scans also passed for this unit. No private absolute
+paths were found in recorded results. This follow-up changes only this evidence
+record; remote CI for the eventual PR head is still required. Review acceptance
+is limited to a disposable experiment with the documented adoption blockers.
+
 ### Delegate implementation snapshot
 
 Assigned branch `t3/phase-1-extraction-feasibility`; worktree basename
