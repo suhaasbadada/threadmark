@@ -1,0 +1,18 @@
+{
+  "kind": "agent-observed synthetic browser checks, not user-study evidence",
+  "date": "2026-11-12",
+  "browser": "T3CodeBeta/0.1.9 Chrome/152.0.7977.169 Electron/44.10.1",
+  "page": "http://127.0.0.1:41837/",
+  "matrix": [
+    {"width": 1280, "height": 800, "theme": "light", "checksPassed": 15, "checksFailed": 0, "bodyBackground": "rgb(250, 250, 248)"},
+    {"width": 1280, "height": 800, "theme": "dark", "checksPassed": 15, "checksFailed": 0, "bodyBackground": "rgb(25, 28, 26)"},
+    {"width": 390, "height": 800, "theme": "light", "checksPassed": 15, "checksFailed": 0, "bodyBackground": "rgb(250, 250, 248)"},
+    {"width": 390, "height": 800, "theme": "dark", "checksPassed": 15, "checksFailed": 0, "bodyBackground": "rgb(25, 28, 26)"}
+  ],
+  "checks": ["first fixture + provenance", "unresolved blocked", "choice discards old example", "review explicit no delivery", "stale blocked", "no auto review on recovery", "worktree mismatch blocks", "revision mismatch blocks", "edit invalidates", "second project isolation", "dependency failure", "return safe", "cancel safe", "no horizontal overflow", "banner sticky"],
+  "method": "Initial wide/light sequence used preview_act native select/click/type and actual Tab/Enter. Matrix repetition used DOM value/change/input events and button.click in preview_evaluate; not pointer-only or keyboard-only coverage.",
+  "keyboard": {"wideReviewTabEnter": "pass", "narrowReviewAndCancelTabEnter": "pass", "focusOutline": "solid", "narrowFocusedReviewTop": 758.5625, "narrowBannerBottom": 132.328125, "projectArrowDownEnter": "did not commit selection; native select automation used"},
+  "finalStickyIdentityRecheck": {"fourConfigurations": "15/15 checks passed again in each", "fullIdentityVisibleAtScrollEnd": true, "wideBannerBottom": 69.109375, "narrowBannerBottom": 132.328125, "narrowKeyboardReviewAndCancel": "pass"},
+  "accessibility": {"initialTree": "returned labeled comboboxes, textbox, checkboxes, regions, buttons and status", "allInputsHaveLabels": true, "statusLive": "polite", "screenReaderCertification": false, "reducedMotion": "CSS source checked; no animation or transition in normal styles; preference not emulated"},
+  "limitations": ["No real user or normal-host baseline", "No host, daemon, indexing, inference or delivery tested", "No latency or memory benchmark", "No screen-reader session", "No screenshots used as proof", "Source/API denylist is a limited regression check, not a security audit"]
+}

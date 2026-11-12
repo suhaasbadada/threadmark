@@ -1,0 +1,33 @@
+name: Disposable UX walkthrough
+on:
+  pull_request:
+    paths:
+      - 'experiments/ux-walkthrough/**'
+      - 'docs/progress/phase-1-ux.md'
+      - '.github/workflows/ux-walkthrough.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/ux-walkthrough/**'
+      - 'docs/progress/phase-1-ux.md'
+      - '.github/workflows/ux-walkthrough.yml'
+permissions:
+  contents: read
+jobs:
+  fixture-tests:
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Offline fixture checks (runner-provided Node 22+)
+        run: |
+          node -e 'if (Number(process.versions.node.split(".")[0]) < 22) process.exit(1)'
+          node --check experiments/ux-walkthrough/app.mjs
+          node --check experiments/ux-walkthrough/model.mjs
+          node --test experiments/ux-walkthrough/model.test.mjs
