@@ -1,0 +1,130 @@
+{
+  "status": "BLOCKED: incomplete upstream notices/provenance; no install authorization",
+  "sourceChecks": [
+    {
+      "name": "@npmcli/agent",
+      "version": "4.0.2",
+      "metadataURL": "https://registry.npmjs.org/@npmcli/agent/4.0.2",
+      "gitHead": "db7852869c74ceb8985d7c36b291a2e7a866741c",
+      "repository": {
+        "url": "git+https://github.com/npm/agent.git",
+        "type": "git"
+      },
+      "integrity": "sha512-EUEuWAxnL07Sp5/iC/1X6Xj+XThUvnbei9zfRWZdEXa7lss9RTHMhAHBeg+MZ5To9s/gGaSI+UwZTPdYMvKSeg==",
+      "treeURL": "https://api.github.com/repos/npm/agent/git/trees/db7852869c74ceb8985d7c36b291a2e7a866741c?recursive=1",
+      "treeResponseSha256": "9b53cdfc7e74b0da64c6c4a36b27bf92cdf58db5586c51aa7bc7262348774781",
+      "treeTruncated": false,
+      "rootPaths": [
+        ".commitlintrc.js",
+        ".eslintrc.js",
+        ".github",
+        ".gitignore",
+        ".npmrc",
+        ".release-please-manifest.json",
+        "CHANGELOG.md",
+        "CODE_OF_CONDUCT.md",
+        "CONTRIBUTING.md",
+        "README.md",
+        "SECURITY.md",
+        "lib",
+        "package.json",
+        "release-please-config.json",
+        "scripts",
+        "test"
+      ],
+      "licensePaths": [
+        "test/fixtures/socksv5/LICENSE"
+      ],
+      "finding": "No root/project license notice in pinned tree; fixture-only license does not license project"
+    },
+    {
+      "name": "eastasianwidth",
+      "version": "0.2.0",
+      "metadataURL": "https://registry.npmjs.org/eastasianwidth/0.2.0",
+      "gitHead": "b89f04d44dc786885615e94cd6e2ba1ef7866fa4",
+      "repository": {
+        "url": "git://github.com/komagata/eastasianwidth.git",
+        "type": "git"
+      },
+      "integrity": "sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==",
+      "treeURL": "https://api.github.com/repos/komagata/eastasianwidth/git/trees/b89f04d44dc786885615e94cd6e2ba1ef7866fa4?recursive=1",
+      "treeResponseSha256": "6b54dce572c5350bb013325e97b4419da6f2c49608d7976885d98fd332810524",
+      "treeTruncated": false,
+      "rootPaths": [
+        ".gitignore",
+        "README.md",
+        "eastasianwidth.js",
+        "package.json",
+        "test"
+      ],
+      "licensePaths": [],
+      "finding": "No root/project license notice in pinned tree; fixture-only license does not license project"
+    },
+    {
+      "name": "@aws-sdk/credential-provider-http",
+      "version": "3.972.86",
+      "metadataURL": "https://registry.npmjs.org/@aws-sdk/credential-provider-http/3.972.86",
+      "gitHead": null,
+      "repository": {
+        "url": "git+https://github.com/aws/aws-sdk-js-v3.git",
+        "type": "git",
+        "directory": "packages-internal/credential-provider-http"
+      },
+      "integrity": "sha512-U4mHaDRPWAn63yhl7FXIzbppNmW1F+4dSLeuiUpej2v3Xb6rGwvayEJ8SdlrdMV+/mZtd+GStTEP2HqurEzXtw==",
+      "finding": "Archive has no license file; registry metadata has no gitHead; version-specific immutable upstream notice not established"
+    },
+    {
+      "name": "@aws-sdk/credential-provider-login",
+      "version": "3.972.92",
+      "metadataURL": "https://registry.npmjs.org/@aws-sdk/credential-provider-login/3.972.92",
+      "gitHead": null,
+      "repository": {
+        "url": "git+https://github.com/aws/aws-sdk-js-v3.git",
+        "type": "git",
+        "directory": "packages-internal/credential-provider-login"
+      },
+      "integrity": "sha512-96bcp9Pe/Xd60OEwncZ+kAQTQSu+fJnpUGz1qE6ghF5jnETmrk8XMU86mIP3lolvnCgR61XbZ+Ht6hdBjiQOmQ==",
+      "finding": "Archive has no license file; registry metadata has no gitHead; version-specific immutable upstream notice not established"
+    },
+    {
+      "name": "@aws-sdk/nested-clients",
+      "version": "3.998.3",
+      "metadataURL": "https://registry.npmjs.org/@aws-sdk/nested-clients/3.998.3",
+      "gitHead": null,
+      "repository": {
+        "url": "git+https://github.com/aws/aws-sdk-js-v3.git",
+        "type": "git",
+        "directory": "packages/nested-clients"
+      },
+      "integrity": "sha512-acHTTzMB13CU6dU4sxABYExMI3PQM2zStWH2MiUwJp/7QKTrLg2f7mbzSXoegW2kYOk2tdqQYagsZrWB8Xv7eA==",
+      "finding": "Archive has no license file; registry metadata has no gitHead; version-specific immutable upstream notice not established"
+    },
+    {
+      "label": "OpenCode root MIT",
+      "url": "https://raw.githubusercontent.com/anomalyco/opencode/9bbb8ce18c80f099e0e448775f59d965ead40a21/LICENSE",
+      "sha256": "625f0f619133f89bbbb2abe37369613dfa1885eba1e50d02170deb62bb42cb6b",
+      "text": "MIT License\n\nCopyright (c) 2025 opencode\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "label": "SPDX exception source README",
+      "url": "https://raw.githubusercontent.com/kemitchell/spdx-exceptions.json/3aa64bec339abc6a3eca00c3436aaa7e154b8799/README.md",
+      "sha256": "554b19eee11d2964e9f7b244e47944c08d52ca75539260a04f3227e6c0144513",
+      "text": "The package exports an array of strings. Each string is an identifier\nfor a license exception under the [Software Package Data Exchange\n(SPDX)][SPDX] software license metadata standard.\n\n[SPDX]: https://spdx.org\n\n## Copyright and Licensing\n\n### SPDX\n\n\"SPDX\" is a federally registered United States trademark of The Linux\nFoundation Corporation.\n\nFrom version 2.0 of the [SPDX] specification:\n\n> Copyright \u00a9 2010-2015 Linux Foundation and its Contributors. Licensed\n> under the Creative Commons Attribution License 3.0 Unported. All other\n> rights are expressly reserved.\n\nThe Linux Foundation and the SPDX working groups are good people. Only\nthey decide what \"SPDX\" means, as a standard and otherwise. I respect\ntheir work and their rights. You should, too.\n\n### This Package\n\n> I created this package by copying exception identifiers out of the\n> SPDX specification. That work was mechanical, routine, and required no\n> creativity whatsoever. - Kyle Mitchell, package author\n\nUnited States users concerned about intellectual property may wish to\ndiscuss the following Supreme Court decisions with their attorneys:\n\n- _Baker v. Selden_, 101 U.S. 99 (1879)\n\n- _Feist Publications, Inc., v. Rural Telephone Service Co._,\n  499 U.S. 340 (1991)\n"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js-v3/v3.972.86/LICENSE",
+      "httpStatus": 404,
+      "finding": "No license evidence at this URL; not proof no alternative exists"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/npm/agent/db7852869c74ceb8985d7c36b291a2e7a866741c/LICENSE",
+      "httpStatus": 404,
+      "finding": "No license evidence at this URL; not proof no alternative exists"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/komagata/eastasianwidth/b89f04d44dc786885615e94cd6e2ba1ef7866fa4/LICENSE",
+      "httpStatus": 404,
+      "finding": "No license evidence at this URL; not proof no alternative exists"
+    }
+  ]
+}
