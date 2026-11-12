@@ -26,7 +26,8 @@ FILES = ("evaluation-runner/runner.py", "evaluation-runner/worker.py",
          "host-isolation/process_supervisor.py", "evaluation-corpus/corpus.py",
          "evaluation-adapter/adapter.py", "evaluation-candidate/candidate.py",
          "evaluation-scoring/scoring.py", "evaluation-lexical/lexical.py",
-         "evaluation-symbol/symbol.py")
+         "evaluation-symbol/symbol.py", "evaluation-directcall/directcall.py",
+         "evaluation-candidate/_trusted.py")
 _QUARANTINED = False
 _ACTIVE = False
 _FIXTURES = frozenset(("complete", "sleep", "descendant", "closed_output",
@@ -70,6 +71,9 @@ def envelope(arm, project, pins, result):
 
 
 def _admit(data, arm, project, pins):
+    if (type(arm) is not str or arm not in ("lexical", "symbol", "candidate")
+            or project not in ("harbor", "harbour") or bindings() != pins):
+        raise ValueError("unreviewed protocol binding")
     value = json.loads(data.decode("utf-8"))
     if canonical(value) != data:
         raise ValueError("noncanonical protocol")
@@ -120,14 +124,15 @@ def _admit(data, arm, project, pins):
         raise ValueError("original binding")
     if pair[0] != "ready":
         return pair[0], original, None
-    item = json.loads(case.fixture)
-    fixture = scoring.Fixture(tuple(item["scope"][k] for k in scoring.SCOPE_KEYS),
-        tuple(item["coverage"]), tuple(scoring.Anchor(**a) for a in item["anchors"]),
-        frozenset(scoring.Anchor(**a) for a in item["gold"]),
-        frozenset(scoring.Anchor(**a) for a in item["rejected"]), item["family"])
+    trusted = import_module("experiments.evaluation-candidate._trusted")
+    expected = trusted._prepare(case, arm)
+    fixture = expected.fixture
     decoded = json.loads(candidate.decode("utf-8"))
     if scoring.canonical(decoded) != candidate or scoring.score(fixture, decoded)["status"] != "valid":
         raise ValueError("candidate admission")
+    trusted._recheck(expected)
+    if bindings() != pins:
+        raise ValueError("changed source bindings")
     return "ready", original, candidate
 
 
@@ -135,8 +140,8 @@ class Runner:
     """Main-thread, single-invocation owner; quarantine is process-session-wide."""
 
     def run(self, arm, project, *, recipe="small", cancel=None):
-        """Exact lexical/symbol, harbor/harbour and small only; optional Event."""
-        if (type(arm) is not str or arm not in ("lexical", "symbol")
+        """Exact lexical/symbol/candidate, harbor/harbour and small only; optional Event."""
+        if (type(arm) is not str or arm not in ("lexical", "symbol", "candidate")
                 or type(project) is not str or project not in ("harbor", "harbour")
                 or type(recipe) is not str or recipe != "small"
                 or (cancel is not None and type(cancel) is not threading.Event)):
@@ -178,6 +183,8 @@ class Runner:
             if canceled():
                 return Result("canceled")
             pins = bindings()
+            if arm == "candidate":
+                import_module("experiments.evaluation-candidate._trusted")._policy()
             with tempfile.TemporaryDirectory(prefix="threadmark-runner-") as directory:
                 state = Path(directory)
                 for name in ("home", "config", "cache", "data", "tmp"):
@@ -197,6 +204,8 @@ class Runner:
                 try:
                     mask = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM, signal.SIGINT})
                     try:
+                        if bindings() != pins:
+                            raise ValueError("changed prelaunch bindings")
                         process = subprocess.Popen(
                             [sys.executable, "-I", "-S", str(SUPERVISOR), str(write_fd),
                              "--ready-fd", str(ready_write), *args],
@@ -373,5 +382,13 @@ class Runner:
             # and this finalizer finish. Cancellation can arrive during either;
             # close the ownership-return boundary only after resource restoration.
             # Never mask missing cleanup proof with an ordinary canceled result.
+            if not _QUARANTINED and process is not None:
+                try:
+                    if bindings() != pins:
+                        return Result("protocol_rejected", cleanup, count, code)
+                except Exception:
+                    return Result("protocol_rejected", cleanup, count, code)
+            # Final binding IO is part of finalization too: cancellation can be
+            # recorded while those reads run. Check only after they complete.
             if not _QUARANTINED and canceled():
                 return Result("canceled", cleanup, count, code)

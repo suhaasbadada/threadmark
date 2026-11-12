@@ -25,7 +25,7 @@ study loop, repetition/order scheduler, scoring report or fake cache measurement
 ## Exact public input and preflight
 
 `Runner().run(arm, project, *, recipe="small", cancel=None)` accepts only exact
-strings `lexical` / `symbol`, `harbor` / `harbour`, and `small`. Project selects
+strings `lexical` / `symbol` / `candidate`, `harbor` / `harbour`, and `small`. Project selects
 the fixed `*-fixture-worktree-1` and `*-fixture-revision-1` labels. Task is fixed
 `definition_directcall`, unchanged original corpus query and instructions. No
 family/query/command/executable/module/path/profile/environment/plugin/pin,
@@ -76,7 +76,9 @@ Input is only the fixed launcher argv: arm and project. There is no stdin reques
 stream or caller content. Exact authored SHA-256 file bindings are captured before
 launch, included by the worker and checked again before output admission. They
 cover runner, worker, supervisor, corpus, adapter, candidate, scorer and both
-retrieval implementations. They are local reviewed-code integrity bindings, not
+baseline retrieval implementations, directcall and shared `_trusted.py`. Candidate
+policy/source/grammar pins check before launch; all file bindings recheck immediately
+before spawn, after cleanup/admission and at final ownership return. They are local code integrity bindings, not
 signatures or a defense against concurrent hostile checkout changes.
 
 ## Output protocol v1 (no trailing newline)
@@ -109,6 +111,23 @@ checks exact original bytes and independently invokes actual merged scorer
 admission against its complete source map/coverage/rejection bindings. No retrieval
 is performed in that validation. Metrics are discarded. Source-map `complete`
 means the existing LIMITED frozen envelope, never language/extractor completeness.
+
+For `candidate`, both builder and parent re-admission use the same private
+normalization helper. Parent rebuilds the real frozen SMALL adapter case and
+reconstructs policy/full observations from **all** selected public sources using
+`directcall.extract`, never retrieve/ranking or a worker-supplied Fixture. Exact
+compact policy/observation commitments append to the unchanged adapter coverage;
+the actual scorer still validates the entire canonical candidate, original and
+all source anchors. Same-extractor consistency is not an independent semantic
+oracle or runtime proof. Unknown code/grammar/policy states close; historical
+standalone pending policy is not permission to launch this integration.
+
+**Actual candidate-arm worker: NOT RUN by implementation child.** New tests use
+pure `_admit` bytes from actual public candidate builds; prelaunch rejection spies
+never spawn. Existing reviewed lexical/symbol worker regressions still run. Parent
+must freshly review this integration, record committed pins and add/run the first
+candidate-worker positive case only after review. See
+[integration handoff](../../docs/progress/phase-1-evaluation-directcall-admission.md).
 
 Frozen public `Result` contains status, cleanup, aggregate output byte count,
 target exit code, candidate/original ephemeral immutable bytes, and
@@ -181,7 +200,7 @@ execution, host or inference operation is authorized or inferred from it.
 
 There is no index/cache in the worker: immutable input, fresh process only.
 Neither cold/warm measurements nor OS page-cache eviction are claimed. Full-study
-environment/run manifests, arm normalization, comparative protocol, graph/direct
-call arm, representative outcomes, hard memory enforcement/scaling and all host/
+environment/run manifests, comparative protocol, candidate integration review and
+first worker conformance, representative outcomes, hard memory enforcement/scaling and all host/
 inference/UX acceptance remain separate gates. See [local evidence and parent
 handoff](../../docs/progress/phase-1-evaluation-runner.md).

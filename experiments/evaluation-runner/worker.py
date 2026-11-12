@@ -10,7 +10,7 @@ r = import_module("experiments.evaluation-runner.runner")
 
 
 def main():
-    if (len(sys.argv) != 3 or sys.argv[1] not in ("lexical", "symbol")
+    if (len(sys.argv) != 3 or sys.argv[1] not in ("lexical", "symbol", "candidate")
             or sys.argv[2] not in ("harbor", "harbour")):
         return 2
     arm, project = sys.argv[1:]
