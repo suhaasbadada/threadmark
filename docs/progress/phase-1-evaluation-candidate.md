@@ -127,3 +127,107 @@ behavior is pure synchronous value plumbing; existing containment tests remain
 separate evidence, not proof that this API aborts work or cleans up processes.
 Parent review, full committed tested SHA and exact-head Linux/macOS CI remain
 pending, without reducing the required full product scope or Phase 1 gates.
+
+## Symbol arm admission prerequisite — staged child handoff
+
+2026-11-12. **TM-02/04/07/10; P1-A1/P1-A5 PARTIAL; Phase 1 OPEN.**
+This entry supersedes only the earlier statement that symbol integration is
+absent. The full product/context/refinement/OpenCode/T3/inference/UX/safety scope
+remains unchanged. Graph/direct-call candidate retrieval, production extraction,
+representative evaluation and every phase-exit gate remain separate open work.
+
+### Scope and acceptance evidence
+
+The existing `candidate.build` now accepts optional keyword-only
+`method="lexical"` or `method="symbol"`, using the exact frozen scorer arm
+names. Lexical remains the default; existing result/candidate fields and bytes
+are unchanged for existing callers. Method must have exact type `str`; invalid
+types/subclasses/strings block as `invalid_method` after the preparation probe
+and before any dependency loading/retrieval. The scope snapshot still precedes
+every callback. Only fixed authored import names select the actual module.
+
+There is one admission implementation, not a parallel candidate builder or
+copied validation. It reuses small recipe/pin validation, adapter preparation,
+immutable trusted fixture lineage, exact task binding, all four checkpoints,
+canonical full 8192-byte admission and the actual scorer. The exact selected
+module's `Anchor` class is required; other-arm/ducktyped values reject. Original
+declared tasks/instructions/negations remain separate unchanged bytes. No new
+method metadata, permission claim or rewritten coverage is emitted. `complete`
+still describes only the original limited adapter source map, never symbol,
+extraction, syntax or semantic completeness. Ready bytes are not host permission.
+
+Eight new parameterized public-behavior tests retain all 16 original lexical
+regressions. Actual frozen SMALL symbol retrieval returns independently authored
+expected Rust/Python declaration coordinates in **both** similarly named roots;
+direct calls and macro bodies are absent. Spies verify all selected immutable
+sources and only the original five-field task reach the selected retriever,
+with no fixture/oracle/coverage/hash leakage or other-arm invocation. Boundary
+tests cover invalid methods without coercion, preparation-probe scope mutation,
+mismatched scope, changed tasks, wrong-arm/malformed/unknown/stale anchors,
+duplicate slots/bytes, exact whole-envelope 8192/8193/8194 UTF-8 boundaries,
+no cheaper fallback, zero candidates and no unnecessary downstream callbacks
+on each cancellation stage, dependency/probe failure and fresh recovery.
+
+Byte-boundary tests reuse the existing tiny fixed private test pins and inject
+independently authored selected-class anchors: their inert boundary text is not
+a symbol declaration. Actual SMALL retrieval is a separate observable test;
+no algorithm, corpus recipe/tier, schema or scoring pin changes were made.
+The actual symbol decision query returns an admitted **empty** anchor list,
+not retired evidence; this is not a quality win. Injected stale evidence proves
+the guard for both arms; the original actual lexical retired-evidence rejection
+remains intact. Scorer metrics remain internal and discarded.
+
+### Exact base, local verification and pending parent gates
+
+Assigned branch `t3/candidate-symbol-arm-admission`, assigned worktree
+`t3-fe603890-ee41b25356942a02`. Initially clean at
+`c10e9ee5ec31569c908dab9d2a556b3c0c99a6d7`; fetched origin main and
+fast-forwarded this same branch to required base
+`c25d2f6f73a9e964d5bf80e56610c672a24b84e8` before edits. No branch switch,
+second worktree, other-checkout edit or discarded user work. Tested state is
+that exact base **plus the staged uncommitted diff**, not a committed head SHA.
+Only candidate module/tests/README and this ledger are changed. No workflow,
+runtime, site, dependency, lockfile, schema, pin or symbol implementation changes.
+
+- Existing integrated workflow's exact Python commands: extraction **8**,
+  containment/supervisor **25**, corpus **10**, scoring **24**, adapter **18**,
+  lexical **21**, candidate **24**, symbol **37**: **167 passed**.
+- Existing integrated Node command: **80 passed**. Combined **247 tests passed**,
+  zero failures/skips. Existing corpus tests still exercise their established
+  tiers; no medium/large retrieval or study was added/run.
+- Actual local macOS guard: **synthetic-only-pass**, `host_launched=false`.
+  Python >=3.10 and Node >=22 workflow runtime prerequisites passed.
+- `CARGO_NET_OFFLINE=true python3 scripts/check.py`: **PASS**, including format,
+  build, Clippy, Rust tests/doctests/docs, finite diagnostics, local doc links and
+  intentional failing-assertion rejection.
+- `cargo deny --offline --locked check`: **PASS**, using cached advisories;
+  this is not fresh online advisory evidence.
+- After staging all four task files, `python3 scripts/secrets.py`,
+  `git diff --cached --check` and `git diff --check`: **PASS**.
+
+Parent owns independent review, commit, full tested implementation SHA, exact
+PR head/CI run and any authorized merge. Those gates are **not run by this
+child**. No commit/push/PR/merge/deploy/subdelegate/watch/scheduler; no study,
+quality/performance claims, installed-host certification or phase/product closure.
+No network/inference/source execution/discovery/export/host/config/clipboard,
+new process worker or Docker capability is added. Existing integrated containment
+and guard checks are separate tooling, not synchronous API abort guarantees.
+
+### Parent exact-commit verification
+
+Implementation committed as `86747abe9776dc9f7f87b7894d38ac7e956a1ddf` on
+the base above. Joffrey independently reviewed this exact commit against that
+base: **no substantive findings**; independently ran **124 tests** (candidate
+24, symbol 37, lexical 21, adapter 18, scorer 24), whitespace passed and checkout
+remained clean. Primary independently ran the actual integrated workflow
+commands: **247 tests PASS** plus actual synthetic macOS guard, foundation,
+cached cargo-deny, tracked secrets and whitespace checks PASS. No fresh advisory
+or native host certification is claimed. This follow-up is evidence-only.
+
+The base's actual post-merge CI was freshly verified successful at
+`c25d2f6f73a9e964d5bf80e56610c672a24b84e8`: foundation
+[43277254526](https://github.com/suhaasbadada/threadmark/actions/runs/43277254526)
+and integrated
+[43277254527](https://github.com/suhaasbadada/threadmark/actions/runs/43277254527).
+These are **base evidence**, not this new commit's CI. Final-head PR/remote CI
+remain pending publication; no phase closure or reduced product scope implied.
