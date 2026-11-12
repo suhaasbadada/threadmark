@@ -188,6 +188,20 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def attempt_summary(mode, code, output, diagnostics):
+    """Bounded content-free failure evidence, never a successful control oracle."""
+    expected = _MODES.get(mode, _NETWORK.get(mode.removeprefix("network-"), set()))
+    # Preserve only exact known labels. Partial observations never complete a mode.
+    observed = {name: "observed-pass-before-failure" for name in expected
+                if (name + ":PASS").encode("ascii") in output.split(b"\n")}
+    hint = ("dyld-bootstrap" if b"dyld[" in diagnostics or b"dyld:" in diagnostics
+            else "sandbox-bootstrap" if b"sandbox-exec:" in diagnostics else "unclassified")
+    return {"mode": mode, "exitStatus": code, "stdoutBytes": len(output),
+            "stderrBytes": len(diagnostics),
+            "stderrSha256": hashlib.sha256(diagnostics).hexdigest(),
+            "diagnosticHint": hint, "partialObservations": observed}
+
+
 def run_guard():
     """After review ONLY: build and run the fixed owned C negative controls."""
     evidence = {"result": "blocked", "synthetic_only": True, "platform": platform.system(),
@@ -269,8 +283,9 @@ def _run_guard(evidence):
 
         def launch(mode, arguments=(), profile_file=profile):
             try:
-                code, output, _, _ = run([str(SANDBOX), "-f", str(profile_file),
-                                          str(root / "probe"), mode, str(root), *arguments])
+                code, output, diagnostics, _ = run([str(SANDBOX), "-f", str(profile_file),
+                                                    str(root / "probe"), mode, str(root), *arguments])
+                evidence["lastAttempt"] = attempt_summary(mode, code, output, diagnostics)
                 return code, output
             finally:
                 unchanged()

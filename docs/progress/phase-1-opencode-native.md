@@ -632,3 +632,34 @@ died. DNS/resolver IPC, Node/plugin/config behavior, V8/total-memory containment
 actual type/consumed-file closure, provenance and native/product acceptance stay
 unproved. No delegate, watch, scheduler, commit, push, PR, merge or deployment was
 performed; the existing assigned worktree and full product scope remain intact.
+
+## First measured C-only guard — BLOCKED, preserved as failure
+
+The reviewed implementation was committed at
+`8c1b42439f42f781e1f8e5d98a94c22baffcb903`. Its single authorized fixed run
+on Darwin kernel 27.0.0 compiled the C fixture and passed both invalid-policy
+parser controls, then blocked in the filesystem/bootstrap mode. The remaining
+filesystem checks were `failed-or-unverified`; fork/spawn/exec, network and quoted
+path acceptance were NOT_RUN. `result: blocked`, exit 1, `host_launched: false`,
+`typescript_launched: false`, cleanup `verified-or-not-launched`. No policy was
+relaxed or rerun for success. Ordinary verified cleanup removed only owned run
+artifacts; unknown-cleanup retention was not needed in this measured attempt.
+
+Recorded SHA-256 identities from that run:
+
+- Fixture: `66d808157b24ced28ad7245379dcd8615573d45cdbf1749d449657c5cf67fdde`
+- Harness: `e963dcba298eef8d3dbff9a27b4e2390f2b10eae378f93e1df9a53cb8d20bb57`
+- Shared owner: `cea23401c8d15de10b40464d4f01d432d945efc7c90513b3335924f23a21276b`
+- Supervisor: `4f88bfeee095c9d29783284b5e5d661b11723a70808419357ed4e3b3c4d75e32`
+- C binary: `3bd996ff05cf332a38ae25f3b033208ef43f7a4589fd55ffd6e13cd0d63b5065`
+- Policy: `aa97dce8504f17323e12d8b509542cdf9357570e32a286d3018d2a35a787741c`
+
+The initial result omitted target exit/status detail and discarded bounded
+diagnostics, preventing a precise bootstrap diagnosis. Primary added content-free
+attempt summaries (fixed mode, exit status, byte counts/hash, bounded categorical
+hint and only exact known observation labels); these cannot mark a partial mode
+successful. The new privacy/failure-evidence regression and 18 retained targeted
+tests pass. Primary authorizes one **diagnostic-only** repeat with the exact same
+policy and C fixture, retaining bounded stderr privately for root-cause inspection
+without printing it or publishing private paths. This is evidence collection, not
+a blind success retry or permission expansion. Compiler/Node/SDK remain CLOSED.

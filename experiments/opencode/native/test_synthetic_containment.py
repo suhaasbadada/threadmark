@@ -156,6 +156,21 @@ class PolicyTests(unittest.TestCase):
         self.assertNotIn("SYNTHETIC-PRIVATE-CONTENT", output.getvalue())
         self.assertEqual(json.loads(output.getvalue())["result"], "blocked")
 
+    def test_attempt_summary_preserves_only_known_content_free_observations(self):
+        private = b"SYNTHETIC-PRIVATE-CONTENT /private/fixture"
+        summary = c.attempt_summary("filesystem", -6,
+            b"approved-read:PASS\nunknown:PASS\n" + private,
+            b"dyld[123]: " + private)
+        self.assertEqual(summary["mode"], "filesystem")
+        self.assertEqual(summary["exitStatus"], -6)
+        self.assertEqual(summary["diagnosticHint"], "dyld-bootstrap")
+        self.assertEqual(summary["partialObservations"], {"approved-read": "observed-pass-before-failure"})
+        self.assertNotIn("SYNTHETIC-PRIVATE-CONTENT", json.dumps(summary))
+        self.assertNotIn("/private/fixture", json.dumps(summary))
+        self.assertEqual(c.attempt_summary("fork", 1, b"", b"sandbox-exec: " + private)["diagnosticHint"],
+                         "sandbox-bootstrap")
+        self.assertEqual(c.attempt_summary("fork", 1, b"", private)["diagnosticHint"], "unclassified")
+
 
 class OwnerTests(unittest.TestCase):
     def test_artifact_removal_failure_retains_state_and_blocks_reuse(self):
