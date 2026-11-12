@@ -9,13 +9,13 @@ refinement, OpenCode/T3, inference, UX and safety scope remains required.
 
 ## Interface and trusted boundary
 
-`candidate.build(artifact, selected_scope, family, canceled=None)` accepts the
+`candidate.build(artifact, selected_scope, family, *, method="lexical", canceled=None)` accepts the
 actual corpus module's immutable `Corpus`, exact selected scope and family ID.
 It returns a frozen `Result(status, reason, original_input, candidate)`:
 
 - `ready`: canonical full candidate UTF-8 **bytes**, independently admitted by
   the actual scorer; original declared task bytes are separate.
-- `blocked`: invalid artifact/scope, unsupported family, changed task, malformed
+- `blocked`: invalid method/artifact/scope, unsupported family, changed task, malformed
   retrieval or rejected whole candidate; **candidate is None**.
 - `canceled`: a declared synchronous checkpoint canceled; **candidate is None**.
 - `unavailable`: dependency/probe failure, no provisional/last-good candidate.
@@ -31,7 +31,14 @@ Python privacy is a code ownership convention, not protection against arbitrary
 code execution or monkeypatching in the same interpreter. Scope/digests enforce
 value consistency and lineage, **not authentication or real Git identity**.
 
-Imports have four fixed internal namespace-module names, resolving authored
+The optional keyword-only `method` must be an exact `str`, either `lexical`
+(unchanged default) or `symbol`, matching the frozen scorer arm names. No
+subclass acceptance, coercion, plugins or caller module/path selection. The
+scope snapshot and preparation cancellation probe precede method validation;
+invalid methods then block as `invalid_method` before any dependencies/retrieval.
+No method field is added to existing results or candidate bytes.
+
+Imports use fixed internal namespace-module names, resolving authored
 modules in this checkout; run from the repository root. There is no arbitrary
 module loader, generated fixture-source execution or dependency installation.
 Existing module APIs, pins and algorithms are unchanged.
@@ -47,12 +54,14 @@ Existing module APIs, pins and algorithms are unchanged.
 3. Construct scorer `Fixture`/`Anchor` values **only** from validated immutable
    adapter output. Keep all selected source lines, all gold and all rejected
    anchors; never narrow source selection to oracle facts.
-4. Retrieval checkpoint; give actual `lexical.retrieve` only selected public
+4. Retrieval checkpoint; give actual selected `lexical.retrieve` or
+   `symbol.retrieve` only selected public
    source bytes and declared method-task fields. No oracle, fixture, coverage,
    fact kinds, hashes or answer labels. Reject mutation of task bindings.
-5. Admission checkpoint; preserve exact lexical top-eight order and whole text.
+5. Admission checkpoint; require the exact selected module's `Anchor` class,
+   not a ducktyped or other-arm anchor; preserve its top-eight order and whole text.
    Construct schema/scope/coverage/items. Coverage `complete` means complete
-   **within the frozen limited lexical/source-map envelope only**, not complete
+   **within the original frozen limited adapter source-map envelope only**, not complete
    syntax, extraction, language coverage or useful context. The envelope retains
    adapter hash/version/source-map bindings and macro/dynamic gaps.
 6. Serialize and call the **actual scorer** for exact source/scope/revision,
@@ -63,9 +72,15 @@ Existing module APIs, pins and algorithms are unchanged.
 7. Final-return checkpoint; return immutable bytes only. There is no persistence,
    logging, retry, cache, fallback, clipboard, host action or implicit send.
 
-The decision query really retrieves retired evidence from the small corpus;
+The lexical decision query really retrieves retired evidence from the small corpus;
 the **whole candidate blocks**. This normal counterexample is retained rather
-than repaired with an oracle-aware lexical filter. An empty denominator or score
+than repaired with an oracle-aware lexical filter. The actual symbol decision
+query returns an admitted **empty** item list: Markdown decisions supply no
+declarations. This is not a quality win, completeness or stale-detection claim.
+Injected exact stale evidence separately proves whole-candidate rejection for
+both arms. Symbol declaration gaps remain as documented in its
+[baseline contract](../evaluation-symbol/README.md); integration does not promote
+source-map coverage to extraction/semantic/syntax completeness. An empty denominator or score
 is not host-send permission; even `ready` is only value admission, never delivery
 or authorization. Unsupported/failed results preserve the validated original if
 preparation reached it; pre-preparation cancellation/failure has
@@ -91,4 +106,12 @@ anchors, not source grep/AST shape. No medium/large retrieval, quality study,
 accuracy/precision/recall publication, timing/RSS comparison, model/provider,
 network, process/worker, source discovery, export or execution. The existing
 integrated read-only Linux/macOS CI has one additional fixed unittest command;
-all previous commands and limits remain intact.
+all previous commands and limits remain intact. The suite now has 24 tests,
+retaining all 16 lexical regressions plus eight parameterized method-integration
+tests. Both roots, private-input separation, exact selected anchor class,
+invalid methods, task/scope mutations, cancellation call counts, dependency
+recovery, stale/unknown/duplicate/overflow rejection and full-envelope boundaries
+are observable assertions. Symbol full-byte boundary tests inject independently
+authored anchors into the existing private test-pin seam (their inert boundary
+text is not a declaration); real frozen SMALL symbol retrieval is tested
+separately. No algorithm or pin is changed to manufacture expected output.

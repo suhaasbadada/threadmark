@@ -16,12 +16,13 @@ class _Closed(Exception):
     pass
 
 
-def _dependencies():
+def _dependencies(method):
     # Fixed repository-owned authored modules only. Never load fixture source,
     # caller paths, plugins or modules named by artifact metadata.
     return (import_module("experiments.evaluation-corpus.corpus"),
             import_module("experiments.evaluation-adapter.adapter"),
-            import_module("experiments.evaluation-lexical.lexical"),
+            (import_module("experiments.evaluation-lexical.lexical") if method == "lexical"
+             else import_module("experiments.evaluation-symbol.symbol")),
             import_module("experiments.evaluation-scoring.scoring"))
 
 
@@ -32,19 +33,21 @@ def _envelope(scoring, fixture, items):
             "items": items}
 
 
-def build(artifact, selected_scope, family, *, canceled=None):
+def build(artifact, selected_scope, family, *, method="lexical", canceled=None):
     """Return immutable ephemeral bytes or a closed result, never host effects.
 
     Only the reviewed SMALL recipe is approved here. Its pin comes from authored
     repository policy, not artifact/candidate fields. Scope labels are consistency
-    values, NOT authentication. canceled(stage) is an optional synchronous probe
+    values, NOT authentication. method is exactly lexical (default) or symbol;
+    invalid methods block after the preparation probe, before dependencies.
+    canceled(stage) is an optional synchronous probe
     at preparation, retrieval, admission and final_return; it cannot abort work.
     No public split prepare/normalize or trusted-fixture constructor is exposed.
     """
-    return _build(artifact, selected_scope, family, canceled=canceled)
+    return _build(artifact, selected_scope, family, method=method, canceled=canceled)
 
 
-def _build(artifact, selected_scope, family, *, canceled=None, _test_pin=None):
+def _build(artifact, selected_scope, family, *, method="lexical", canceled=None, _test_pin=None):
     """_test_pin is INTERNAL trusted test policy for tiny boundary artifacts only.
 
     Never route caller/artifact pins here. Like unittest mocks, this private seam
@@ -66,7 +69,9 @@ def _build(artifact, selected_scope, family, *, canceled=None, _test_pin=None):
         # Freeze the sole mutable caller input before any probe/dependency call.
         selected = dict(selected_scope) if type(selected_scope) is dict else selected_scope
         checkpoint(stage)
-        corpus, adapter, lexical, scoring = _dependencies()
+        if type(method) is not str or method not in ("lexical", "symbol"):
+            raise _Closed("invalid_method")
+        corpus, adapter, retriever, scoring = _dependencies(method)
         try:
             adapter.scope(selected)
             if type(family) is not str or family not in adapter.FAMILIES:
@@ -98,8 +103,8 @@ def _build(artifact, selected_scope, family, *, canceled=None, _test_pin=None):
                 frozenset(scoring.Anchor(**a) for a in data["gold"]),
                 frozenset(scoring.Anchor(**a) for a in data["rejected"]),
                 data["family"])
-            method = case.arm_input.method_task
-            task = json.loads(method)
+            method_task = case.arm_input.method_task
+            task = json.loads(method_task)
             scoring.build_manifest(task)  # Actual task/schema/original-budget API.
         except (ValueError, TypeError, KeyError, IndexError, UnicodeError):
             raise _Closed("preparation_rejected") from None
@@ -107,13 +112,13 @@ def _build(artifact, selected_scope, family, *, canceled=None, _test_pin=None):
         stage = "retrieval"
         checkpoint(stage)
         # No fixture, oracle, coverage, hashes or private sidecar crosses this call.
-        anchors = lexical.retrieve(case.arm_input.sources, task)
-        if scoring.canonical(task) != method:
+        anchors = retriever.retrieve(case.arm_input.sources, task)
+        if scoring.canonical(task) != method_task:
             raise _Closed("task_changed")
 
         stage = "admission"
         checkpoint(stage)
-        if type(anchors) is not tuple or any(type(a) is not lexical.Anchor for a in anchors):
+        if type(anchors) is not tuple or any(type(a) is not retriever.Anchor for a in anchors):
             raise _Closed("malformed_retrieval")
         candidate = _envelope(scoring, fixture, [asdict(a) for a in anchors])
         # Check the WHOLE envelope without selecting cheaper anchors or truncating.

@@ -14,6 +14,7 @@ corpus = import_module("experiments.evaluation-corpus.corpus")
 adapter = import_module("experiments.evaluation-adapter.adapter")
 lexical = import_module("experiments.evaluation-lexical.lexical")
 scoring = import_module("experiments.evaluation-scoring.scoring")
+symbol = import_module("experiments.evaluation-symbol.symbol")
 FAMILY = "definition_directcall"
 # Reviewed test policy, fixed before boundary assertions. Never derive an
 # expected pin from a candidate at execution/admission time.
@@ -380,6 +381,216 @@ class CandidateTests(unittest.TestCase):
         self.assertEqual(actual, expected)
         self.assertEqual(json.loads(actual.candidate)["scope"], corpus.scope("harbor"))
         self.assertEqual(selected, corpus.scope("harbour"))
+
+
+class SelectedMethodTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.artifact = corpus.build("small")
+
+    def build(self, method, **kwargs):
+        return candidate.build(self.artifact, corpus.scope("harbor"), FAMILY,
+                               method=method, **kwargs)
+
+    def closed(self, result, status, reason=None):
+        self.assertEqual(result.status, status)
+        self.assertIsNone(result.candidate)
+        if reason:
+            self.assertEqual(result.reason, reason)
+
+    def anchor(self, module, *, project="harbor", index=0, line=2):
+        # Authored coordinates, never a retrieval-derived expected oracle.
+        path = f"{project}/src/unit_{index:04d}.rs"
+        text = dict(self.artifact.sources)[path].decode().split("\n")[line - 1]
+        return module.Anchor(**corpus.scope(project), path=path, line=line, text=text)
+
+    def test_actual_symbol_declarations_both_roots_and_lexical_default(self):
+        for project in corpus.PROJECTS:
+            with self.subTest(project=project):
+                scope = corpus.scope(project)
+                result = candidate.build(self.artifact, scope, FAMILY, method="symbol")
+                self.assertEqual(result.status, "ready")
+                payload = json.loads(result.candidate)
+                expected = [(f"unit_{i:04d}.{ext}", 2)
+                            for i, ext in ((0, "rs"), (1, "py"), (4, "rs"), (5, "py"),
+                                           (8, "rs"), (9, "py"), (12, "rs"), (13, "py"))]
+                self.assertEqual([(a["path"].split("/")[-1], a["line"])
+                                  for a in payload["items"]], expected)
+                for a in payload["items"]:
+                    self.assertEqual({k: a[k] for k in scope}, scope)
+                    self.assertEqual(a["text"], dict(self.artifact.sources)[a["path"]].decode().split("\n")[1])
+                default = candidate.build(self.artifact, scope, FAMILY)
+                self.assertEqual(default, candidate.build(self.artifact, scope, FAMILY, method="lexical"))
+                self.assertEqual(result.original_input, default.original_input)
+                self.assertEqual(payload["coverage"], json.loads(default.candidate)["coverage"])
+                self.assertEqual(set(vars(result)), set(vars(default)))
+
+    def test_only_bound_public_inputs_and_selected_arm_called(self):
+        for name, module, other in (("lexical", lexical, symbol), ("symbol", symbol, lexical)):
+            seen = []
+            actual = module.retrieve
+            def spy(sources, task):
+                seen.append((sources, copy.deepcopy(task)))
+                self.assertIs(type(sources), tuple)
+                self.assertTrue(all(type(p) is tuple and type(p[1]) is bytes for p in sources))
+                return actual(sources, task)
+            with self.subTest(method=name), patch.object(module, "retrieve", side_effect=spy), patch.object(other, "retrieve") as unused:
+                self.assertEqual(self.build(name).status, "ready")
+                unused.assert_not_called()
+            self.assertEqual(len(seen), 1)
+            sources, task = seen[0]
+            self.assertEqual(sources, tuple((p, b) for p, b in self.artifact.sources if p.startswith("harbor/")))
+            declared = json.loads(self.artifact.inputs)["tasks"][0]
+            self.assertEqual(task, {"schema": scoring.VERSION, "scope": corpus.scope("harbor"),
+                "family": FAMILY, "query": declared["families"][0]["query"],
+                "instructions": declared["instructions"]})
+
+    def test_invalid_methods_reject_before_dependencies_without_coercion(self):
+        class String(str):
+            pass
+        class Hostile:
+            def __eq__(self, other):
+                raise AssertionError("must not compare")
+            def __str__(self):
+                raise AssertionError("must not coerce")
+        for method in (None, True, 1, b"symbol", [], {}, "", "Symbol", "candidate",
+                       "experiments.evaluation-symbol.symbol", String("symbol"), Hostile()):
+            calls = []
+            with patch.object(candidate, "_dependencies") as dependencies:
+                result = self.build(method, canceled=lambda s: calls.append(s) or False)
+            self.closed(result, "blocked", "invalid_method")
+            self.assertIsNone(result.original_input)
+            self.assertEqual(calls, ["preparation"])
+            dependencies.assert_not_called()
+        with patch.object(candidate, "_dependencies") as dependencies:
+            self.closed(self.build(None, canceled=lambda _: True), "canceled")
+            dependencies.assert_not_called()
+
+    def test_scope_and_task_binding_mutations_and_fresh_recovery(self):
+        for name, module in (("lexical", lexical), ("symbol", symbol)):
+            good = self.build(name)
+            selected = corpus.scope("harbor")
+            def probe(stage):
+                selected.update(corpus.scope("harbour"))
+                return False
+            self.assertEqual(candidate.build(self.artifact, selected, FAMILY, method=name, canceled=probe), good)
+            for key in scoring.SCOPE_KEYS:
+                with patch.object(module, "retrieve") as retrieve:
+                    scope = {**corpus.scope("harbor"), key: "wrong"}
+                    self.closed(candidate.build(self.artifact, scope, FAMILY, method=name), "blocked", "preparation_rejected")
+                    retrieve.assert_not_called()
+            actual = module.retrieve
+            for key, value in (("scope", corpus.scope("harbour")), ("query", "changed"),
+                               ("instructions", "permission invented")):
+                def mutate(sources, task):
+                    anchors = actual(sources, task)
+                    task[key] = value
+                    return anchors
+                with self.subTest(method=name, key=key), patch.object(module, "retrieve", side_effect=mutate):
+                    self.closed(self.build(name), "blocked", "task_changed")
+            self.assertEqual(self.build(name), good)
+
+    def test_wrong_arm_malformed_unknown_stale_and_duplicate_budgets(self):
+        for name, module, other in (("lexical", lexical, symbol), ("symbol", symbol, lexical)):
+            first = self.anchor(module)
+            stale = module.Anchor(**corpus.scope("harbor"), path="harbor/src/unit_0002.md",
+                line=3, text="Historical rule (retired): export audit records.")
+            bad = [(self.anchor(other),), (asdict(first),), [first], None,
+                   (replace(first, path="harbor/src/unknown.rs"),),
+                   (replace(first, line=True),), (replace(first, text="unknown"),),
+                   (replace(first, project="harbour"),), (replace(first, worktree="wrong"),),
+                   (replace(first, revision="old"),), (first,) * 9, (first, stale)]
+            for anchors in bad:
+                with self.subTest(method=name, output=type(anchors).__name__), patch.object(module, "retrieve", return_value=anchors) as retrieve, patch.object(other, "retrieve") as fallback:
+                    self.closed(self.build(name), "blocked")
+                    retrieve.assert_called_once()
+                    fallback.assert_not_called()
+            with patch.object(module, "retrieve", return_value=(first,) * 8):
+                result = self.build(name)
+            self.assertEqual(result.status, "ready")
+            self.assertEqual(json.loads(result.candidate)["items"], [asdict(first)] * 8)
+            self.assertEqual(self.build(name).status, "ready")
+
+    def test_both_full_envelope_boundaries_no_cheaper_fallback(self):
+        exact = "resolve " + "x" * 7125 + "😀"
+        for name, module, other in (("lexical", lexical, symbol), ("symbol", symbol, lexical)):
+            for pin_name, text, size in (("exact", exact, 8192), ("one_over", exact + "x", 8193),
+                                         ("multi_over", exact + "é", 8194),
+                                         ("duplicates", "resolve " + "x" * 1000, None)):
+                artifact = boundary(text)
+                self.assertEqual(json.loads(artifact.manifest)["digest"], PINS[pin_name])
+                anchor = module.Anchor(**corpus.scope("harbor"), path="harbor/src/unit_0000.rs", line=1, text=text)
+                anchors = (anchor,) * (8 if pin_name == "duplicates" else 1)
+                case = adapter.prepare(artifact.sources, artifact.manifest, artifact.oracle,
+                    artifact.inputs, corpus.scope("harbor"), expected_digest=PINS[pin_name])[0]
+                payload = {"schema": scoring.VERSION, "scope": corpus.scope("harbor"),
+                    "coverage": {"status": "complete", "envelope": json.loads(case.fixture)["coverage"]},
+                    "items": [asdict(a) for a in anchors]}
+                if size:
+                    self.assertLess(len(encoded(payload["items"])), 8192)
+                    self.assertEqual(len(encoded(payload)), size)
+                # Boundary source is inert text, not a symbol declaration. Inject
+                # authored anchors to isolate the SAME whole-envelope admission.
+                with self.subTest(method=name, boundary=pin_name), patch.object(module, "retrieve", return_value=anchors) as retrieve, patch.object(other, "retrieve") as fallback:
+                    result = candidate._build(artifact, corpus.scope("harbor"), FAMILY,
+                        method=name, _test_pin=PINS[pin_name])
+                    retrieve.assert_called_once()
+                    fallback.assert_not_called()
+                if pin_name == "exact":
+                    self.assertEqual(result.candidate, encoded(payload))
+                else:
+                    self.closed(result, "blocked", "admission_rejected")
+
+    def test_cancel_stops_unnecessary_calls_and_dependency_recovery(self):
+        stages = ["preparation", "retrieval", "admission", "final_return"]
+        for name, module in (("lexical", lexical), ("symbol", symbol)):
+            for index, stage in enumerate(stages):
+                calls = []
+                def probe(s):
+                    calls.append(s)
+                    return s == stage
+                with patch.object(adapter, "prepare", wraps=adapter.prepare) as prepare, patch.object(module, "retrieve", wraps=module.retrieve) as retrieve, patch.object(scoring, "score", wraps=scoring.score) as score:
+                    self.closed(self.build(name, canceled=probe), "canceled")
+                    self.assertEqual(calls, stages[:index + 1])
+                    self.assertEqual(prepare.call_count, int(index > 0))
+                    self.assertEqual(retrieve.call_count, int(index > 1))
+                    self.assertEqual(score.call_count, int(index > 2))
+            for dependency, function in ((candidate, "_dependencies"), (corpus, "validate"),
+                    (adapter, "prepare"), (scoring, "Fixture"), (scoring, "build_manifest"),
+                    (module, "retrieve"), (candidate, "_envelope"), (scoring, "score"), (scoring, "canonical")):
+                with self.subTest(method=name, dependency=function), patch.object(dependency, function, side_effect=RuntimeError("PRIVATE")):
+                    result = self.build(name)
+                self.closed(result, "unavailable")
+                self.assertNotIn("PRIVATE", result.reason)
+                self.assertEqual(self.build(name).status, "ready")
+            for stage in stages:
+                def broken(s):
+                    if s == stage:
+                        raise RuntimeError("PRIVATE")
+                    return False
+                self.closed(self.build(name, canceled=broken), "unavailable", stage + "_unavailable")
+                self.assertEqual(self.build(name).status, "ready")
+
+    def test_symbol_decision_empty_not_quality_and_unsupported_originals(self):
+        result = candidate.build(self.artifact, corpus.scope("harbor"), adapter.FAMILIES[1], method="symbol")
+        self.assertEqual(result.status, "ready")
+        self.assertEqual(json.loads(result.candidate)["items"], [])
+        for name, module in (("lexical", lexical), ("symbol", symbol)):
+            for family in adapter.FAMILIES[2:]:
+                with patch.object(module, "retrieve") as retrieve:
+                    result = candidate.build(self.artifact, corpus.scope("harbor"), family, method=name)
+                    self.closed(result, "blocked", "unsupported_family")
+                    retrieve.assert_not_called()
+                declared = json.loads(self.artifact.inputs)["tasks"][0]
+                self.assertEqual(json.loads(result.original_input)["original_input"],
+                                 next(f for f in declared["families"] if f["id"] == family))
+            artifact = boundary("resolve tiny", originals=True)
+            result = candidate._build(artifact, corpus.scope("harbor"), FAMILY,
+                                      method=name, _test_pin=PINS["originals"])
+            self.assertEqual(result.status, "ready")
+            declared = json.loads(artifact.inputs)["tasks"][0]
+            self.assertEqual(json.loads(result.original_input), {"schema": "1", "scope": corpus.scope("harbor"),
+                "instructions": declared["instructions"], "original_input": declared["families"][0]})
 
 
 if __name__ == "__main__":
