@@ -49,6 +49,23 @@ received primary source review, not a claimed additional delegated review.
 This consolidation has primary evidence reconciliation only; no new independent
 review has occurred. Earlier safety findings are not waived by this report.
 
+### Subsequent independent protocol review
+
+Joffrey independently reviewed full head
+`d3a7ad601316bec82856aa60ea7b4fb99e0df188`. No must-fix blocker to the documents
+or preparing a small offline corpus. Two medium execution-gate gaps were found:
+retrieval arms/scoring units were underspecified before comparative pilots, and
+descendant ownership/termination/output bounds needed explicit runner acceptance
+criteria before launch. The primary added both gates to ADR 0006: frozen lexical,
+symbol and candidate arm/scoring manifests; actual bounded aggregate-output and
+owned-descendant cleanup/failure/recovery tests. No worker or corpus was launched.
+
+The earlier primary-only review statements describe the initial consolidation;
+this paragraph records the subsequent real independent review. Joffrey did not
+review the follow-up wording, a runner implementation or runtime behavior. Full
+study blinding/adjudication and condition budgets remain pre-study requirements;
+corpus preparation alone does not resolve comparative or host acceptance gates.
+
 ## Safe continuation and authority boundaries
 
 1. Independently review the prospective evaluation protocol; implement its
@@ -91,3 +108,15 @@ addition does not change the protocol. The final PR head needs its own CI; its
 exact run/head record will be attached to the PR without rewriting historical
 experiment evidence. Review remains primary-only; protocol acceptance and
 independent review before a future runner remain pending.
+
+Subsequent exact-head verification: PR #8 at
+`d3a7ad601316bec82856aa60ea7b4fb99e0df188` passed all three checks in
+[CI run 43206956344](https://github.com/suhaasbadada/threadmark/actions/runs/43206956344).
+That is the independently reviewed head, before the focused protocol repairs
+recorded above. It remains unmerged. Those repairs need their own CI head;
+neither the old green run nor review certifies the follow-up or a future runner.
+
+Focused follow-up local verification: `scripts/check.py`, `cargo deny --locked
+check`, staged `scripts/secrets.py` and staged whitespace checks all passed.
+Only ADR 0006 and this progress record changed; no corpus, worker or other
+experiment ran. The follow-up's exact committed head/run is recorded on PR #8.

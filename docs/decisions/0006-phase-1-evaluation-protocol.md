@@ -28,6 +28,16 @@ test protocol plumbing but cannot substitute for measured refinement quality.
 Conditions 1–3 may be inspected offline; without execution their results are
 retrieval/intent observations, not task-success scores.
 
+Before any comparative retrieval pilot, the run manifest must separate lexical,
+symbol and candidate retrieval arms within condition 3. Freeze each arm's query
+construction, instruction/payload budget, index scope and ranking/tie-breaking
+rules. Freeze the evidence-scoring unit, matching rules, duplicate handling,
+partial-relevance credit and precision/recall denominators against the oracle;
+do not expose oracle answers to retrieval inputs. Corpus generation and
+noncomparative plumbing tests may precede this scoring contract, but comparisons
+must not. Full-study condition budgets, blinded outcome review and disagreement
+adjudication must also be declared before quality-improvement conclusions.
+
 ## Prospective synthetic corpus
 
 Use paired, similarly named projects with conflicting decisions and identical
@@ -88,6 +98,19 @@ calls remain explicit coverage gaps unless independently verified.
   do not reinterpret zero as permission for a free remote endpoint.
 
 Record retrieval, inference, review, handoff and executor time/cost separately.
+
+Before launching an evaluation worker, the separately reviewed runner must pass
+actual cancellation, timeout, aggregate stdout/stderr overflow, dependency failure
+and fresh-recovery tests. The two-second termination deadline covers its declared
+owned worker/descendant set, not just the immediate child or pipe closure. Bound
+combined output while reading it, including descendants; retain process identity
+until the final owned-group signal and verify termination before reporting cleanup.
+Test descendants that keep running after closing output, launch-boundary cancel
+and owner death. No partial state may be labeled complete or admitted on recovery.
+An escaped/unaccounted descendant or unverified cleanup blocks further trials;
+never claim universal process containment from cooperative process-group tests.
+Only reviewed fixture workers may run; no source execution or arbitrary commands.
+
 Unrun stages are `not_run`, not zero-duration successes. Record worker peak RSS
 and measurement method, relevant-evidence precision/recall against the frozen
 oracle, unsupported/stale claims, intent violations, correction effort and task
