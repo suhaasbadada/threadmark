@@ -1,7 +1,8 @@
 # Phase 0 — Foundation evidence
 
 Owner: project maintainer. Scope: TM-01–TM-10, P0-A1–P0-A5.
-Status: implementation under verification; phase remains **open**.
+Status: foundation engineering gates accepted for the tested revision below;
+PR merge and any publication remain **unapproved**. No product release exists.
 Base revision: `f4d05ee474d055fb8345c831a733ebd4f5dd1f64`.
 
 ## Implemented scope
@@ -20,10 +21,10 @@ Gitleaks history/tracked-file scans with an intentional synthetic failure probe.
 
 | ID | Evidence / current limit |
 | --- | --- |
-| P0-A1 | Pending exact-head remote CI. Local tests alone do not satisfy it. |
-| P0-A2 | Cargo failing assertion and synthetic scanner sentinel probes implemented; results to be recorded after execution. |
+| P0-A1 | Passed on `9515e7f87af4710cdc5e2ef3f52ec5ad92e4796c`, run `43180767765`, all three declared CI jobs successful. |
+| P0-A2 | Intentional Cargo assertion failed as expected on Linux/macOS; synthetic Gitleaks sentinel detected in security job. Normal checks also passed. |
 | P0-A3 | Requirement mapping in development guide; synthetic scope/failure/recovery fixtures, no providers required. |
-| P0-A4 | ADR 0001, risk register, MIT license, development and approval rules. Independent review pending. |
+| P0-A4 | ADR 0001, risk register, MIT license, development and approval rules reviewed by Joffrey; both actionable findings repaired and reproduced checks pass. |
 | P0-A5 | README and architecture distinguish implemented checks from planned product; no capability certification claimed. |
 
 ## Verification log
@@ -34,8 +35,8 @@ Gitleaks history/tracked-file scans with an intentional synthetic failure probe.
   dependencies blocked by cargo-deny and a Gitleaks probe incorrectly expecting
   the rule ID in console output. Fixed with explicit dependency versions and a
   temporary redacted JSON report checked for the sentinel RuleID. No policy waiver.
-- Full tested revision, local final results, independent review and exact-head CI
-  run will be recorded in a follow-up evidence entry. No gate is predeclared green.
+- Full tested revisions, local results, independent review and exact-head CI are
+  recorded below; no product/runtime gate is inferred from engineering checks.
 - Local macOS Apple Silicon / Rust 1.97.1: format, Clippy, 2 unit tests,
   8 integration tests, 1 doctest, rustdoc, CLI/daemon finite smokes, local links and
   intentional assertion failure passed. cargo-deny 0.20.2 advisory/bans/licenses/
@@ -63,6 +64,24 @@ run is superseded by the repair head, not acceptance evidence for it.
 
 ## Exit decision
 
-**No-go for Phase 1 execution until P0 checks and review evidence are accepted.**
+PR <https://github.com/suhaasbadada/threadmark/pull/1> targets `main` and remained
+open, with no GitHub approval or merge, at verification time.
+Full tested head: `9515e7f87af4710cdc5e2ef3f52ec5ad92e4796c`.
+Exact PR CI run: <https://github.com/suhaasbadada/threadmark/actions/runs/43180767765>.
+
+| Declared job | Job ID | Outcome |
+| --- | --- | --- |
+| Rust (ubuntu-24.04) | 131056002031 | Success, completed 2026-11-12 08:10:54 UTC |
+| Rust (macos-15) | 131056001901 | Success, completed 2026-11-12 08:11:04 UTC |
+| Dependencies, licenses and secrets | 131056002224 | Success, completed 2026-11-12 08:13:08 UTC |
+
+Implementation owner accepts P0-A1–P0-A5 engineering evidence for that exact
+revision, including independent review and repaired negative gates. This permits
+bounded Phase 1 feasibility work in a separately scoped change, not automatic
+merge, distribution or host certification. Any later head must pass its own CI;
+this historical run must not be cited as proof of a later head's checks.
+
 Planning/foundation checks are not proof of usable product behavior, durable
-recovery or supported hosts. Source, docs and runtime acceptance stay separate.
+recovery or supported hosts. Source, docs, runtime, merge and publication
+acceptance stay separate. The independent landing-page unit does not depend on
+claiming any planned product workflow is implemented.

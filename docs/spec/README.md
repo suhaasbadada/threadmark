@@ -4,7 +4,7 @@
 
 ## Status and authority
 
-This is the proposed implementation contract for Threadmark, not a description of shipped software. All Phases 0–9 remain open. Publishing a specification does not satisfy an implementation gate.
+This is the implementation contract for Threadmark, not a description of shipped software. Phase 0 engineering evidence is accepted for its [recorded tested revision](../progress/phase-0.md); merge and publication remain unapproved. Phases 1–9 remain open. Publishing a specification does not satisfy an implementation gate.
 
 The background-companion model, human control, editable project knowledge, and coexistence with existing coding tools are agreed product requirements. Component choices, interaction details, and rollout sequence below are proposed designs unless explicitly identified otherwise. Runtime feasibility and usability must be demonstrated before support is advertised.
 
