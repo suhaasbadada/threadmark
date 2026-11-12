@@ -19,6 +19,14 @@ only; this new unit is not authorized for automatic merge or deployment.
 The delegate snapshot below predates final commit/current-main integration;
 final committed revision and exact-head CI must be recorded separately.
 
+Final committed code revision after incorporating current main:
+`8df9a11512a499286b2ecc2dcb80562954264074`. Parent reran all 48 Node tests,
+`python3 scripts/check.py`, and `cargo deny --locked check` successfully on that
+exact revision; staged/history Gitleaks and whitespace checks passed for the unit.
+No runtime admission, SDK compatibility or full Phase 1 acceptance follows from
+these offline checks. This subsequent edit changes only this evidence record;
+the eventual PR head requires its own Linux/macOS/security CI.
+
 ## Provenance and environment
 
 Public V2 documentation fetched on **2026-11-12 UTC**:
