@@ -1,13 +1,102 @@
 # Phase 1 — Synthetic host-isolation prerequisite
 
-Status: **synthetic guard and exact-head CI passed; installed OpenCode version
-diagnostic remains blocked, not host certification**. TM-02,
+Status: **synthetic guard and exact-head CI passed; version-only OpenCode
+bootstrap observed with diagnostic allowances, not host certification**. TM-02,
 TM-04–TM-08, TM-10. P1-A2 prerequisite; partial P1-A5 capability evidence.
 P1-A2 admission/approval acceptance and Phase 1 exit are **not established**.
 No extraction or OpenCode mock experiment files are dependencies or modified.
 Budgets were set before probes in [ADR 0004](../decisions/0004-synthetic-host-containment.md).
 
-## Current evidence — bounded version diagnostic, 2026-11-12 UTC
+## Latest evidence — ICU boundary and version-only success
+
+2026-11-12 UTC. Continuation remains a P1-A2 containment prerequisite and partial
+P1-A5 capability observation, not admission/approval acceptance. Prior failed
+attempts below remain historical evidence; no failure was waived or retried
+without a diagnostic purpose. No service, plugin, session, provider or prompt.
+
+### Exact-head CI before this evidence update
+
+Full prior head `84c508ed8aeefe7417f23a4a5af29a89ac9dcdda` passed all six checks:
+[foundation CI](https://github.com/suhaasbadada/threadmark/actions/runs/43200010174)
+and [synthetic isolation](https://github.com/suhaasbadada/threadmark/actions/runs/43200010334).
+PR #5 remains open/unmerged. This verifies the unchanged synthetic harness and
+previous evidence record, not the installed-host probes or the new evidence head.
+
+### Identifying the remaining failure
+
+A bounded same-policy version diagnostic at `2026-11-12T10:37:26.244629Z`
+retained the two named page-size reads, disposable state, default-deny networking,
+constructed environment and existing supervisor. It again exited 1 with 2421
+output bytes. A sanitized short-line inspection, suppressing bundled source,
+private paths and addresses, identified the exact error:
+`TypeError: failed to initialize Segmenter`.
+
+The pinned WebKit
+[IntlSegmenter implementation](https://github.com/oven-sh/WebKit/blob/d6375c72affe0f70222cdcb45012b10f0bf3a9d5/Source/JavaScriptCore/runtime/IntlSegmenter.cpp)
+throws that exact message when ICU `ubrk_open` returns a failure status. Its
+invalid-locale branch has a different message; this observation alone does not
+identify the missing resource. Apple's installed `watchlistd.sb:122` explicitly
+names a versioned ICU data file, while this machine has the regular, non-symlink
+system file `/usr/share/icu/icudt78l.dat`. No broad system-directory access follows
+from those observations.
+
+### Synthetic ICU boundary control
+
+Compiled a tiny owned C fixture with installed Apple clang/SDK, `-std=c11 -Wall
+-Wextra -Werror`. It loads system `/usr/lib/libicucore.A.dylib`, resolves only
+`ubrk_open`/`ubrk_close`, calls `ubrk_open(0, "en", NULL, 0, &status)`, prints
+numeric status and iterator presence, then closes the iterator/library. No
+packages, downloaded code, actual host, network endpoint or user content.
+Each comparison starts a fresh sandboxed process so a warm ICU cache cannot
+substitute for the allowed-file test. The base synthetic profile is unchanged;
+only the candidate literal-file read differs:
+
+| Synthetic ICU policy | Exit | ICU status | Iterator |
+| --- | --- | --- | --- |
+| Filesystem-only base | 1 | 2 | absent |
+| Base plus literal ICU data-file read | 0 | -127 | present |
+
+Negative status is an ICU warning, not an error; this fixture treats positive
+status or a missing iterator as failure. This controlled result supports a
+diagnostic read of this exact public system resource, not an ICU subtree or
+universal/version-independent path. No claim of representative Unicode coverage.
+
+### Installed version-only observation
+
+For one bounded OpenCode `--version` attempt, the filesystem-only base received
+only these temporary diagnostic additions:
+
+```scheme
+(allow sysctl-read (sysctl-name "hw.pagesize" "hw.pagesize_compat"))
+(allow file-read* (literal "/usr/share/icu/icudt78l.dat"))
+```
+
+At `2026-11-12T10:38:29.763088Z` through `10:38:30.555951Z`, the owned child
+exited **0** with 16 output bytes and the single version line
+**`opencode v2.2.5`**. The earlier equality predicate expected bare `2.2.5` and
+therefore reported false; the observed, sanitized line establishes the actual
+CLI format without another launch. All version/ICU attempts retained unchanged
+outside-canary bytes and removed their owned fixture roots. Existing five-second
+process, 16 KiB output, cancellation and process-group cleanup limits applied.
+
+**Limits:** these additions exist only in disposable diagnostic profiles. The
+committed harness still has no installed-host entry point or added policy
+permissions. A version command does not prove denial of all configuration reads,
+absence of every attempted side effect, running-service containment, authenticated
+admission, review/cancellation semantics, inference, native host support or P1-A2.
+No service startup, configuration access test, listener or provider was attempted.
+The ICU path is local/version-specific; other systems and future updates remain
+unverified. No new independent safety review is claimed for these observations.
+Phase 1 remains open; any broader host experiment needs its own bounded plan,
+negative controls and review before execution. No merge/deployment authorized.
+
+This latest update changes documentation only. Foundation `scripts/check.py`,
+`cargo deny --locked check`, staged `scripts/secrets.py` and staged whitespace
+validation passed. The synthetic runtime checks remain the exact-head CI
+evidence above, not a claimed local rerun. Final evidence SHA and new CI
+run/head will be attached to PR #5; pending checks are not called green.
+
+## Earlier evidence — page-size blocker, 2026-11-12 UTC
 
 The sections below this update retain earlier implementation and delegate
 snapshots. Their pending-CI and never-launched-host statements describe those
