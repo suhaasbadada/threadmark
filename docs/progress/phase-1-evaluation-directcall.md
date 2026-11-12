@@ -126,3 +126,29 @@ Primary independently ran **72 directcall tests and all 336 integrated tests**
 cached cargo-deny also PASS; advisory freshness remains unverified. No directcall
 worker/integration/study was launched. Fresh repaired-head policy/coverage review,
 staged secrets/whitespace and exact-head CI remain the next recorded gates.
+
+### Second review: qualified types and compiler-scope bindings
+
+Joffrey freshly reviewed `018259f2ea692e8be3cb06b1f50607bc55dc1712`, ran
+72 tests and additional probes, and blocked approval on three further false-edge
+cases. Primary reproduced qualified Rust trait syntax inside
+`<dyn Fn()>::factory()` becoming a call to a same-spelling free function; class
+private names targeting raw module names and mangled parameters failing to mask;
+and methods treating implicit `__class__` as a module function.
+
+Repairs conservatively poison expression-angle contexts (including qualified type
+paths and comparisons), preserving unrelated scopes; implement lexical class-name
+mangling for **both binding and lookup keys**, preserving raw evidence names/IDs;
+and mask implicit class cells in class-associated function/lambda/comprehension
+scopes. Global/nonlocal masks use the initiating class-mangled key. Tests cover
+the exact qualified type, correct private target identity, parameters/assignment/
+global masks, nested and leading-underscore class contexts, implicit class cells
+and unaffected ordinary module calls. No existing language/type certainty claim
+is strengthened. The pending Python 3.12 supplemental digest is now
+`82ebc050e58f1595e8d42fc06a323229dcdf3d7b8382bd301861aef70f1db867`;
+both earlier supplemental digests are historical, not current admissions pins.
+
+Primary independently reran **77 directcall tests, all 341 integrated tests**
+(261 Python + 80 Node), synthetic macOS guard, foundation and cached cargo-deny:
+PASS. Directcall remains NOT ARMED, with no candidate/runner integration or
+study. Fresh exact repaired-head review and CI are still required.

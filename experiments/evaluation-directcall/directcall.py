@@ -85,8 +85,8 @@ def policy_manifest():
             "scoring.py": "78d023fcb47e3a85908f0cd87ca9d3ae0126b70b330eba465c887281b6919181",
             "corpus.py": "87f884b5820060e6939e05612699fd86be193d4b36fa14ddf0cfd4f16cc09dff"},
         "bindings": "static lexical unique unconditional undecorated functions; no runtime certainty",
-        "rust": "standalone file; parsed item boundaries; block-wide masks; casts and unknown bindings poison scope; no grammar certification",
-        "python": "AST plus raw tokens; whole-scope and annotation masks; class not method closure; local function and class binding initialization required",
+        "rust": "standalone file; parsed item boundaries; block-wide masks; casts, expression angles and unknown bindings poison scope; no grammar certification",
+        "python": "AST plus raw tokens; whole-scope and annotation masks; class-private binding keys and implicit class cells; class not method closure; local function and class binding initialization required",
         "identity": "scope,path,language,lexical owner byte spans,declaration keyword byte,kind,raw name; calls own byte span",
         "coordinates": "normalized LF UTF-8 bytes; decl keyword line; call callee-expression start line; whole lines",
         "failure": "whole closed ValueError; all files before selection; no cache or prefix",
@@ -98,14 +98,29 @@ def policy_manifest():
 
 
 class _Scope:
-    def __init__(self, parent, kind, span):
+    def __init__(self, parent, kind, span, class_name=None):
         self.parent, self.kind, self.span = parent, kind, span
         self.bindings, self.poison = {}, False
+        self.class_name = class_name if kind == "python_class" else (parent.class_name if parent else None)
+        if (self.class_name is not None
+                and kind in ("python_function", "python_lambda", "python_comprehension")):
+            # Class-associated code scopes can receive the implicit class cell.
+            # Constructors/implicit cell targets are not verified free functions.
+            self.bind("__class__")
+
+    def key(self, name):
+        if (self.class_name is not None and name.startswith("__")
+                and not name.endswith("__") and "." not in name):
+            prefix = self.class_name.lstrip("_")
+            if prefix:
+                return "_" + prefix + name
+        return name
 
     def bind(self, name, declaration=None):
-        self.bindings.setdefault(name, []).append(declaration)
+        self.bindings.setdefault(self.key(name), []).append(declaration)
 
     def resolve(self, name, position):
+        name = self.key(name)
         scope = self
         while scope:
             if scope.poison:
@@ -291,7 +306,8 @@ def _python(file):
                             or (node.args.vararg and node.args.vararg.annotation)
                             or (node.args.kwarg and node.args.kwarg.annotation)))):
                     file.gaps.add("definition_defaults_annotations_decorators_bases_not_resolved")
-                inner = _Scope(owner, "python_function" if is_function else "python_class", span(node))
+                inner = _Scope(owner, "python_function" if is_function else "python_class", span(node),
+                               class_name=node.name if not is_function else None)
                 if getattr(node, "type_params", ()):
                     inner.poison = True
                 if is_function:
@@ -302,7 +318,7 @@ def _python(file):
                 for name in node.names:
                     current = owner
                     while current:
-                        current.bind(name)
+                        current.bind(owner.key(name))
                         current = current.parent
             elif isinstance(node, (ast.Import, ast.ImportFrom)):
                 file.gaps.add("imports_and_aliases_not_resolved")
@@ -609,7 +625,7 @@ def _rust(file):
                 i, boundary = k + 1, True
                 continue
             if ((kind == "id" and word in ("use", "macro", "for", "match", "if", "while", "move", "extern", "as"))
-                    or word == "|"):
+                    or word in ("|", "<")):
                 owner.poison = True
                 file.gaps.add("unsupported_binding_or_control_construct_scope_poisoned")
             if word == "let" and kind == "id":

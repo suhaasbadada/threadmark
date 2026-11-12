@@ -127,6 +127,12 @@ context checking, name/type checking or proof that a program can execute.
   bare name can reach a module function, never a sibling method through the class
   dictionary. Constructor/member/self/subscript/dynamic-global calls are unresolved,
   never basename-resolved. Aliases/imports do not transfer callable identity.
+- Class-private binding and lookup keys follow the lexical class name-mangling
+  rule, including leading-underscore class names and nested class contexts;
+  declarations/IDs retain their raw source names. Class-associated function,
+  lambda and comprehension scopes mask the implicit `__class__` cell so it cannot
+  fabricate an edge to a same-spelling module function. This conservatively
+  under-resolves explicit rebindings of that cell.
 - Comprehensions have a separate masked target scope; the first iterable uses the
   enclosing context. Walrus targets mask the enclosing non-comprehension scope.
   Lambda arguments mask its own body. These are static observations, not flow or
@@ -170,8 +176,9 @@ explicit internal source hash, **without changing/copying the other arm**.
   Type/const/static item initializers are explicitly unsupported call contexts;
   their textual declarations are retained but never callable targets.
 - use/import aliases/globs, extern binding contexts, destructuring/unknown
-  parameter or let patterns, for/if/while/match constructs, expression casts
-  (whose unsupported type spans must not fabricate calls), closures, macro
+  parameter or let patterns, for/if/while/match constructs, expression casts and
+  expression-level angle brackets (including qualified type paths, whose type
+  spans must not fabricate calls, and conservatively ordinary comparisons), closures, macro
   invocations that could introduce bindings, and attributes/cfg poison their
   **affected scope**. This can suppress valid neighbors, but not unrelated files
   or sibling function scopes. Macro token trees are opaque; no generated targets.

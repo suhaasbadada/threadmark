@@ -137,6 +137,40 @@ class DirectcallTests(unittest.TestCase):
                          "class_binding_not_initialized")
         self.assertEqual([a.line for a in d.retrieve(source, task())], [1, 4, 5])
 
+    def test_python_private_lookup_uses_class_context_not_raw_module_name(self):
+        result = d.extract(sources("def __target(): pass\ndef _C__target(): pass\nclass C:\n def caller(self):\n  return __target()"), SCOPE)
+        self.assertEqual(edges(result), [(5, "_C__target")])
+        self.assertEqual(result.resolvedcalls[0].target, result.declarations[1].id)
+
+    def test_python_private_binding_masks_and_global_keys_are_mangled(self):
+        for binding in ("def caller(__target):\n  return _C__target()",
+                        "def caller():\n  return _C__target()\n  __target = replacement",
+                        "def caller():\n  global __target\n  return _C__target()"):
+            with self.subTest(binding=binding):
+                result = d.extract(sources("def _C__target(): pass\nclass C:\n " + binding), SCOPE)
+                self.assertEqual(edges(result), [])
+
+    def test_python_private_nested_and_underscore_class_contexts(self):
+        for name, target in (("_C", "_C__target"), ("___C", "_C__target"),
+                             ("___", "__target")):
+            with self.subTest(class_name=name):
+                result = d.extract(sources("def " + target + "(): pass\nclass " + name + ":\n def caller(self):\n  return __target()"), SCOPE)
+                self.assertEqual(edges(result), [(4, target)])
+        result = d.extract(sources("def _Inner__target(): pass\nclass Outer:\n class Inner:\n  def caller(self):\n   return __target()"), SCOPE)
+        self.assertEqual(edges(result), [(5, "_Inner__target")])
+
+    def test_python_implicit_class_cell_masks_function_lambda_nested_scopes(self):
+        for body in ("def caller(self):\n  return __class__()",
+                     "def caller(self):\n  def nested():\n   return __class__()\n  return nested()",
+                     "caller = lambda: __class__()"):
+            with self.subTest(body=body):
+                result = d.extract(sources("def __class__(): pass\nclass C:\n " + body), SCOPE)
+                self.assertFalse(any(c.target[-1] == "__class__" for c in result.resolvedcalls))
+                self.assertTrue(result.observedcoverage[0].unresolved)
+        # No class context: the same whole-ASCII name can be an ordinary function.
+        self.assertEqual(edges(d.extract(sources("def __class__(): pass\n__class__()"), SCOPE)),
+                         [(2, "__class__")])
+
     def test_python_constructor_unsupported(self):
         result = d.extract(sources("class target: pass\ntarget()"), SCOPE)
         self.assertEqual(edges(result), [])
@@ -300,6 +334,12 @@ class DirectcallTests(unittest.TestCase):
         self.assertEqual(edges(result), [(5, "Fn")])
         self.assertIn("scope_poisoned", [u.reason for u in result.observedcoverage[0].unresolved])
         self.assertEqual([a.line for a in d.retrieve(source, task("Fn"))], [1, 5])
+
+    def test_rust_qualified_type_expressions_do_not_fabricate_calls(self):
+        source = sources("trait Factory { fn factory() -> u8 { 0 } }\nimpl Factory for dyn Fn() {}\nfn Fn() {}\nfn caller() { let _ = <dyn Fn()>::factory(); }\nfn good() { Fn(); }", "rs")
+        result = d.extract(source, SCOPE)
+        self.assertEqual(edges(result), [(5, "Fn")])
+        self.assertEqual([a.line for a in d.retrieve(source, task("Fn"))], [3, 5])
 
     def test_rust_extern_crate_alias_cannot_be_a_free_function(self):
         result = d.extract(sources("fn target() {}\nextern crate other as target;\nfn caller() { target(); }", "rs"), SCOPE)
@@ -536,7 +576,7 @@ fn caller<'a>(x: &'a str) {
         self.assertEqual(manifest["python_ast_grammar"], list(sys.version_info[:2]))
         if sys.version_info[:2] == (3, 12):
             self.assertEqual(manifest["digest"],
-                             "9244239f9063407e51d942d2f36e056147e78355a60660dcaa95d2d9a994cb7a")
+                             "82ebc050e58f1595e8d42fc06a323229dcdf3d7b8382bd301861aef70f1db867")
         self.assertEqual(manifest["internal_dependency"]["experiments/evaluation-symbol/symbol.py"],
                          "d09e22d3a7d3f077673d672920bbeeff983de778407684ec6dc5c9e53ba63a60")
         scoring = import_module("experiments.evaluation-scoring.scoring")
