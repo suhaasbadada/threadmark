@@ -2,6 +2,23 @@
 
 ## Scope and revision
 
+### Parent finalization — 2026-11-12 UTC
+
+Site implementation committed independently on current `origin/main`
+(`f4d05ee474d055fb8345c831a733ebd4f5dd1f64`), excluding all foundation changes.
+Full tested site-code revision: `616d5bee9dc86cb1a699ef97117ff019ac4b621d`.
+The parent reran `python3 scripts/site_check.py` successfully after isolation and
+verified the diff contains only the four site files listed below. Source review
+confirmed no active content/remote resources, only one source CTA, no runtime
+claims, SHA-pinned actions, read-only PR checks, and owner-merge-gated deployment.
+This evidence-only follow-up does not modify site code or workflow. Exact-head
+PR CI remains required; no merge, approval, Pages setting change or deployment
+has occurred. The original implementation snapshot below is historical, not the
+current commit/publication status. Inherited local build artifacts are preserved
+and excluded from the PR.
+
+### Delegate implementation snapshot
+
 Site-only implementation for a separate PR, not part of the runtime foundation.
 Prepared on `t3/static-landing-page`, based on
 `9515e7f87af4710cdc5e2ef3f52ec5ad92e4796c`, with uncommitted additions.
@@ -16,7 +33,7 @@ repository setting, or foundation file changes. The site, gate, and workflow do
 not require unmerged foundation tooling. The only external page link is the
 repository root; it does not assume unmerged documentation paths exist on main.
 
-## Acceptance evidence (2026-11-11)
+## Acceptance evidence (2026-11-12 UTC)
 
 | ID | Scope | Result and evidence |
 | --- | --- | --- |
