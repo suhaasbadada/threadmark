@@ -21,6 +21,14 @@ touched. Main integration, committed-revision verification and exact-head CI
 are still required. Historical delegate verification below refers to its then
 uncommitted 17-test version, not the final code revision.
 
+Full committed code revision after current-main integration:
+`61c53adba489915137026c0d35afe084ae322628`. Primary reran all 18 Node tests and
+the full foundation script successfully at this exact revision. cargo-deny,
+staged/history secret scans and whitespace checks also passed for the unit.
+This follow-up changes only the evidence record; the eventual PR head still
+requires its own Linux/macOS/security CI. No new merge/publication authorization
+is inferred from either local or remote checks.
+
 ## Evidence provenance
 
 Public read-only GitHub tree API and raw files inspected at T3 commit
