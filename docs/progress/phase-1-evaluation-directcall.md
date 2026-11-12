@@ -191,3 +191,24 @@ still skips the class dictionary. Pending Python 3.12 policy digest:
 `7e126aabcfca4db0b01568139cd711cd22391bcd2eb979c3b78083fc588ed622`.
 Prior pending digests remain historical; existing frozen arm/corpus pins unchanged.
 Final verification and fresh review are recorded next; no arm integration/study.
+
+## Final standalone prerequisite review and local verification
+
+Exact reviewed implementation: `9ee47048cc31fa4edcb96a26b6884d0e9af28b58`.
+Joffrey freshly reviewed that full commit against
+`d00b94e225233595d026481c4e241187bfa0b657`: **no substantive findings**,
+ready for standalone **NOT_ARMED** prerequisite merge subject to exact-head CI.
+Independently ran **79 tests + 16 fresh in-memory probes**, checked the current
+Python 3.12 policy digest and unchanged frozen files, whitespace and clean tree.
+Only Python 3.12.6 was independently exercised, not Python 3.13+ certification.
+
+Primary independently ran **all 343 integrated tests** (263 Python + 80 Node),
+including 79 directcall tests, plus actual synthetic macOS guard: PASS. Offline
+foundation, cached cargo-deny, staged secrets and whitespace: PASS. Advisory
+freshness remains unverified locally. Final follow-up is evidence-only.
+
+Review applies only to the standalone observed-coverage/static-binding unit.
+The pending manifest state remains NOT_ARMED; no source/candidate/runner coverage
+normalization, admission parity, worker arming, comparisons or production Graphify
+replacement is authorized or implied. Full product scope and Phase 1 remain open.
+Remote exact-head PR/CI are pending publication and will be recorded on the PR.
