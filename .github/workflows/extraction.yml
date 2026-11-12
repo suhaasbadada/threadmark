@@ -1,0 +1,30 @@
+name: Extraction experiment harness
+on:
+  pull_request:
+    paths:
+      - 'experiments/extraction/**'
+      - '.github/workflows/extraction.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/extraction/**'
+      - '.github/workflows/extraction.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  harness:
+    name: Offline harness (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Standard-library admission, process and evidence regression tests
+        run: python3 -B experiments/extraction/test_harness.py
