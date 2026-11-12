@@ -1,0 +1,28 @@
+name: Offline evaluation corpus
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/evaluation-corpus/**'
+      - '.github/workflows/evaluation-corpus.yml'
+      - 'docs/progress/phase-1-evaluation-corpus.md'
+  pull_request:
+    paths:
+      - 'experiments/evaluation-corpus/**'
+      - '.github/workflows/evaluation-corpus.yml'
+      - 'docs/progress/phase-1-evaluation-corpus.md'
+permissions:
+  contents: read
+jobs:
+  corpus:
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Validate inert synthetic bytes only (stdlib; no installation)
+        run: python3 -B -m unittest discover -s experiments/evaluation-corpus -v
