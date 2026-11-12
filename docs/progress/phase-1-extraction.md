@@ -307,3 +307,53 @@ Docker, runtime or product authority was added or exercised. Full integration,
 independent review, final tested commit SHA and exact-head CI remain parent-owned
 pending gates; no commit, push, PR or merge in this repair. Production Graphify
 adoption remains deferred and Phase 1 remains **OPEN**.
+
+## Cooperative fixture readiness repair (2026-11-12)
+
+TM-02/TM-04/TM-07/TM-10; P1-A1 failure/recovery and P1-A5 lifecycle
+evidence only. Parent-reported PR #20 failure in run `43302394977`, job
+`131476701572` (macos-15 arm64 image `20261104`, Python 3.15.2): the closed-output
+case raised timeout but had no fixture `terminal.json`. Inspection confirms the
+old 0.3-second deadline included interpreter startup/fork/handler installation;
+the supervisor's target-PID record does not attest fixture readiness. The
+failure is retained, not retried or waived here; no production defect was
+established by this fixture failure.
+
+Only `experiments/extraction/test_harness.py` changes behavior. A fixed synthetic
+worker now publishes an atomic ready record only after installing its TERM
+handler, receiving its child's readiness, and (in closed mode) closing both
+processes' output. The known child waits for an explicit owned release file.
+A private selector-entry seam waits at most five real seconds for readiness,
+checks both PIDs are alive, then releases work. Startup failure has a distinct
+assertion rather than counting as the intended active-work timeout.
+
+A test-only clock subtracts the **measured setup interval**, not invented elapsed
+time; subsequent active work and cleanup advance with real monotonic time. The
+active-work budget remains 0.3 seconds and aggregate test output remains 1 KiB.
+Closed mode must specifically time out; overflow mode must specifically exceed
+the aggregate output bound via its real descendant writer. The new delayed-start
+regression exercises both modes with a deliberate 0.45-second setup delay,
+asserting setup exceeds the active budget. This is synchronization/lifecycle
+evidence, **not** a launch-inclusive performance measurement. Production
+`run.py`, supervisor, 15-second/256-KiB budgets and two-second cleanup are untouched.
+
+Real TERM/KILL, supervisor target-wait proof, fixture descendant `waitpid`, exact
+ready/terminal PID matching, TERM exit status and both PIDs' absence remain
+required before deleting successful owned temporary state or launching fresh
+recovery. Any helper/assertion failure quarantines further invocations in that
+test process; it never signals recorded IDs after reap or fabricates missing
+terminal proof. Failed selector entry closes its own selector descriptor.
+
+Local verification on base `d0a5cba8164d88bd239f896009b48e807980fd48`
+plus this uncommitted repair, using Python 3.12.6:
+
+- Focused original/new readiness tests: 2 passed (both modes each).
+- Extraction suite after final selector-entry repair: all 18 tests passed with
+  ResourceWarnings treated as errors (the original 17 plus delayed-start test).
+- Host-isolation portable suite: all 25 tests passed with ResourceWarnings as
+  errors; no real sandbox probe, compilation or network test was invoked.
+- `python3 scripts/check.py` and `cargo deny --locked check`: passed.
+
+Parent owns independent review, final commit/tested SHA, full integration and
+native exact-head CI. No commit/push, runtime adoption, corpus execution,
+installation, Docker, provider access or Phase 1 closure is claimed.

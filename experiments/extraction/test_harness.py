@@ -8,6 +8,8 @@ import signal
 import subprocess
 import sys
 import tempfile
+import time
+from types import SimpleNamespace
 import unittest
 from unittest import mock
 
@@ -206,21 +208,27 @@ except run.Canceled:
             self.python("import os,time; os.close(1); os.close(2); time.sleep(30)", timeout=0.2)
         self.assertEqual(self.python("print('fresh')")[0], b"fresh\n")
 
-    def test_cooperative_descendant_timeout_and_overflow_reaped(self):
+    def cooperative_descendant(self, mode, startup_delay=0):
         # Fixed synthetic process fixture, not execution of an extraction corpus.
         code = '''
 import json, os, signal, sys, time
 from pathlib import Path
+time.sleep(float(sys.argv[2]))
 ready_read, ready_write = os.pipe()
 child = os.fork()
 if child == 0:
-    os.close(ready_write)
-    os.read(ready_read, 1)
     os.close(ready_read)
+    if sys.argv[1] == 'closed':
+        os.close(1)
+        os.close(2)
+    os.write(ready_write, b'1')
+    os.close(ready_write)
+    while not Path('release').exists():
+        time.sleep(0.005)
     if sys.argv[1] == 'overflow':
         os.write(2, b'x' * 10000)
-    os.close(1)
-    os.close(2)
+        os.close(1)
+        os.close(2)
     time.sleep(30)
     os._exit(0)
 def stop(_number, _frame):
@@ -229,27 +237,87 @@ def stop(_number, _frame):
         {'worker': os.getpid(), 'child': pid, 'status': status, 'reaped': True}))
     raise SystemExit(0)
 signal.signal(signal.SIGTERM, stop)
-os.close(ready_read)
-os.write(ready_write, b'1')
 os.close(ready_write)
+assert os.read(ready_read, 1) == b'1'
+os.close(ready_read)
 if sys.argv[1] == 'closed':
     os.close(1)
     os.close(2)
+Path('ready.tmp').write_text(json.dumps({'worker': os.getpid(), 'child': child}))
+Path('ready.tmp').rename('ready.json')
 while True:
     time.sleep(0.01)
 '''
-        for mode in ("closed", "overflow"):
-            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:
-                with self.assertRaisesRegex(ValueError, "timeout|output budget"):
-                    run.bounded([sys.executable, "-I", "-S", "-c", code, mode],
-                                Path(directory), {"HOME": directory}, timeout=0.3, limit=1024)
-                evidence = json.loads((Path(directory) / "terminal.json").read_text())
-                self.assertTrue(evidence["reaped"])
-                self.assertEqual(os.waitstatus_to_exitcode(evidence["status"]), -signal.SIGTERM)
-                for key in ("worker", "child"):
+        # bounded() normally includes launch in its deadline. This private clock
+        # seam excludes only the measured fixture setup interval; active work and
+        # _finish() still advance with real monotonic time. It is not a latency
+        # measurement or a change to production's launch-inclusive watchdog.
+        clock = time.monotonic
+        origin = clock()
+        setup_seconds = 0
+        selector_class = selectors.DefaultSelector
+        active_budget = 0.3
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            state = None
+
+            class FixtureReadySelector(selector_class):
+                def __enter__(selector):
+                    nonlocal setup_seconds, state
+                    # Gate before bounded() first calculates remaining work time,
+                    # not after its launch-inclusive deadline could already fire.
+                    try:
+                        end = clock() + 5
+                        while not (root / 'ready.json').exists():
+                            if clock() >= end:
+                                raise AssertionError('fixture startup deadline; active work not tested')
+                            time.sleep(0.005)
+                        state = json.loads((root / 'ready.json').read_text())
+                        for pid in state.values():
+                            os.kill(pid, 0)
+                        setup_seconds = clock() - origin
+                        (root / 'release').touch()
+                        return super().__enter__()
+                    except BaseException:
+                        selector.close()  # Failed __enter__ does not call __exit__.
+                        raise
+
+            try:
+                with mock.patch.object(run, 'time', SimpleNamespace(
+                        monotonic=lambda: clock() - setup_seconds, sleep=time.sleep)), \
+                        mock.patch.object(run.selectors, 'DefaultSelector', FixtureReadySelector):
+                    with self.assertRaisesRegex(ValueError, 'timeout' if mode == 'closed'
+                                                else 'output budget'):
+                        run.bounded([sys.executable, '-I', '-S', '-c', code, mode,
+                                     str(startup_delay)], root, {'HOME': directory},
+                                    timeout=active_budget, limit=1024)
+                self.assertIsNotNone(state, 'fixture never activated')
+                evidence = json.loads((root / 'terminal.json').read_text())
+                self.assertEqual({key: evidence[key] for key in state}, state)
+                self.assertTrue(evidence['reaped'])
+                self.assertEqual(os.waitstatus_to_exitcode(evidence['status']), -signal.SIGTERM)
+                for pid in state.values():
                     with self.assertRaises(ProcessLookupError):
-                        os.kill(evidence[key], 0)
-            self.assertEqual(self.python("print('fresh')")[0], b"fresh\n")
+                        os.kill(pid, 0)
+                if startup_delay:
+                    self.assertGreaterEqual(setup_seconds, startup_delay)
+                    self.assertGreater(setup_seconds, active_budget)
+            except BaseException:
+                # Do not launch fresh trials after missing descendant/wait proof.
+                # bounded() owns signaling; never kill a recorded/reaped PGID here.
+                run._QUARANTINED = True
+                raise
+        self.assertEqual(self.python("print('fresh')")[0], b'fresh\n')
+
+    def test_cooperative_descendant_timeout_and_overflow_reaped(self):
+        for mode in ("closed", "overflow"):
+            with self.subTest(mode=mode):
+                self.cooperative_descendant(mode)
+
+    def test_delayed_fixture_startup_is_not_active_worker_timeout(self):
+        for mode in ('closed', 'overflow'):
+            with self.subTest(mode=mode):
+                self.cooperative_descendant(mode, startup_delay=0.45)
 
     def test_launch_failure_closes_private_fds_without_quarantine(self):
         pipe = os.pipe

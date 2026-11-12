@@ -291,3 +291,42 @@ and integrated
 [43296440731](https://github.com/suhaasbadada/threadmark/actions/runs/43296440731)
 SUCCESS. Those are base evidence, not final-head CI for this unit. Native final
 PR/head runs remain pending publication. Full product scope and Phase 1 stay open.
+
+## Native PR20 failures and focused repair
+
+Full failed head: `d0a5cba8164d88bd239f896009b48e807980fd48`.
+Both required macOS traces were inspected, not retried or waived:
+
+- [Offline extraction job 131476701572](https://github.com/suhaasbadada/threadmark/actions/runs/43302394977/job/131476701572)
+  failed in the closed-output descendant test because `terminal.json` was missing.
+  Supervisor Popen identity readiness did not establish fixture handler/descendant
+  readiness. The 0.3-second test deadline included interpreter startup, permitting
+  termination before the cooperative test scenario became active.
+- [Integrated job 131476702928](https://github.com/suhaasbadada/threadmark/actions/runs/43302395484/job/131476702928)
+  ran default **Python 3.15.2**. Candidate admission correctly rejected its unknown
+  grammar, outside the authored 3.10–3.14 table; ready assertions consequently
+  failed. This was not repaired by admitting an unreviewed grammar or weakening
+  an assertion.
+
+Bob added a bounded ready/release handshake and a measured-startup private clock
+seam to the **test only**. Active timeout and cleanup still advance using real
+monotonic time; production launch-inclusive 15-second work and 2-second cleanup
+limits are unchanged. Deliberate 0.45-second startup (longer than the 0.3-second
+active-test budget) proves startup is not mistaken for the scenario under test.
+Target/child identity, reap attestation and absence remain required; missing proof
+still quarantines further trials. No production supervisor/runner budget changed.
+
+Primary added a finite CI selector for **already installed Python 3.12**. The exact
+failed image [software record](https://github.com/actions/runner-images/blob/macos-15-arm64/20261104.0514/images/macos/macos-15-arm64-Readme.md)
+lists cached Python 3.12.10 as well as default 3.15.2. Both existing workflows now
+use the selected absolute interpreter explicitly and fail if unavailable; no
+installation/download, PATH override or new action/dependency is introduced.
+Five selector tests cover deterministic cache selection, actual version probing,
+unknown/missing/failed candidates, bounded clean probes and explicit CI output.
+The grammar/source/policy allowlists and frozen corpus/algorithm pins are unchanged.
+
+Primary local exact workflow commands: **381 tests PASS** (301 Python + 80 Node),
+including extraction 18 and selector 5, plus actual synthetic macOS guard PASS.
+Native cached-runtime selection and repaired macOS jobs still need exact-new-head
+CI. Fresh review, full committed SHA and new native run IDs are recorded next;
+failed runs above remain failure evidence, never current green checks.

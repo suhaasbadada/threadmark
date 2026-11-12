@@ -3,11 +3,13 @@ on:
   pull_request:
     paths:
       - 'experiments/extraction/**'
+      - 'scripts/ci_python.py'
       - '.github/workflows/extraction.yml'
   push:
     branches: [main]
     paths:
       - 'experiments/extraction/**'
+      - 'scripts/ci_python.py'
       - '.github/workflows/extraction.yml'
 
 permissions:
@@ -26,5 +28,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
+      - name: Select installed reviewed Python (no download)
+        run: python3 -B scripts/ci_python.py
       - name: Standard-library admission, process and evidence regression tests
-        run: python3 -B experiments/extraction/test_harness.py
+        run: '"$THREADMARK_PYTHON" -B experiments/extraction/test_harness.py'
