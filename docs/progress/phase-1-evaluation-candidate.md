@@ -10,6 +10,42 @@ define a new MVP, adopt a production knowledge core, or close any phase.
 [Phase 1](../spec/phase-1-feasibility.md) and
 [ADR 0006](../decisions/0006-phase-1-evaluation-protocol.md) remain authoritative.
 
+## Parent repair, independent review and integrated verification
+
+Full committed implementation: `44bde8fd8350478e882fbf8a5067cba795f7b2cf`,
+based on actual merged main `700f5fbe1f258818a41a22ac20087fde59fe2544`.
+The assigned branch fast-forwarded from the inherited PR #14 head to its
+tree-identical merge commit, preserving all task changes and other worktrees.
+Main's post-merge foundation run
+[43269307591](https://github.com/suhaasbadada/threadmark/actions/runs/43269307591)
+was freshly confirmed successful at that full main SHA.
+
+Primary reproduced a binding regression before repair: a preparation probe
+changed `harbor` scope to the valid `harbour` scope and a ready candidate then
+targeted the latter. The failing assertion demonstrated the wrong project.
+Scope is now copied before **any** cancellation/dependency callback; a new
+observable regression verifies the original invocation remains bound even when
+the probe mutates the caller's dict to another valid project. All **16** new
+behavior tests passed; late-mutation, cancellation and failure checks remain.
+
+Joffrey independently reviewed that exact commit and actual dependencies: no
+substantive findings. His 16 tests, 48 additional boundary probes and whitespace
+check passed; checkout unchanged. He did not run the full integrated suite,
+remote CI, host certification or quality study.
+
+Primary separately executed the exact Python, Node and synthetic-guard commands
+from the expanded integration workflow on that committed revision: **202 tests
+passed** (122 Python + 80 Node), plus real local macOS `synthetic-only-pass`,
+`host_launched=false`. No failures/skips in the experimental suites. Offline
+foundation, cached cargo-deny, staged secrets and whitespace passed on the same
+implementation tree. This is conformance, not comparative quality evidence.
+
+The earlier 15-test/uncommitted child record below remains historical. This
+follow-up changes documentation only; final PR-head CI must bind its own head
+and run. Standing direct owner authorization covers merge to main after fresh
+head/check/review/discussion/target gates, then continued full-scope implementation.
+No deployment/spend/credential authority or Phase 1 closure is inferred.
+
 ## Trust and acceptance evidence
 
 Public `build` accepts only the actual immutable small frozen artifact, scope
