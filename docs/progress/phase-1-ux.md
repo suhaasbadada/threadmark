@@ -32,6 +32,13 @@ its 13-test version. The focused availability repair is unit-verified, not a
 repeat of all browser observations. Main integration, final full tested SHA and
 exact-head CI remain pending; no end-user or runtime certification follows.
 
+Committed code after current-main integration:
+`b357e398113d9bf8e4ba9899f3492560a6f22f33`. Primary reran all 14 Node tests
+and the full foundation script successfully on that exact revision. cargo-deny,
+staged/history secret scans and whitespace checks also passed for this unit.
+This follow-up changes only the evidence record; final PR-head CI remains
+required. No merge, publication or real host action is authorized by these checks.
+
 ## Pre-test protocol and bounds
 
 Declared in the implementation turn before test execution: six scripted journeys;
