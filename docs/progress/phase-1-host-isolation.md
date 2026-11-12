@@ -1,11 +1,91 @@
 # Phase 1 — Synthetic host-isolation prerequisite
 
-Status: **local synthetic guard passed after narrow repairs; review findings
-addressed, remote CI pending, not host certification**. TM-02,
+Status: **synthetic guard and exact-head CI passed; installed OpenCode version
+diagnostic remains blocked, not host certification**. TM-02,
 TM-04–TM-08, TM-10. P1-A2 prerequisite; partial P1-A5 capability evidence.
 P1-A2 admission/approval acceptance and Phase 1 exit are **not established**.
 No extraction or OpenCode mock experiment files are dependencies or modified.
 Budgets were set before probes in [ADR 0004](../decisions/0004-synthetic-host-containment.md).
+
+## Current evidence — bounded version diagnostic, 2026-11-12 UTC
+
+The sections below this update retain earlier implementation and delegate
+snapshots. Their pending-CI and never-launched-host statements describe those
+earlier stages, not this later version-only diagnostic. No service, plugin,
+session, provider, prompt, admission or host integration was exercised.
+
+### Exact-head synthetic CI
+
+PR #5 remained open/unmerged at full head
+`dbcc3cf2d4639891ba1de647acd5971e6db2621f`. All six checks passed:
+[foundation CI](https://github.com/suhaasbadada/threadmark/actions/runs/43191936827)
+and [synthetic isolation](https://github.com/suhaasbadada/threadmark/actions/runs/43191936937),
+including the real macos-15 guard. These runs establish the synthetic contract
+at that head only, not the later installed-binary diagnostic or this evidence
+update's eventual CI head. Independent supervisor reviews and focused repairs
+are recorded below; no new independent review of the version diagnostic is claimed.
+
+### Confirmed original trap
+
+An unchanged filesystem-only policy launched installed OpenCode **2.2.5** with
+only `--version` under the existing reviewed, bounded supervisor. Disposable
+HOME/XDG state, constructed environment, closed inherited descriptors and default
+deny networking remained in force. A wrapper recorded its PID before `exec`;
+PID and timestamps precisely matched the owned crash report. At
+`2026-11-12T10:19:39.441397Z` through `10:19:39.994368Z`, exit was **-5** with
+662 captured diagnostic bytes. The synthetic outside canary was unchanged and
+the owned fixture root was removed. No raw report or private path is published.
+
+The report's original exception offset, normalized to the executable's static
+image, was `0x10002b254`. Static LLDB disassembly (no attachment or execution)
+identified `WTF::pageSize()`, `PageBlock.cpp:64`, a `brk #0` after the call to
+`sysconf(29)` (`_SC_PAGESIZE`) and its power-of-two assertion. The bundled Bun
+revision is `38afee6c84fcf48c0edb2466aa4b27d287a59c30`; its WebKit pin
+`d6375c72affe0f70222cdcb45012b10f0bf3a9d5` confirms this
+[page-size implementation](https://github.com/oven-sh/WebKit/blob/d6375c72affe0f70222cdcb45012b10f0bf3a9d5/Source/WTF/wtf/PageBlock.cpp).
+The blank OS-version diagnostic is not the established trap cause. Broad Mach,
+JIT or sysctl requirements were not established by this evidence.
+
+### Narrow diagnostic allowance and remaining failure
+
+Apple's installed `container.sb:95` explicitly names `hw.pagesize` and
+`hw.pagesize_compat` in its sysctl-read rules. A disposable diagnostic appended
+only `(allow sysctl-read (sysctl-name "hw.pagesize" "hw.pagesize_compat"))`;
+no system profile was imported, and **the committed harness policy was not
+changed**. `/usr/bin/getconf PAGESIZE`, separately allowlisted as the sole
+executable for its fixture, produced:
+
+| Policy | Exit | Result |
+| --- | --- | --- |
+| Unchanged filesystem-only profile | 71 | No numeric page size; 52 diagnostic bytes |
+| Same profile plus the two named reads | 0 | `16384`; 6 output bytes |
+
+This isolates the page-size access restriction, but does not distinguish which
+of the two names is individually necessary. No general sysctl access is justified.
+
+With only those named reads added to the OpenCode version fixture, the attempt
+at `2026-11-12T10:21:56.992178Z` through `10:21:57.640172Z` exited **1**, not
+the original trap, with 2421 output bytes; output was **not** the expected version.
+A same-policy diagnostic confirmed exit 1 and the same byte count. A restricted
+error-marker scan found no `SIGTRAP`, `EPERM`, `EACCES`, `ENOENT`, assertion,
+syscall identifier or JavaScript frame-name match; it does not diagnose the new
+failure. Raw output was not published. Every fixture's outside canary remained
+unchanged and every owned root was removed. Execution used the existing five
+second/process and 16 KiB/output limits with cancellation/group cleanup.
+
+**Outcome:** the original page-size bootstrap blocker is localized, but successful
+`--version`, complete installed-host containment, P1-A2 and Phase 1 exit remain
+unverified. Further runtime allowance needs evidence of the actual failing
+operation and separate review; do not infer permission to widen the policy or
+invoke a service. No runtime/source/policy changes, host configuration changes,
+listener, credential reuse, provider access, merge or deployment in this update.
+
+Evidence-only update verification: `python3 scripts/check.py`,
+`cargo deny --locked check`, staged `python3 scripts/secrets.py` and
+`git diff --cached --check` passed. No runtime file changed; the 25 portable
+tests and real synthetic guard are retained at the exact green CI head above,
+not claimed as rerun for this documentation update. The final evidence commit
+and its new CI run/head are recorded on PR #5 after publication.
 
 ## Parent investigation and current results — 2026-11-12 UTC
 
