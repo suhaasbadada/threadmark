@@ -1,0 +1,34 @@
+name: Evaluation adapter fixtures
+on:
+  pull_request:
+    paths:
+      - 'experiments/evaluation-adapter/**'
+      - 'docs/progress/phase-1-evaluation-adapter.md'
+      - 'docs/decisions/0006-phase-1-evaluation-protocol.md'
+      - '.github/workflows/evaluation-adapter.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/evaluation-adapter/**'
+      - 'docs/progress/phase-1-evaluation-adapter.md'
+      - 'docs/decisions/0006-phase-1-evaluation-protocol.md'
+      - '.github/workflows/evaluation-adapter.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  fixtures:
+    name: Pure adapter (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Synthetic adapter unit tests (stdlib only, no installation)
+        run: python3 -B -m unittest discover -s experiments/evaluation-adapter -v
