@@ -1,0 +1,32 @@
+name: Evaluation lexical conformance
+on:
+  push:
+    branches: [main]
+    paths:
+      - experiments/evaluation-lexical/**
+      - docs/progress/phase-1-evaluation-lexical.md
+      - .github/workflows/evaluation-lexical.yml
+  pull_request:
+    paths:
+      - experiments/evaluation-lexical/**
+      - docs/progress/phase-1-evaluation-lexical.md
+      - .github/workflows/evaluation-lexical.yml
+
+permissions:
+  contents: read
+
+jobs:
+  conformance:
+    name: Lexical (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Pure synthetic conformance
+        run: python3 -B -m unittest discover -s experiments/evaluation-lexical -v
