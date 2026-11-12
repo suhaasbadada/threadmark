@@ -117,3 +117,13 @@ cached `cargo deny --offline --locked check` passed; advisory freshness remains
 unverified. Synthetic corpus source was not executed or compiled. Fresh repaired
 commit review, staged secrets, exact SHA and remote CI are recorded below when
 available; initial 34/35-test evidence is historical, not the repaired total.
+
+Exact repaired, tested implementation SHA:
+`2027cb0dbd598c6010b578f16c4bcb9f413fff01`. Joffrey freshly reviewed that
+commit against main `992997be44a14c5a66dc7d3c45ef7e758c15f1e4`: **no
+substantive findings**, independently 37 tests on Python 3.12.6 plus compact
+Rust operator / both-language Unicode probes and 200 independently calculated
+synthetic ranking cases passed. No other interpreter or integrated/remote CI
+was independently claimed by Joffrey. Parent's staged secrets and whitespace
+checks passed. This following evidence-only commit does not alter code/tests.
+Remote CI is pending publication; no green-run or phase-closure claim yet.
