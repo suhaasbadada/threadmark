@@ -85,8 +85,8 @@ def policy_manifest():
             "scoring.py": "78d023fcb47e3a85908f0cd87ca9d3ae0126b70b330eba465c887281b6919181",
             "corpus.py": "87f884b5820060e6939e05612699fd86be193d4b36fa14ddf0cfd4f16cc09dff"},
         "bindings": "static lexical unique unconditional undecorated functions; no runtime certainty",
-        "rust": "standalone file; parsed item boundaries; block-wide masks; unknown bindings poison scope; no grammar certification",
-        "python": "AST plus raw tokens; whole-scope masks; class not method closure; nested local initialization required",
+        "rust": "standalone file; parsed item boundaries; block-wide masks; casts and unknown bindings poison scope; no grammar certification",
+        "python": "AST plus raw tokens; whole-scope and annotation masks; class not method closure; local function and class binding initialization required",
         "identity": "scope,path,language,lexical owner byte spans,declaration keyword byte,kind,raw name; calls own byte span",
         "coordinates": "normalized LF UTF-8 bytes; decl keyword line; call callee-expression start line; whole lines",
         "failure": "whole closed ValueError; all files before selection; no cache or prefix",
@@ -115,8 +115,10 @@ class _Scope:
                 if len(values) != 1 or values[0] is None or not values[0].callable:
                     return None, "masked_or_ambiguous_binding"
                 target = values[0]
-                if (scope.kind == "python_function" and target.span[1] > position):
-                    return None, "local_function_not_initialized"
+                if (scope.kind in ("python_function", "python_class")
+                        and target.span[1] > position):
+                    return None, ("class_binding_not_initialized" if scope.kind == "python_class"
+                                  else "local_function_not_initialized")
                 return target, None
             if scope.kind == "rust_mod":
                 return None, "module_requires_explicit_path_or_import"
@@ -317,6 +319,11 @@ def _python(file):
                 # Annotations are explicitly unsupported execution contexts.
                 if isinstance(node, ast.AnnAssign):
                     file.gaps.add("annotation_execution_not_resolved")
+                    # Unsupported execution context is not permission to ignore
+                    # its binding effects (annotations can contain walrus stores).
+                    for child in ast.walk(node.annotation):
+                        if isinstance(child, ast.NamedExpr):
+                            mask_target(child.target, owner)
                 expression(getattr(node, "value", None), owner)
             elif isinstance(node, (ast.For, ast.AsyncFor, ast.With, ast.AsyncWith, ast.If, ast.While, ast.Try,
                                    getattr(ast, "TryStar", ast.Try), ast.Match)):
@@ -601,7 +608,7 @@ def _rust(file):
                 file.gaps.add("type_static_const_initializer_calls_not_resolved")
                 i, boundary = k + 1, True
                 continue
-            if ((kind == "id" and word in ("use", "macro", "for", "match", "if", "while", "move", "extern"))
+            if ((kind == "id" and word in ("use", "macro", "for", "match", "if", "while", "move", "extern", "as"))
                     or word == "|"):
                 owner.poison = True
                 file.gaps.add("unsupported_binding_or_control_construct_scope_poisoned")

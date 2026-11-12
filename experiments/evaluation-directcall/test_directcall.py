@@ -127,6 +127,16 @@ class DirectcallTests(unittest.TestCase):
         self.assertEqual(result.resolvedcalls[0].target[-3:], (0, "def", "target"))
         self.assertEqual(result.observedcoverage[0].unresolved[0].reason, "non_bare_or_non_ascii_callee")
 
+    def test_python_class_forward_binding_never_targets_later_method(self):
+        source = sources("def target(): pass\nclass C:\n target()\n def target(): pass\n target()")
+        result = d.extract(source, SCOPE)
+        self.assertEqual(edges(result), [(5, "target")])
+        method = next(x for x in result.declarations if x.kind == "def" and x.line == 4)
+        self.assertEqual(result.resolvedcalls[0].target, method.id)
+        self.assertEqual(result.observedcoverage[0].unresolved[0].reason,
+                         "class_binding_not_initialized")
+        self.assertEqual([a.line for a in d.retrieve(source, task())], [1, 4, 5])
+
     def test_python_constructor_unsupported(self):
         result = d.extract(sources("class target: pass\ntarget()"), SCOPE)
         self.assertEqual(edges(result), [])
@@ -160,6 +170,16 @@ class DirectcallTests(unittest.TestCase):
             with self.subTest(context=context):
                 result = d.extract(sources("def target(): pass\n" + context + "\ntarget()"), SCOPE)
                 self.assertEqual(edges(result), [])
+
+    def test_python_annotation_namedexpr_masks_module_and_class(self):
+        for text in ("def target(): pass\nx: (target := replacement)\ntarget()",
+                     "def target(): pass\nclass C:\n def target(): pass\n x: (target := replacement)\n target()"):
+            with self.subTest(text=text):
+                result = d.extract(sources(text), SCOPE)
+                self.assertEqual(edges(result), [])
+                self.assertIn("annotation_execution_not_resolved", result.observedcoverage[0].gaps)
+                self.assertEqual(result.observedcoverage[0].unresolved[0].reason,
+                                 "masked_or_ambiguous_binding")
 
     def test_python_lambda_parameters(self):
         result = d.extract(sources("def target(): pass\nx = lambda target: target()\ny = lambda: target()"), SCOPE)
@@ -273,6 +293,13 @@ class DirectcallTests(unittest.TestCase):
     def test_rust_local_type_and_turbofish_arguments_not_calls(self):
         result = d.extract(sources("fn Target() {}\nfn caller() {\n let f: &dyn Target() = other;\n unknown::<dyn Target()>();\n Target();\n}", "rs"), SCOPE)
         self.assertEqual(edges(result), [(5, "Target")])
+
+    def test_rust_cast_trait_types_are_not_call_expressions(self):
+        source = sources("fn Fn() {}\nfn caller(x: &dyn Fn()) {\n let y = x as &dyn Fn();\n}\nfn good() { Fn(); }", "rs")
+        result = d.extract(source, SCOPE)
+        self.assertEqual(edges(result), [(5, "Fn")])
+        self.assertIn("scope_poisoned", [u.reason for u in result.observedcoverage[0].unresolved])
+        self.assertEqual([a.line for a in d.retrieve(source, task("Fn"))], [1, 5])
 
     def test_rust_extern_crate_alias_cannot_be_a_free_function(self):
         result = d.extract(sources("fn target() {}\nextern crate other as target;\nfn caller() { target(); }", "rs"), SCOPE)
@@ -509,7 +536,7 @@ fn caller<'a>(x: &'a str) {
         self.assertEqual(manifest["python_ast_grammar"], list(sys.version_info[:2]))
         if sys.version_info[:2] == (3, 12):
             self.assertEqual(manifest["digest"],
-                             "c66d5404f17a8cc596bad68e718b287e6c2e96b25d88f78fdb3aac3fe374612e")
+                             "9244239f9063407e51d942d2f36e056147e78355a60660dcaa95d2d9a994cb7a")
         self.assertEqual(manifest["internal_dependency"]["experiments/evaluation-symbol/symbol.py"],
                          "d09e22d3a7d3f077673d672920bbeeff983de778407684ec6dc5c9e53ba63a60")
         scoring = import_module("experiments.evaluation-scoring.scoring")

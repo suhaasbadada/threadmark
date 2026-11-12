@@ -118,7 +118,9 @@ context checking, name/type checking or proof that a program can execute.
 - Bare Name calls in assignments, returns, nested arguments and keyword arguments
   resolve by lexical ownership. Module-function-body references to a unique module
   function use a **declared static assumption**, not runtime object identity.
-  Nested local functions additionally must end before the call's source position;
+  Nested local functions and class-local callable bindings additionally must end
+  before the call's source position; forward class-local references are left
+  unresolved rather than targeting a method not yet initialized.
   uninitialized/recursive forward locals are unresolved. This deliberately
   under-resolves some valid recursion and later initialization paths.
 - Class bodies are not lexical closures for methods/nested scopes. A method's
@@ -133,7 +135,9 @@ context checking, name/type checking or proof that a program can execute.
 - Calls in defaults, annotations, decorators, class bases/keywords are explicitly
   **unsupported execution contexts**, not walked in the function-body scope.
   Named-expression bindings inside them still mask the enclosing scope
-  (conservatively also in nested lambdas). Decorated targets remain declarations
+  (conservatively also in nested lambdas). Variable annotation expressions are
+  likewise unsupported call contexts but their named-expression stores still
+  mask affected module/class/function bindings. Decorated targets remain declarations
   but are not callable bindings. Unknown statement/binding constructs poison the
   affected scope; e.g. Python 3.12 type aliases. New grammar unsupported by the
   running interpreter rejects the entire input. Type-parameter function bodies
@@ -166,7 +170,8 @@ explicit internal source hash, **without changing/copying the other arm**.
   Type/const/static item initializers are explicitly unsupported call contexts;
   their textual declarations are retained but never callable targets.
 - use/import aliases/globs, extern binding contexts, destructuring/unknown
-  parameter or let patterns, for/if/while/match constructs, closures, macro
+  parameter or let patterns, for/if/while/match constructs, expression casts
+  (whose unsupported type spans must not fabricate calls), closures, macro
   invocations that could introduce bindings, and attributes/cfg poison their
   **affected scope**. This can suppress valid neighbors, but not unrelated files
   or sibling function scopes. Macro token trees are opaque; no generated targets.

@@ -99,3 +99,30 @@ Final unique test inventory verified: **333 PASS (264 existing + 69 new;
 Parent must independently review policy and observed coverage before integration,
 then bind eventual committed SHA and exact CI run/head. No local check closes
 Phase 1 or establishes quality/performance, host certification or a product decision.
+
+## Parent review repairs (supersede initial 69/333-test snapshot)
+
+Initial implementation commit: `a976033a02038476b0fa790991e4247f74b2dcd0`.
+Joffrey independently ran 69 tests and three additional probes, finding three
+substantive false-edge defects. Primary reproduced all three without executing
+source: Rust cast trait syntax `x as &dyn Fn()` was reported as a call to a
+same-spelling free function; a module annotation's walrus rebinding was ignored;
+a class-body call before its later method definition targeted that uninitialized
+method instead of remaining unresolved.
+
+Repairs poison the affected Rust cast scope (not sibling functions); collect
+annotation named-expression masks without resolving unsupported annotation calls;
+and require class-local callable bindings to have completed before their call.
+New independent literal regressions cover exact cast coordinates and unaffected
+sibling calls, module/class annotation masking, and forward-vs-initialized class
+method identity. Supplemental pending policy descriptions now explicitly include
+these rules. Its Python 3.12 digest is
+`9244239f9063407e51d942d2f36e056147e78355a60660dcaa95d2d9a994cb7a`;
+the prior supplemental digest above is historical. Existing scorer/corpus/schema/
+algorithm pins remain unchanged. This is not a retroactive scoring-rule change.
+
+Primary independently ran **72 directcall tests and all 336 integrated tests**
+(256 Python + 80 Node), plus actual synthetic macOS guard: PASS. Foundation and
+cached cargo-deny also PASS; advisory freshness remains unverified. No directcall
+worker/integration/study was launched. Fresh repaired-head policy/coverage review,
+staged secrets/whitespace and exact-head CI remain the next recorded gates.
