@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Threadmark is a planned local-first background companion for source-backed project intelligence. Early development; no released app.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+  <title>Threadmark — Keep the evidence with the intent</title>
+  <style>
+    :root { color-scheme: light dark; --paper: #f6f5f0; --ink: #252c2a; --muted: #59635e; --line: #c5cbc4; --accent: #1e6555; --wash: #e6ece5; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.6 system-ui, sans-serif; }
+    .page { max-width: 1100px; margin: auto; padding: 0 44px; }
+    a { color: var(--accent); text-underline-offset: .24em; }
+    a:hover { text-decoration-thickness: 2px; }
+    a:focus-visible, main:focus { outline: 3px solid var(--accent); outline-offset: 6px; }
+    .skip { position: absolute; top: 12px; left: 16px; padding: 8px 14px; background: var(--paper); transform: translateY(-180%); z-index: 2; }
+    .skip:focus { transform: none; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 28px 0; border-bottom: 1px solid var(--line); }
+    .wordmark { font-size: 20px; font-weight: 650; letter-spacing: -.04em; }
+    .mark { color: var(--accent); margin-right: 10px; font-family: ui-monospace, monospace; }
+    .label, .number { font: 12px/1.5 ui-monospace, monospace; letter-spacing: .05em; text-transform: uppercase; }
+    .label { color: var(--muted); }
+    .intro { padding: 76px 0 56px; max-width: 790px; }
+    .eyebrow { color: var(--accent); margin: 0 0 20px; }
+    h1 { font-size: clamp(40px, 6.5vw, 72px); font-weight: 520; letter-spacing: -.055em; line-height: 1.06; margin: 0 0 28px; text-wrap: balance; }
+    .lede { max-width: 630px; font-size: 21px; line-height: 1.6; }
+    .cta { display: inline-flex; gap: 28px; align-items: center; padding: 12px 0; margin-top: 12px; font-weight: 600; }
+    .status { margin: 22px 0 0; font-size: 14px; color: var(--muted); }
+    section { border-top: 1px solid var(--line); padding: 34px 0 42px; }
+    .section-heading { display: flex; align-items: baseline; gap: 20px; margin-bottom: 28px; }
+    .number { color: var(--accent); }
+    h2 { font-size: 24px; font-weight: 550; letter-spacing: -.025em; margin: 0; }
+    h3 { font-size: 18px; margin: 0 0 8px; font-weight: 600; }
+    p { margin: 0 0 16px; }
+    .thread { list-style: none; padding: 0 0 0 10px; margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); }
+    .thread li { position: relative; padding: 24px 28px 0 18px; border-top: 1px solid var(--accent); }
+    .thread li::before { content: ''; position: absolute; width: 9px; height: 9px; background: var(--paper); border: 2px solid var(--accent); top: -5px; left: 0; border-radius: 50%; }
+    .thread p { font-size: 15px; color: var(--muted); }
+    .boundary { display: grid; grid-template-columns: 1fr 1.2fr; gap: 50px; }
+    .boundary p { color: var(--muted); }
+    .note { border-left: 2px solid var(--accent); padding-left: 22px; }
+    dl { margin: 0; }
+    .record { display: grid; grid-template-columns: 160px 1fr; gap: 24px; border-bottom: 1px solid var(--line); padding: 18px 0; }
+    dt { font-weight: 600; }
+    dd { margin: 0; color: var(--muted); font-size: 15px; }
+    footer { display: flex; justify-content: space-between; gap: 16px; padding: 26px 0 38px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+    @media (prefers-color-scheme: dark) { :root { --paper: #171d1b; --ink: #e4e9e2; --muted: #abb8ae; --line: #414e47; --accent: #8bceb6; --wash: #26352d; } }
+    @media (max-width: 650px) {
+      .page { padding: 0 24px; }
+      header { align-items: flex-start; }
+      header .label { max-width: 110px; text-align: right; }
+      .intro { padding: 52px 0 40px; }
+      .lede { font-size: 18px; }
+      .thread { display: block; padding-left: 5px; }
+      .thread li { border-top: 0; border-left: 1px solid var(--accent); padding: 0 0 24px 24px; }
+      .thread li::before { left: -5px; top: 9px; }
+      .thread li:last-child { padding-bottom: 0; }
+      .boundary { grid-template-columns: 1fr; gap: 16px; }
+      .record { grid-template-columns: 1fr; gap: 6px; }
+      footer { flex-direction: column; gap: 4px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+    @media print { body { background: white; color: black; } .skip { display: none; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="page">
+    <header>
+      <div class="wordmark"><span class="mark" aria-hidden="true">┊↳</span>Threadmark</div>
+      <span class="label">Project intelligence<br>In development</span>
+    </header>
+    <main id="main" tabindex="-1">
+      <div class="intro">
+        <p class="eyebrow label">Local-first. Source-backed. Planned.</p>
+        <h1>Keep the evidence<br>with the intent.</h1>
+        <p class="lede">A background companion for project understanding that travels with you between coding hosts. Less repeated explanation. A clearer starting point for the next task.</p>
+        <a class="cta" href="https://github.com/suhaasbadada/threadmark">Explore source &amp; docs <span aria-hidden="true">↗</span></a>
+        <p class="status">Early development. No released app, download, or certified host integration.</p>
+      </div>
+      <section aria-labelledby="thread-title">
+        <div class="section-heading"><span class="number" aria-hidden="true">01</span><h2 id="thread-title">A thread back to the source</h2></div>
+        <ol class="thread">
+          <li><h3>Approve the sources</h3><p>The plan starts with project-scoped access, not an indiscriminate repository dump.</p></li>
+          <li><h3>Keep the distinctions</h3><p>Evidence, your decisions, and uncertain interpretations stay separate, with provenance and known gaps.</p></li>
+          <li><h3>Review the handoff</h3><p>A bounded execution brief would carry intent, constraints, relevant context, and proposed checks into your host.</p></li>
+        </ol>
+      </section>
+      <section aria-labelledby="host-title">
+        <div class="section-heading"><span class="number" aria-hidden="true">02</span><h2 id="host-title">Your coding host stays your workspace</h2></div>
+        <div class="boundary">
+          <p>Existing hosts retain chat, tools, execution, and permissions. Threadmark is designed to prepare context—not become another executor.</p>
+          <p class="note">The planned shell is an occasional tray, management, and review surface. Not a chat app, editor, dashboard, or agent launcher.</p>
+        </div>
+      </section>
+      <section aria-labelledby="design-title">
+        <div class="section-heading"><span class="number" aria-hidden="true">03</span><h2 id="design-title">Design direction, not shipped capability</h2></div>
+        <dl>
+          <div class="record"><dt>Local knowledge</dt><dd>A Rust core with the provisional mem-z knowledge layer: SQLite-backed evidence, retrieval, and editable decisions.</dd></div>
+          <div class="record"><dt>Replaceable extraction</dt><dd>Graphify is an initial candidate worker, not the authority for knowledge semantics. Inferred relationships would remain labeled.</dd></div>
+          <div class="record"><dt>Explicit inference</dt><dd>Structural analysis is planned without a model. Semantic work requires explicitly authorized inference, content scope, and budgets—not reused coding-host credentials.</dd></div>
+          <div class="record"><dt>Open questions</dt><dd>Storage, background orchestration, inference, shell behavior, and host compatibility still need implementation and runtime validation. No performance or completeness promises.</dd></div>
+        </dl>
+      </section>
+    </main>
+    <footer><span>Threadmark · An early, unshipped project</span><span>Context should come with its provenance.</span></footer>
+  </div>
+</body>
+</html>
