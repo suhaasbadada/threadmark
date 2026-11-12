@@ -152,3 +152,24 @@ Primary independently reran **77 directcall tests, all 341 integrated tests**
 (261 Python + 80 Node), synthetic macOS guard, foundation and cached cargo-deny:
 PASS. Directcall remains NOT ARMED, with no candidate/runner integration or
 study. Fresh exact repaired-head review and CI are still required.
+
+### Third review: item masks and compiler-created class dictionaries
+
+Joffrey freshly reviewed `f90289c9ec19ea04ccdb859e961cc878f72ee857`, ran
+77 tests plus nine probes and blocked approval on multiline Rust nonfunction
+bindings and Python compiler-created class dictionary names. Primary reproduced
+the local multiline tuple constructor incorrectly targeting a file function,
+and `__module__`, `__qualname__`, docstring `__doc__` and annotation
+`__annotations__` class calls incorrectly targeting module functions.
+
+Rust item-header binding masks now install independently of same-line emitted
+declaration eligibility, covering multiline/raw tuple structs, constants and
+statics. Python class dictionaries collect those compiler-created masks before
+resolution; methods still skip class dictionaries and retain legitimate module
+references. Independently authored regressions verify both rejection and unaffected
+sibling/method identity. **79 focused tests PASS**. Supplemental pending Python
+3.12 policy digest is now
+`5ef8bfd20b2be4e9c82ad85b314a0156a73095bdf20fbf777e3576414c6d9b36`.
+Earlier pending-policy digests above remain historical; no scorer/corpus/schema/
+algorithm pin changed. Fresh repaired-head review and full integrated rerun remain
+required; standalone prerequisite is not assumed approved or armed.

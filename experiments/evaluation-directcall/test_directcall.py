@@ -171,6 +171,19 @@ class DirectcallTests(unittest.TestCase):
         self.assertEqual(edges(d.extract(sources("def __class__(): pass\n__class__()"), SCOPE)),
                          [(2, "__class__")])
 
+    def test_python_compiler_created_class_bindings_do_not_mask_method_globals(self):
+        for name, prelude in (("__module__", ""), ("__qualname__", ""),
+                              ("__doc__", ' "class doc"\n'),
+                              ("__annotations__", " x: int\n")):
+            with self.subTest(name=name):
+                text = ("def " + name + "(): pass\nclass C:\n" + prelude
+                        + " " + name + "()\n def caller(self):\n  return " + name + "()")
+                result = d.extract(sources(text), SCOPE)
+                self.assertEqual(edges(result), [(len(text.splitlines()), name)])
+                self.assertEqual(result.resolvedcalls[0].target, result.declarations[0].id)
+                self.assertEqual(result.observedcoverage[0].unresolved[0].reason,
+                                 "masked_or_ambiguous_binding")
+
     def test_python_constructor_unsupported(self):
         result = d.extract(sources("class target: pass\ntarget()"), SCOPE)
         self.assertEqual(edges(result), [])
@@ -271,6 +284,18 @@ class DirectcallTests(unittest.TestCase):
                 result = d.extract(sources(text, "rs"), SCOPE)
                 self.assertEqual(edges(result), [])
                 self.assertEqual(result.observedcoverage[0].unresolved[0].reason, "masked_or_ambiguous_binding")
+
+    def test_rust_multiline_nonfunction_items_mask_independent_of_evidence(self):
+        for item in ("struct\n target();", "struct\n r#target();",
+                     "const\n target: fn() = other;", "const\n r#target: fn() = other;",
+                     "static\n target: fn() = other;", "static mut\n r#target: fn() = other;"):
+            with self.subTest(item=item):
+                text = "fn target() {}\nfn caller() {\n " + item + "\n target();\n}\nfn good() { target(); }"
+                result = d.extract(sources(text, "rs"), SCOPE)
+                self.assertEqual(edges(result), [(7, "target")])
+                self.assertEqual([a.line for a in d.retrieve(sources(text, "rs"), task())], [1, 7])
+                self.assertEqual(result.observedcoverage[0].unresolved[0].reason,
+                                 "masked_or_ambiguous_binding")
 
     def test_rust_unknown_parameter_patterns_poison_function_only(self):
         result = d.extract(sources("fn target() {}\nfn bad((target, x): (fn(), i32)) { target(); }\nfn good() { target(); }", "rs"), SCOPE)
@@ -576,7 +601,7 @@ fn caller<'a>(x: &'a str) {
         self.assertEqual(manifest["python_ast_grammar"], list(sys.version_info[:2]))
         if sys.version_info[:2] == (3, 12):
             self.assertEqual(manifest["digest"],
-                             "82ebc050e58f1595e8d42fc06a323229dcdf3d7b8382bd301861aef70f1db867")
+                             "5ef8bfd20b2be4e9c82ad85b314a0156a73095bdf20fbf777e3576414c6d9b36")
         self.assertEqual(manifest["internal_dependency"]["experiments/evaluation-symbol/symbol.py"],
                          "d09e22d3a7d3f077673d672920bbeeff983de778407684ec6dc5c9e53ba63a60")
         scoring = import_module("experiments.evaluation-scoring.scoring")

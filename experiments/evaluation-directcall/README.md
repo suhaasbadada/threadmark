@@ -133,6 +133,11 @@ context checking, name/type checking or proof that a program can execute.
   lambda and comprehension scopes mask the implicit `__class__` cell so it cannot
   fabricate an edge to a same-spelling module function. This conservatively
   under-resolves explicit rebindings of that cell.
+- Class dictionaries mask compiler-created `__module__` / `__qualname__`,
+  `__doc__` when a class docstring exists, and `__annotations__` when an annotated
+  assignment is present. These whole-scope masks may under-resolve explicit later
+  rebinding; methods still skip the dictionary and can reach ordinary module
+  functions with those names.
 - Comprehensions have a separate masked target scope; the first iterable uses the
   enclosing context. Walrus targets mask the enclosing non-comprehension scope.
   Lambda arguments mask its own body. These are static observations, not flow or
@@ -165,6 +170,9 @@ explicit internal source hash, **without changing/copying the other arm**.
   tail expressions, returns and arguments are supported. Nested fn items shadow
   outer items. Simple name:type parameters and simple let bindings mask the entire
   affected block/function, conservatively even before a Rust let declaration.
+- Nonfunction item bindings mask independently of same-line evidence eligibility:
+  multiline tuple structs, constants and statics cannot expose an outer function
+  merely because their declarations are excluded from emitted anchors.
 - Modules do **not** implicitly import their parent's unqualified names. Local
   module paths and super/crate paths are currently unresolved; no guessed path
   resolution. Impl/trait methods remain declarations, never another method's bare

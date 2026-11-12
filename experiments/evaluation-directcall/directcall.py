@@ -85,8 +85,8 @@ def policy_manifest():
             "scoring.py": "78d023fcb47e3a85908f0cd87ca9d3ae0126b70b330eba465c887281b6919181",
             "corpus.py": "87f884b5820060e6939e05612699fd86be193d4b36fa14ddf0cfd4f16cc09dff"},
         "bindings": "static lexical unique unconditional undecorated functions; no runtime certainty",
-        "rust": "standalone file; parsed item boundaries; block-wide masks; casts, expression angles and unknown bindings poison scope; no grammar certification",
-        "python": "AST plus raw tokens; whole-scope and annotation masks; class-private binding keys and implicit class cells; class not method closure; local function and class binding initialization required",
+        "rust": "standalone file; parsed item boundaries; multiline item masks independent of evidence; casts, expression angles and unknown bindings poison scope; no grammar certification",
+        "python": "AST plus raw tokens; whole-scope and annotation masks; class-private keys, implicit class cells and compiler-created class bindings; class not method closure; local function and class binding initialization required",
         "identity": "scope,path,language,lexical owner byte spans,declaration keyword byte,kind,raw name; calls own byte span",
         "coordinates": "normalized LF UTF-8 bytes; decl keyword line; call callee-expression start line; whole lines",
         "failure": "whole closed ValueError; all files before selection; no cache or prefix",
@@ -102,6 +102,9 @@ class _Scope:
         self.parent, self.kind, self.span = parent, kind, span
         self.bindings, self.poison = {}, False
         self.class_name = class_name if kind == "python_class" else (parent.class_name if parent else None)
+        if kind == "python_class":
+            self.bind("__module__")
+            self.bind("__qualname__")
         if (self.class_name is not None
                 and kind in ("python_function", "python_lambda", "python_comprehension")):
             # Class-associated code scopes can receive the implicit class cell.
@@ -312,6 +315,8 @@ def _python(file):
                     inner.poison = True
                 if is_function:
                     parameters(node.args, inner)
+                elif ast.get_docstring(node, clean=False) is not None:
+                    inner.bind("__doc__")
                 statements(node.body, inner)
             elif isinstance(node, (ast.Global, ast.Nonlocal)):
                 file.gaps.add("global_nonlocal_affected_names_poisoned")
@@ -335,6 +340,8 @@ def _python(file):
                 # Annotations are explicitly unsupported execution contexts.
                 if isinstance(node, ast.AnnAssign):
                     file.gaps.add("annotation_execution_not_resolved")
+                    if owner.kind == "python_class":
+                        owner.bind("__annotations__")
                     # Unsupported execution context is not permission to ignore
                     # its binding effects (annotations can contain walrus stores).
                     for child in ast.walk(node.annotation):
@@ -588,7 +595,10 @@ def _rust(file):
                 excluded.update(range(i, k + 1))
                 ownership.update((x, owner) for x in range(i, k + 1))
                 declaration_tokens.add(header)
-                if item_word == "mod" and identifier(header + 1):
+                # Binding effects do not depend on same-line evidence eligibility.
+                # A multiline tuple struct can shadow a file function even though
+                # its declaration cannot be emitted by the frozen anchor policy.
+                if item_word != "impl" and identifier(header + 1):
                     owner.bind(value(header + 1))
                 if value(k) == "{":
                     inner = _Scope(owner, "rust_" + item_word, (spans[k][0], spans[pairs[k]][1]))
@@ -611,6 +621,13 @@ def _rust(file):
             if boundary and nonfunction is not None:
                 # Type syntax is not expression syntax. Initializers deliberately
                 # remain unsupported rather than inventing calls in Fn() bounds.
+                name_index = nonfunction + 1 + (value(nonfunction) == "static"
+                                               and value(nonfunction + 1) == "mut")
+                if identifier(name_index):
+                    owner.bind(value(name_index))
+                else:
+                    owner.poison = True
+                    file.gaps.add("unknown_item_binding_scope_poisoned")
                 k = i + 1
                 while k < end and value(k) != ";":
                     if k in pairs:
