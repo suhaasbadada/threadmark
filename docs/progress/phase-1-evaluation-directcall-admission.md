@@ -330,3 +330,12 @@ including extraction 18 and selector 5, plus actual synthetic macOS guard PASS.
 Native cached-runtime selection and repaired macOS jobs still need exact-new-head
 CI. Fresh review, full committed SHA and new native run IDs are recorded next;
 failed runs above remain failure evidence, never current green checks.
+
+Fresh independent repair review: exact
+`46ca993feb61f92425567f0a1eca1d3be5b72986` against failed `d0a5cba...`.
+Joffrey found **no substantive findings**; independently passed selector 5,
+extraction 18 and host-isolation 25 tests, with ResourceWarnings treated as errors
+for extraction/host suites; clean tree and whitespace. Ready to push for native
+CI, **not merge approval**. Primary foundation/cached-deny/staged-secrets/whitespace
+also passed after repairs. Native cache selection/repaired jobs remain pending
+new-head verification; this following addition is evidence-only.
