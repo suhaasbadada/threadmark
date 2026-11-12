@@ -173,6 +173,7 @@ class DirectcallTests(unittest.TestCase):
 
     def test_python_compiler_created_class_bindings_do_not_mask_method_globals(self):
         for name, prelude in (("__module__", ""), ("__qualname__", ""),
+                              ("__firstlineno__", ""),
                               ("__doc__", ' "class doc"\n'),
                               ("__annotations__", " x: int\n")):
             with self.subTest(name=name):
@@ -601,7 +602,7 @@ fn caller<'a>(x: &'a str) {
         self.assertEqual(manifest["python_ast_grammar"], list(sys.version_info[:2]))
         if sys.version_info[:2] == (3, 12):
             self.assertEqual(manifest["digest"],
-                             "5ef8bfd20b2be4e9c82ad85b314a0156a73095bdf20fbf777e3576414c6d9b36")
+                             "7e126aabcfca4db0b01568139cd711cd22391bcd2eb979c3b78083fc588ed622")
         self.assertEqual(manifest["internal_dependency"]["experiments/evaluation-symbol/symbol.py"],
                          "d09e22d3a7d3f077673d672920bbeeff983de778407684ec6dc5c9e53ba63a60")
         scoring = import_module("experiments.evaluation-scoring.scoring")

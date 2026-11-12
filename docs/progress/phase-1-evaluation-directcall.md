@@ -173,3 +173,21 @@ sibling/method identity. **79 focused tests PASS**. Supplemental pending Python
 Earlier pending-policy digests above remain historical; no scorer/corpus/schema/
 algorithm pin changed. Fresh repaired-head review and full integrated rerun remain
 required; standalone prerequisite is not assumed approved or armed.
+
+### Compatibility review follow-up
+
+Joffrey freshly reviewed `1778592b90feb01336e045baa5bbcb9fbe636bf3`:
+79 tests plus 13 additional in-memory probes passed on Python 3.12.6, with no
+further substantive issue in that grammar. Approval remained blocked on a
+Python 3.13+ compiler-created class binding, `__firstlineno__`, whose absence
+from masks could fabricate a module-function edge. Python 3.13 was unavailable
+to the reviewer; its runtime behavior was not claimed tested.
+
+The class mask now conservatively includes `__firstlineno__` across grammars,
+with the existing paired class-body/method regression expanded to cover it.
+This intentionally under-resolves that class-body name on older Python versions
+rather than falsely claiming universal compiler-version support. Method lookup
+still skips the class dictionary. Pending Python 3.12 policy digest:
+`7e126aabcfca4db0b01568139cd711cd22391bcd2eb979c3b78083fc588ed622`.
+Prior pending digests remain historical; existing frozen arm/corpus pins unchanged.
+Final verification and fresh review are recorded next; no arm integration/study.

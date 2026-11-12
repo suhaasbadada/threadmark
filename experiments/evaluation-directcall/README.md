@@ -134,6 +134,8 @@ context checking, name/type checking or proof that a program can execute.
   fabricate an edge to a same-spelling module function. This conservatively
   under-resolves explicit rebindings of that cell.
 - Class dictionaries mask compiler-created `__module__` / `__qualname__`,
+  and conservatively `__firstlineno__` (initialized on Python 3.13+; masked on
+  older grammars as well to avoid version-dependent fabricated global edges),
   `__doc__` when a class docstring exists, and `__annotations__` when an annotated
   assignment is present. These whole-scope masks may under-resolve explicit later
   rebinding; methods still skip the dictionary and can reach ordinary module

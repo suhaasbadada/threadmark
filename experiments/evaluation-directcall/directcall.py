@@ -86,7 +86,7 @@ def policy_manifest():
             "corpus.py": "87f884b5820060e6939e05612699fd86be193d4b36fa14ddf0cfd4f16cc09dff"},
         "bindings": "static lexical unique unconditional undecorated functions; no runtime certainty",
         "rust": "standalone file; parsed item boundaries; multiline item masks independent of evidence; casts, expression angles and unknown bindings poison scope; no grammar certification",
-        "python": "AST plus raw tokens; whole-scope and annotation masks; class-private keys, implicit class cells and compiler-created class bindings; class not method closure; local function and class binding initialization required",
+        "python": "AST plus raw tokens; whole-scope and annotation masks; class-private keys, implicit class cells and compiler-created class bindings including conservative __firstlineno__; class not method closure; local function and class binding initialization required",
         "identity": "scope,path,language,lexical owner byte spans,declaration keyword byte,kind,raw name; calls own byte span",
         "coordinates": "normalized LF UTF-8 bytes; decl keyword line; call callee-expression start line; whole lines",
         "failure": "whole closed ValueError; all files before selection; no cache or prefix",
@@ -105,6 +105,9 @@ class _Scope:
         if kind == "python_class":
             self.bind("__module__")
             self.bind("__qualname__")
+            # Python 3.13+ initializes this class-local integer. Conservatively
+            # mask it on older grammars too rather than fabricate a global edge.
+            self.bind("__firstlineno__")
         if (self.class_name is not None
                 and kind in ("python_function", "python_lambda", "python_comprehension")):
             # Class-associated code scopes can receive the implicit class cell.
