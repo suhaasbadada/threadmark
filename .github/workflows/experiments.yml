@@ -1,0 +1,43 @@
+name: Integrated offline experiments
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: experiments-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline:
+    name: Integrated experiments (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Check runner-provided runtimes (no installation)
+        run: |
+          python3 -c 'import sys; assert sys.version_info >= (3, 10)'
+          node -e 'if (Number(process.versions.node.split(".")[0]) < 22) process.exit(1)'
+      - name: Python offline contracts and fixture preparation
+        run: |
+          python3 -B experiments/extraction/test_harness.py
+          python3 -B -m unittest discover -s experiments/host-isolation -p 'test_*.py' -v
+          python3 -B -m unittest discover -s experiments/evaluation-corpus -v
+          python3 -B -m unittest discover -s experiments/evaluation-scoring -v
+          python3 -B -m unittest discover -s experiments/evaluation-adapter -v
+          python3 -B -m unittest discover -s experiments/evaluation-lexical -v
+      - name: Node offline host and UX contracts
+        run: node --test experiments/opencode/contract.test.mjs experiments/t3-handoff/prepare.test.mjs experiments/ux-walkthrough/model.test.mjs
+      - name: Actual synthetic macOS guard (never an installed host)
+        if: runner.os == 'macOS'
+        run: python3 -B experiments/host-isolation/harness.py --synthetic-guard

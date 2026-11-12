@@ -6,6 +6,12 @@ below. Phase 0 is the offline foundation, not a functioning companion. Foundatio
 and the separate public landing page were merged with explicit owner approval;
 that authorization does not extend to the experimental PRs below.
 
+**Later integration update:** the owner subsequently explicitly instructed
+continued work and merging. PRs #3–#13 are now merged; see the exact source/merge
+SHAs and combined-tree verification in [the integration record](phase-1-integration.md).
+Earlier approval limits and open/unmerged descriptions below are historical
+snapshots. Phase 1 acceptance remains open; merging is not certification.
+
 This is a documentation-only consolidation and prospective protocol, not an
 integration of unmerged experimental code. The exact assigned primary worktree
 and branch are retained; its clean foundation branch was fast-forwarded to main
@@ -15,7 +21,8 @@ bind evidence to immutable commits rather than assuming files exist on main.
 
 ## Evidence ledger
 
-All listed PRs remain **open/unmerged**. Every listed check was successful at the
+At this ledger's original snapshot all listed PRs were **open/unmerged**; they
+have since merged as recorded above. Every listed check was successful at the
 full head recorded here, not automatically at a later head. CI validates the
 named experiment, not real-host capability or the full Phase 1 exit.
 
