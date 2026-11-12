@@ -65,6 +65,12 @@ The adapter-layer diff remains five files. Final-head CI binds its own head/run.
 P1-A5/Phase 1 remain partial/open;
 no merge, deployment or live execution authorized.
 
+After integrating CI prerequisite `03df2fd42424807f83bc583b543b6770c0a34b55`,
+full combined revision `06484eaba4039b8afc98e8308d9087e817ef8aa9` passed all
+18 adapter tests, the offline foundation script and tracked/history secret scan.
+Adapter code remains identical to Joffrey's reviewed implementation. This final
+evidence-only addition still requires its own exact-head native CI before handoff.
+
 ## Bounded unit and preregistered mapping
 
 [Adapter contract](../../experiments/evaluation-adapter/README.md) declares the
