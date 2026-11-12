@@ -1,0 +1,18 @@
+{
+  "name": "threadmark-opencode-native-prerequisite",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Isolated Phase 1 static prerequisite; not installed-host certification",
+  "dependencies": {
+    "@opencode/client": "2.2.5",
+    "@opencode/plugin": "2.2.5",
+    "@opencode/theme": "2.2.5",
+    "@opentui/core": "0.8.0",
+    "@opentui/solid": "0.8.0",
+    "solid-js": "1.9.17"
+  },
+  "devDependencies": {
+    "typescript": "npm:@typescript/typescript6@6.0.2"
+  }
+}
