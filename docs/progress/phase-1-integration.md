@@ -63,6 +63,12 @@ These results validate the combined code tree, not a comparative retrieval
 study, approved inference, native consent/admission, clipboard/composer behavior
 or a deployment. No generated Rust/Python fixture source was executed.
 
+Remote post-merge checks also passed on that exact main revision:
+[foundation push run 43266453983](https://github.com/suhaasbadada/threadmark/actions/runs/43266453983)
+and [lexical push run 43266453923](https://github.com/suhaasbadada/threadmark/actions/runs/43266453923).
+The other experimental suites' combined-tree evidence above is local, not a
+claim they all ran in those two remote workflows.
+
 ## Integrated CI gate
 
 [Integrated offline experiments](../../.github/workflows/experiments.yml) runs
@@ -74,9 +80,17 @@ runner-provided. No packages, provider credentials, corpus downloads, host
 startup, Docker, deployment or site workflow changes. Existing individual gates
 remain intact. This adds combined-tree coverage, not a new product capability.
 
-Primary reviewed the workflow against the exact commands executed above.
-The constituent implementations retain their recorded independent reviews;
-no new independent review of this small orchestration/evidence change is claimed.
+Primary reviewed the workflow against the exact commands executed above and
+parsed its event/permission/matrix/checkout/timeout/platform semantics with
+installed PyYAML. Offline foundation, cached cargo-deny, staged secret scanning
+and whitespace checks passed on this implementation tree.
+
+Joffrey independently reviewed committed revision
+`c045c2fb6c238516efac8e6fe9c860d71d250169`: no substantive findings. YAML parsing,
+whitespace, workflow-to-existing-command coverage and all eleven documented
+source/merge SHA pairs' local parents/main ancestry checked. He did not rerun
+the suites, query remote APIs or independently establish supplied authorization.
+This follow-up changes only the evidence record; workflow code is unchanged.
 The new gate's final head/run and outcome must be recorded on its own PR before
 the authorized merge; prior main/branch greens are not its CI result. Continue
 through merge and verification rather than stopping at a ready-to-merge state.
