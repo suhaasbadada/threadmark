@@ -73,6 +73,22 @@ class AdmissionTests(unittest.TestCase):
 
 
 class ProcessTests(unittest.TestCase):
+    def test_wrapper_retains_defaults_caps_and_stdout_elapsed_contract(self):
+        with mock.patch.object(run._process, "bounded", return_value=(0, b"stdout", b"stderr", 1.25)) as shared:
+            self.assertEqual(run.bounded(["inert"], "/owned", {}), (b"stdout", 1.25))
+            shared.assert_called_once_with(["inert"], "/owned", {}, 15, 256 * 1024)
+        with mock.patch.object(run._process, "bounded") as shared:
+            for timeout, limit in ((15.1, 1), (1, 256 * 1024 + 1), (0, 1), (1, 0)):
+                with self.assertRaisesRegex(ValueError, "budget"):
+                    run.bounded([], "/owned", {}, timeout, limit)
+            shared.assert_not_called()
+
+    def test_wrapper_still_translates_nonzero_and_launch_error_without_diagnostics(self):
+        for code in (7, None):
+            with mock.patch.object(run._process, "bounded", return_value=(code, b"private", b"private", 1)):
+                with self.assertRaisesRegex(ValueError, "^worker failed; dependency/API prerequisite unavailable$"):
+                    run.bounded([], "/owned", {})
+
     def test_sigterm_unwinds_worker_and_temporary_directory(self):
         # The selector emits readiness only after bounded() entered its cleanup
         # region. Actual SIGTERM, not a mocked exception, cancels this parent.
@@ -83,12 +99,12 @@ sys.path.insert(0, sys.argv[1])
 import run
 run.install_cancellation_handler()
 children = []
-original_spawn = run.subprocess.Popen
+original_spawn = run._process.subprocess.Popen
 def spawn(*args, **kwargs):
     child = original_spawn(*args, **kwargs)
     children.append(child)
     return child
-run.subprocess.Popen = spawn
+run._process.subprocess.Popen = spawn
 class ReadySelector(selectors.DefaultSelector):
     announced = False
     def select(self, timeout=None):
@@ -96,7 +112,7 @@ class ReadySelector(selectors.DefaultSelector):
             print(json.dumps({"group_owner": children[0].pid, "temp": directory}), flush=True)
             self.announced = True
         return super().select(timeout)
-run.selectors.DefaultSelector = ReadySelector
+run._process.selectors.DefaultSelector = ReadySelector
 try:
     with tempfile.TemporaryDirectory(prefix="threadmark-sigterm-") as directory:
         run.bounded([sys.executable, "-I", "-B", "-c", "import time; time.sleep(30)"],
@@ -181,12 +197,12 @@ except run.Canceled:
             events.append("reap")
             return wait(child, *args, **kwargs)
 
-        with mock.patch.object(run.subprocess, "Popen", record_spawn), \
+        with mock.patch.object(run._process.subprocess, "Popen", record_spawn), \
                 mock.patch.object(spawn, "wait", record_wait), \
                 mock.patch.object(spawn, "poll", side_effect=AssertionError("early owner poll")), \
                 mock.patch.object(spawn, "communicate", side_effect=AssertionError("early owner reap")), \
-                mock.patch.object(run.os, "killpg", record_kill), \
-                mock.patch.object(run.os, "pipe", record_pipe):
+                mock.patch.object(run._process.os, "killpg", record_kill), \
+                mock.patch.object(run._process.os, "pipe", record_pipe):
             self.assertEqual(self.python("import sys; print('exact'); print('diagnostic', file=sys.stderr)")[0],
                              b"exact\n")
         self.assertEqual(events, [signal.SIGTERM, signal.SIGKILL, "reap"])
@@ -283,9 +299,9 @@ while True:
                         raise
 
             try:
-                with mock.patch.object(run, 'time', SimpleNamespace(
+                with mock.patch.object(run._process, 'time', SimpleNamespace(
                         monotonic=lambda: clock() - setup_seconds, sleep=time.sleep)), \
-                        mock.patch.object(run.selectors, 'DefaultSelector', FixtureReadySelector):
+                        mock.patch.object(run._process.selectors, 'DefaultSelector', FixtureReadySelector):
                     with self.assertRaisesRegex(ValueError, 'timeout' if mode == 'closed'
                                                 else 'output budget'):
                         run.bounded([sys.executable, '-I', '-S', '-c', code, mode,
@@ -305,7 +321,7 @@ while True:
             except BaseException:
                 # Do not launch fresh trials after missing descendant/wait proof.
                 # bounded() owns signaling; never kill a recorded/reaped PGID here.
-                run._QUARANTINED = True
+                run._process._QUARANTINED = True
                 raise
         self.assertEqual(self.python("print('fresh')")[0], b'fresh\n')
 
@@ -326,14 +342,14 @@ while True:
             pair = pipe()
             fds.extend(pair)
             return pair
-        with mock.patch.object(run.os, "pipe", record_pipe), \
-                mock.patch.object(run.subprocess, "Popen", side_effect=OSError("synthetic")):
+        with mock.patch.object(run._process.os, "pipe", record_pipe), \
+                mock.patch.object(run._process.subprocess, "Popen", side_effect=OSError("synthetic")):
             with self.assertRaisesRegex(ValueError, "launch or I/O"):
                 self.python("print('unused')")
         for fd in fds:
             with self.assertRaises(OSError):
                 os.fstat(fd)
-        self.assertFalse(run._QUARANTINED)
+        self.assertFalse(run._process._QUARANTINED)
         self.assertEqual(self.python("print('fresh')")[0], b"fresh\n")
 
     def test_actual_launch_boundary_cancel_and_cleanup_signal_deferral(self):
@@ -356,8 +372,8 @@ while True:
 
         try:
             run.install_cancellation_handler()
-            with mock.patch.object(run.subprocess, "Popen", record_spawn), \
-                    mock.patch.object(run.os, "killpg", record_kill):
+            with mock.patch.object(run._process.subprocess, "Popen", record_spawn), \
+                    mock.patch.object(run._process.os, "killpg", record_kill):
                 with self.assertRaises(run.Canceled):
                     self.python("import time; time.sleep(30)")
             self.assertEqual(events, [signal.SIGTERM, signal.SIGKILL])
@@ -371,11 +387,11 @@ while True:
 
     def test_unverified_cleanup_blocks_further_launches(self):
         # Real target/helper finish, but missing private wait proof cannot be success.
-        with mock.patch.object(run, "_QUARANTINED", False):
-            with mock.patch.object(run, "_target_status", side_effect=run.CleanupUnverified("missing proof")):
+        with mock.patch.object(run._process, "_QUARANTINED", False):
+            with mock.patch.object(run._process, "_target_status", side_effect=run.CleanupUnverified("missing proof")):
                 with self.assertRaisesRegex(run.CleanupUnverified, "cleanup unverified"):
                     self.python("print('done')")
-            with mock.patch.object(run.subprocess, "Popen") as spawn:
+            with mock.patch.object(run._process.subprocess, "Popen") as spawn:
                 with self.assertRaises(run.CleanupUnverified):
                     self.python("print('must not launch')")
                 spawn.assert_not_called()
@@ -386,18 +402,18 @@ while True:
             if number == signal.SIGTERM:
                 raise PermissionError("synthetic permission failure")
             return kill(group, number)
-        with mock.patch.object(run, "_QUARANTINED", False), \
-                mock.patch.object(run.os, "killpg", denied):
+        with mock.patch.object(run._process, "_QUARANTINED", False), \
+                mock.patch.object(run._process.os, "killpg", denied):
             with self.assertRaisesRegex(run.CleanupUnverified, "cleanup unverified"):
                 self.python("print('done')")
-            self.assertTrue(run._QUARANTINED)
+            self.assertTrue(run._process._QUARANTINED)
 
     def test_private_status_is_actual_target_status(self):
-        self.assertEqual(run._target_status(b"123\n", b"7\n"), 7)
+        self.assertEqual(run._process._target_status(b"123\n", b"7\n"), 7)
         for ready, status in ((b"", b"0\n"), (b"123\n", b""),
                               (b"0123\n", b"0\n"), (b"123\n", b"0\n0\n")):
             with self.subTest(ready=ready, status=status), self.assertRaises(run.CleanupUnverified):
-                run._target_status(ready, status)
+                run._process._target_status(ready, status)
         with self.assertRaisesRegex(ValueError, "dependency/API"):
             self.python("raise SystemExit(7)")
         with tempfile.TemporaryDirectory() as directory:
@@ -407,7 +423,7 @@ while True:
 
     def test_parent_cancellation_reaps_worker(self):
         with tempfile.TemporaryDirectory(prefix="threadmark-cancel-test-") as directory:
-            original = run.subprocess.Popen
+            original = run._process.subprocess.Popen
             children = []
 
             def spawn(*args, **kwargs):
@@ -415,8 +431,8 @@ while True:
                 children.append(child)
                 return child
 
-            with mock.patch.object(run.subprocess, "Popen", side_effect=spawn), \
-                    mock.patch.object(run.selectors, "DefaultSelector") as selector:
+            with mock.patch.object(run._process.subprocess, "Popen", side_effect=spawn), \
+                    mock.patch.object(run._process.selectors, "DefaultSelector") as selector:
                 selector.return_value.__enter__.return_value.get_map.return_value = True
                 selector.return_value.__enter__.return_value.select.side_effect = KeyboardInterrupt
                 with self.assertRaises(KeyboardInterrupt):

@@ -453,3 +453,182 @@ No compiler, Node probe, SDK import, acquisition or network was used by these
 reproductions. Primary cached offline cargo-deny also passes; no advisory-refresh
 claim is made. Fresh full-suite/foundation/staged checks and publication evidence
 will follow separately; execution approval and measured containment remain CLOSED.
+
+## Published compiler-preflight prerequisite — PR #22
+
+PR: <https://github.com/suhaasbadada/threadmark/pull/22>, target `main`.
+Tested implementation head `47328e24087b995c1295860c7a9010b13c66d292`, tree
+`f00dd8cc330794b0a8345c543be9a6e8dc649f43`. Primary fresh integrated verification
+passes **452 tests** (372 Python, including 71 native; 80 Node); actual macOS
+synthetic guard passes with `host_launched: false`. Foundation checks, cached
+offline cargo-deny, staged secrets and full whitespace checks pass. Joffrey's
+review, sole encoding finding and primary regression repair are recorded above.
+
+Initial exact-head PR inspection registered seven queued/in-progress jobs:
+
+- Foundation CI: <https://github.com/suhaasbadada/threadmark/actions/runs/43321091555>
+  — both Rust platforms plus dependencies/licenses/secrets.
+- Integrated experiments:
+  <https://github.com/suhaasbadada/threadmark/actions/runs/43321091267>
+  — Linux/macOS.
+- Offline OpenCode contracts:
+  <https://github.com/suhaasbadada/threadmark/actions/runs/43321091590>
+  — Linux/macOS.
+
+These are pending, not green. Exact-head final checks, approvals/discussions,
+target and prerequisite-only acceptance must be freshly checked before merge.
+This appended local evidence is not another published implementation head.
+No compiler/SDK/host, native containment measurement, type closure, product
+acceptance, deployment or phase closure is claimed. The assigned worktree and
+all progress text remain intact; no duplicate worker or reminder was created.
+
+## PR #22 qualified merge
+
+Fresh inspection verified all seven exact-head jobs SUCCESS for
+`47328e24087b995c1295860c7a9010b13c66d292`, with the three PR run IDs above,
+target `main`, MERGEABLE/CLEAN, no draft, no unresolved review threads and no
+additional repository branch-protection/ruleset approval gate. No forge approval
+was invented. Independent Joffrey review, his sole finding, and the primary's
+encoding repair/pre-fix regression evidence are recorded above. This accepts only
+the inert prerequisite, not compiler containment or phase acceptance.
+
+Under standing qualified-merge authorization, PR #22 was squash-merged at
+`d5e9a04cae1cad1c22e0e23032cc8131b7c98cc9`. The PR watch was stopped. The
+assigned task branch integrated merged main without branch switch, reset or
+cleanup; local progress updates were preserved. No compiler, SDK/TUI, provider,
+binary/runtime deployment or native certification followed. Post-merge CI and
+the next synthetic containment-harness gates remain separate.
+
+## Synthetic containment implementation decision
+
+PR #22's merge tree equals tested tree `f00dd8cc330794b0a8345c543be9a6e8dc649f43`.
+Fresh post-merge verification found SUCCESS on exact merge head
+`d5e9a04cae1cad1c22e0e23032cc8131b7c98cc9`: foundation CI
+<https://github.com/suhaasbadada/threadmark/actions/runs/43321679364>, integrated
+experiments <https://github.com/suhaasbadada/threadmark/actions/runs/43321679397>,
+and offline contracts <https://github.com/suhaasbadada/threadmark/actions/runs/43321679385>.
+
+Sherlock independently investigated the actual next executable prerequisite.
+The existing C host guard permits fork and whole-state writes; it is not evidence
+for compiler no-child containment. Primary selects minimal extraction of the
+repaired retained-owner mechanism into a private shared helper, preserving the
+extraction wrapper's 15 s/256 KiB cap and existing behavior. A separate fixed C-only
+synthetic experiment may use explicit bounded budgets; no generic public command,
+profile or executable launcher is authorized. The existing host guard is not
+broadened or migrated. Unknown cleanup must preserve/quarantine owned state and
+block reuse, not merely raise and then unconditionally delete its directory.
+
+Implementation and pure/portable synthetic tests are authorized now. **The new
+C sandbox runner itself must receive independent policy/code review before its
+first measured run.** A later primary decision may authorize only that fixed C
+fixture using installed Apple tools and owned synthetic canaries. System-only
+`/usr/lib`/dyld baseline allowances may be implemented as a separately labeled
+synthetic baseline; they are not Node's reviewed minimum inventory and may not be
+silently expanded to home, repository or private trees. No network allowance or
+target fork/spawn permission is authorized. Bootstrap failure is a concrete
+blocker to investigate, not permission to restore fork.
+
+No Node/compiler/SDK execution, dependency acquisition or real compiler launch
+descriptor is authorized by this implementation decision. C controls cannot prove
+Node loader/config/type behavior, V8 memory containment or declaration semantics.
+Full type closure, runtime provenance and all native/product gates remain open.
+
+## First C-only run authorization after independent review
+
+Joffrey reviewed the exact eight-file staged synthetic harness/fixture/policy and
+shared owner refactor, identifying no substantive blocking finding. He separately
+passed 18 synthetic policy/portable owner tests and 20 extraction tests with
+ResourceWarning as error, and staged whitespace validation. He verified fixed
+extraction caps, private owner status/readiness, TERM/KILL-before-reap, quarantine/
+artifact retention, no fork/network allowance, DAC-independent denial checks and
+content-free complete observations. His review does not establish actual SBPL,
+C denial outcomes or exact-change CI.
+
+Primary authorizes **one exact fixed `--synthetic-compiler-guard` execution** after
+committing the reviewed implementation, using installed Apple C tools, fresh
+private owned artifacts/canaries and only owned loopback receivers. No policy
+change, retry, compiler/Node/SDK execution, provider call or external egress is
+authorized by this decision. Any bootstrap/parser/denial failure blocks and must
+be diagnosed with evidence, not permission expansion. C results remain separate
+from DNS IPC, Node loader/config, V8 memory, type closure and native certification.
+
+## Bob — fixed C-only containment implementation, measurement NOT RUN
+
+This append preserves the primary's entire existing progress text. Assigned
+branch `t3/004628d1`, full base/local HEAD
+`38707993e511219a07ef7450d8835b9f579700a0`, integrating merged main
+`d5e9a04cae1cad1c22e0e23032cc8131b7c98cc9`. The implementation is staged and
+uncommitted; there is **no exact-change tested commit or CI run**. The prior
+merge-head runs above are not evidence for this working-tree change. Parent
+independent review, final tested SHA and exact-head CI remain separate gates.
+
+TM-04/TM-05/TM-08/TM-10; P1-A2/P1-A5 remain **PARTIAL**, Phase 1 OPEN. The
+authoritative synthetic implementation decision above is preserved: no C fixture
+compilation, new sandbox policy execution or new network/listening negative
+control has run. The optional fixed CLI is implemented for parent use only after
+independent policy/code review. No executable/profile/descriptor/budget inputs,
+Node/compiler/SDK integration, installation or acquisition are introduced.
+
+Changed files (complete unit, including this preserved parent-owned record):
+
+- `experiments/host-isolation/_bounded_process.py`: one private repaired owner
+  loop, canonical private ready/status records, independent stdout/stderr and
+  elapsed result; fixed 120 s/16 MiB hard maxima and 2 s cleanup proof. No public
+  command or environment override. Both final signals are attempted even after
+  readiness/drain errors; no group-owner reaping before final KILL. Unknown
+  status/permission/reap/FD cleanup quarantines and retains owner references.
+- `experiments/extraction/run.py`: thin compatibility wrapper retains signature,
+  15 s/256 KiB caps, stdout/elapsed and content-free nonzero/launch-status
+  translation. Larger budgets reject before shared launch. The supervisor and
+  older host guard/policy are unchanged.
+- `experiments/extraction/test_harness.py`: existing portable lifecycle fault
+  seams now explicitly target the actual shared module, including the fixture
+  clock seam. Two added wrapper-compatibility tests prevent cap/result drift.
+- `experiments/opencode/native/synthetic_containment.py`: fixed C-only action,
+  typed deny-default policy and serializer, strict observations, clean six-state
+  environment, private owned artifacts and quarantine on uncertain cleanup.
+  Structured partial/failure evidence never emits target output/canaries/paths;
+  success requires all requested controls. Future observed evidence records
+  fixture/binary/policy/harness/owner/supervisor hashes and OS/kernel, not an
+  inferred Node version or compiler/native certification.
+- `experiments/opencode/native/containment_probe.c`: fixed synthetic filesystem,
+  fork, unauthorized spawn, separate direct exec, IPv4/IPv6 TCP/UDP/bind/listen
+  controls. Controlled invalid exec marker makes ENOEXEC a failure, not proof.
+  Owner-writable protected controls avoid DAC-based false positives; owned
+  canaries and protected hashes must remain unchanged. No private data printing.
+- `experiments/opencode/native/test_synthetic_containment.py`: 18 new pure/
+  portable tests, independently decoded behavioral policy tests (including quoted
+  injection-shaped roots), import/CLI closure, strict partial/duplicate/malformed
+  result rejection, ordinary failure/recovery, removal failure and real finite
+  owner runs with injected TERM+KILL EPERM, missing/malformed status and reap
+  failures. Quarantine, retained artifacts/references and no further launch are
+  asserted. Injection tests deliver real cleanup before reporting synthetic
+  faults; test-only removal occurs only after independent actual wait proof.
+- `experiments/opencode/native/README.md`: review-before-first-run command,
+  policy baseline, matrix, lifecycle ownership and explicit unsupported gates.
+- `docs/progress/phase-1-opencode-native.md`: this append and preserved primary
+  updates, staged together without rewriting earlier evidence.
+
+Verification: full integrated offline suites **472 PASS** = 392 Python and 80
+existing Node contract tests (retained 452 + 18 new native + 2 wrapper tests).
+Python 3.12 with ResourceWarning as error: selector 5, extraction 20, native 89,
+host-isolation 25, corpus 10, scoring 24, adapter 18, lexical 21, candidate 39,
+symbol 37, directcall 79, evaluation runner 25. Existing extraction tests exercise
+timeout, combined floods, cancellation, early EOF and retained-owner/descendant
+ordering through the shared implementation; existing supervisor tests retain
+parent-death coverage. `python3 scripts/check.py` passes foundation format/build/
+Clippy/Rust tests/docs/finite commands/intentional-failure rejection and local
+links. `cargo deny --locked --offline check` passes using cached advisories only.
+Staged secrets and staged/unstaged whitespace pass; final local documentation
+links pass. No online freshness, acquisition or actual C measurement is claimed.
+
+**Actual new C guard, clang fixture compilation, policy parser/path injection,
+fork/spawn/exec and network sandbox measurements: NOT RUN pending independent
+review.** No new C workflow step exists. `/usr/lib` and dyld are labeled only a
+SYNTHETIC C baseline, with exact ancestor metadata and no private read subtrees;
+they are not Node's minimum inventory. Bootstrap failure must stop, not restore
+fork or expand allowances. Group status/kill cannot prove an escaped descendant
+died. DNS/resolver IPC, Node/plugin/config behavior, V8/total-memory containment,
+actual type/consumed-file closure, provenance and native/product acceptance stay
+unproved. No delegate, watch, scheduler, commit, push, PR, merge or deployment was
+performed; the existing assigned worktree and full product scope remain intact.
