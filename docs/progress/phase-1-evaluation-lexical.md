@@ -6,6 +6,36 @@ TM-02/04/07/10. [Phase 1](../spec/phase-1-feasibility.md),
 and [ledger](phase-1-feasibility-ledger.md) remain authoritative; this unit does
 not complete extraction acceptance, justify Graphify adoption or authorize Phase 2.
 
+## Parent finalization and independent review
+
+Full committed implementation: `dc7dafe3eb9986262b89b46299f1cec12b3817cb`.
+Primary inspected all files and repaired avoidable all-match materialization:
+ranking now retains the best eight incrementally, at most nine candidates during
+insertion. Validation releases decoded lines after each file; selection decodes
+one file at a time rather than retaining the entire decoded input. The frozen
+overlap/path/line ordering is unchanged. Added a 1024-matching-line regression
+measuring peak live candidate objects; all **21** tests passed. This does not
+measure total RSS or establish a hostile-input/timeout boundary.
+
+Primary also removed the main-only PR-base filter from the new experiment
+workflow, preserving main-only push and all read-only/pinned/timeout settings.
+Offline foundation, cached cargo-deny, staged secrets and whitespace passed on
+the same implementation tree before commit.
+
+Joffrey independently reviewed that exact commit: no substantive findings or
+must-fix issues. His 21-test suite, 200 tiny independent ranking comparisons and
+commit-range whitespace checks passed; clean worktree retained. He did not rerun
+foundation or remote CI. No additional review of this evidence-only follow-up is
+claimed. The 20-test/uncommitted child snapshot below remains historical.
+
+Parent publishes a separate dependent PR on green, unmerged CI prerequisite
+PR #11 (itself based on PR #8). Only this task branch integrates the exact CI
+prerequisite; no PR or other task branch is merged, changed or retargeted. The
+lexical-layer diff remains five files. Its final full head/native CI run must
+be verified separately; inherited or sibling greens do not certify it. No actual
+corpus integration, full-envelope validation, pilot, worker or phase acceptance
+follows from these tiny conformance tests. No merge/deployment authorized.
+
 ## Bounded implementation and preregistration
 
 Only [pure lexical API](../../experiments/evaluation-lexical/lexical.py),
