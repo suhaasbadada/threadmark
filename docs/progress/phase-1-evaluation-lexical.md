@@ -36,6 +36,12 @@ be verified separately; inherited or sibling greens do not certify it. No actual
 corpus integration, full-envelope validation, pilot, worker or phase acceptance
 follows from these tiny conformance tests. No merge/deployment authorized.
 
+After integrating CI prerequisite `03df2fd42424807f83bc583b543b6770c0a34b55`,
+full combined revision `5ce9866feff224a7c7be4e35a3310a64bbb1c216` passed all
+21 lexical tests, offline foundation checks and tracked/history secret scanning.
+Lexical code is identical to Joffrey's reviewed revision. This subsequent
+evidence-only addition still needs its own final-head native CI run.
+
 ## Bounded implementation and preregistration
 
 Only [pure lexical API](../../experiments/evaluation-lexical/lexical.py),
