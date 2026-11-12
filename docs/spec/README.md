@@ -4,7 +4,7 @@
 
 ## Status and authority
 
-This is the proposed implementation contract for Threadmark, not a description of shipped software. All Phases 0–9 remain open. Publishing a specification does not satisfy an implementation gate.
+This is the implementation contract for Threadmark, not a description of shipped software. Phase 0 engineering evidence is accepted for its [recorded tested revision](../progress/phase-0.md); merge and publication remain unapproved. Phases 1–9 remain open. Publishing a specification does not satisfy an implementation gate.
 
 The background-companion model, human control, editable project knowledge, and coexistence with existing coding tools are agreed product requirements. Component choices, interaction details, and rollout sequence below are proposed designs unless explicitly identified otherwise. Runtime feasibility and usability must be demonstrated before support is advertised.
 
@@ -48,4 +48,4 @@ Every feature must cover success, cancellation, invalid scope, unavailable depen
 
 Phase 1 establishes representative repository/task fixtures and provisional latency/resource budgets before implementation optimizes against them. Phase 4 sets task-quality evaluation thresholds before held-out runs. Phase 8 freezes release budgets and evaluates whether the benefit outweighs latency, cost, and review effort. There are no measured performance claims yet.
 
-Decisions still open include the project license, desktop shell confirmation, extraction-worker packaging, supported inference profiles, exact host versions, shortcut assignments, retention durations, resource budgets, and public-release support commitments. Each is owned and resolved in its relevant phase rather than treated as an implicit promise.
+The project license is [MIT](../../LICENSE). Decisions still open include desktop shell confirmation, extraction-worker packaging, supported inference profiles, exact host versions, shortcut assignments, retention durations, resource budgets, and public-release support commitments. Each is owned and resolved in its relevant phase rather than treated as an implicit promise.

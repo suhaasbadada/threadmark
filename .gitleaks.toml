@@ -1,0 +1,9 @@
+title = "Threadmark: upstream credential rules plus a nonfunctional gate sentinel"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "threadmark-synthetic"
+description = "Nonfunctional synthetic fixture for gate verification"
+regex = '''THREADMARK_SYNTHETIC_SECRET=[A-Za-z0-9-]{20,}'''

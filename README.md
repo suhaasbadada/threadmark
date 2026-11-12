@@ -1,12 +1,35 @@
 # Threadmark
 
+[![CI](https://github.com/suhaasbadada/threadmark/actions/workflows/ci.yml/badge.svg)](https://github.com/suhaasbadada/threadmark/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 ## Project intelligence for every coding agent.
 
 Threadmark is a planned local-first background companion that turns rough developer intent into grounded, project-aware execution briefs. It keeps project understanding portable across coding agents without replacing their tools, permissions, or workflows. It is not another chat application, editor, task dashboard, or agent launcher.
 
 > Explain less. Carry context forward. Give every agent a better starting point.
 
-**Status: planning and documentation.** There is no installable application or released integration yet. Client capabilities described here are proposed designs informed by host documentation; they still require runtime certification.
+**Status: early foundation development.** The Rust workspace provides offline version/status diagnostics and synthetic scope/worker contract checks. There is no installable companion, persistent index, background service, inference provider or released integration yet. All product workflows below remain planned and require runtime validation.
+
+## Try the foundation from source
+
+With Git, [Rustup](https://rustup.rs/) and Python 3.11+ installed:
+
+```sh
+git clone https://github.com/suhaasbadada/threadmark.git
+cd threadmark
+cargo build --workspace --locked
+cargo run --locked -p threadmark-cli -- --version
+cargo run --locked -p threadmark-cli -- status
+cargo run --locked -p threadmark-cli -- smoke
+python3 scripts/check.py
+```
+
+Rustup uses the pinned toolchain automatically. `status` reports
+`service=not-connected`; `smoke` runs one synthetic check and exits without
+reading a project, contacting a provider, or sending a task. These are developer
+diagnostics, not a working product demo. See [development](docs/development.md)
+for security checks, fixtures and platform limits.
 
 ## The problem
 
@@ -38,6 +61,28 @@ A Rust core, local daemon, and CLI; a thin menu-bar/management shell with tempor
 
 The internal knowledge layer is provisionally named **mem-z**.
 
+```mermaid
+flowchart TB
+  Host["Existing coding hosts — own chat, permissions and execution"]
+  Adapter["Planned: certified host adapters"]
+  Daemon["Implemented: finite offline daemon checks\nPlanned: authorized local service and bounded jobs"]
+  Core["Implemented: Rust scope / worker contracts\nPlanned: mem-z SQLite evidence and retrieval"]
+  Worker["Planned: replaceable Graphify extraction"]
+  Inference["Planned, optional: explicitly authorized inference"]
+  Shell["Planned: occasional tray / management / review shell\nNot chat, editor, dashboard or agent launcher"]
+  CLI["Implemented: CLI version / status / synthetic smoke"]
+  Host -.-> Adapter
+  Adapter -.-> Daemon
+  Shell -.-> Daemon
+  CLI --> Daemon
+  Daemon --> Core
+  Core -.-> Worker
+  Worker -.-> Inference
+```
+
+Solid arrows describe current crate dependencies; dashed arrows are planned
+boundaries, not certified runtime connections. Hosts remain independent executors.
+
 ## Roadmap
 
 The scope is divided into [Phases 0–9](docs/roadmap.md):
@@ -53,7 +98,9 @@ The scope is divided into [Phases 0–9](docs/roadmap.md):
 8. Hardening and public beta
 9. Stable release and sustainable operation
 
-Phases are acceptance gates, not release dates. Only planning documents have been published; implementation and validation gates remain open.
+Phases are acceptance gates, not release dates. Foundation engineering evidence
+has passed review for the recorded revision; merge/publication and Phases 1–9 remain open. See the
+[progress record](docs/progress/phase-0.md).
 
 ## Documentation
 
@@ -69,4 +116,7 @@ Phases are acceptance gates, not release dates. Only planning documents have bee
 
 No perfect outputs, complete project comprehension, zero hallucinations, or guaranteed speedups. Added context must earn its place through evaluation. Agents remain responsible for discovery and execution, and their host environments retain their permission boundaries.
 
-Public visibility does not itself grant a software license. A project license has not yet been selected.
+## License
+
+[MIT](LICENSE) · Copyright 2026 Suhaas Badada. See [contributing](CONTRIBUTING.md)
+and [security reporting](SECURITY.md) before opening a PR or reporting a vulnerability.

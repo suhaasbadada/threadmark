@@ -1,0 +1,16 @@
+# No third-party Rust dependencies in Phase 0. Review this policy before adding any.
+[advisories]
+unmaintained = "all"
+yanked = "deny"
+
+[licenses]
+allow = ["MIT"]
+confidence-threshold = 0.95
+
+[bans]
+multiple-versions = "deny"
+wildcards = "deny"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

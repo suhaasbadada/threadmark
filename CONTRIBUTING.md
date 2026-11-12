@@ -1,6 +1,6 @@
 # Development process
 
-Threadmark is currently documentation-first. This guide establishes the intended SDLC; build/test commands will be added with the actual implementation, not invented in advance.
+Threadmark is in early foundation development. Start with the [reproducible development guide](docs/development.md) for the pinned toolchain, checks, fixtures, versioning and release rules. No production application or certified integration exists yet.
 
 ## Working principles
 
@@ -44,4 +44,4 @@ Use relative links within the repository. Clearly label proposed behavior and hy
 
 ## Licensing
 
-The repository's license has not been selected. Public visibility alone does not grant reuse rights; do not assume an open-source license or contributor terms that have not been adopted. Contributions and redistribution policy must be resolved before accepting outside code.
+Threadmark is licensed under [MIT](LICENSE), copyright 2026 Suhaas Badada. Contributions are accepted under the same license; no CLA is required. Preserve third-party attribution and obtain review before introducing dependencies or redistributed extraction workers.
