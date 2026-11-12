@@ -126,10 +126,11 @@ last-good state, cache or persistence. The test suite explicitly verifies answer
 separation, all four families, all-gold retention, scope isolation, pin forgery,
 validation negatives and fresh valid-value recovery.
 
-## Independent source contracts, not integration evidence
+## Independent source contracts and pinned compatibility limits
 
-Only authored files were read for compatibility design; no implementation was
-copied, imported or run from either retained checkout:
+The child read authored files for compatibility design without copying, importing
+or running either implementation. Primary subsequently ran a separately declared
+pinned pure-module value-compatibility check, recorded in the progress document:
 
 - PR #9 reviewed code `df49ecbfd38dbd6c39be3ff214bf2de383dd51a1`:
   [corpus schema](https://github.com/suhaasbadada/threadmark/blob/df49ecbfd38dbd6c39be3ff214bf2de383dd51a1/experiments/evaluation-corpus/corpus.py),
@@ -141,12 +142,14 @@ copied, imported or run from either retained checkout:
   Supplied PR head: `23ad31623dba76fa518de1865c2d92ee836225c1`.
 
 These are supplied immutable source references, not freshly queried remote state.
-**No actual full corpus or scorer integration was tested.** Tests use only a tiny
-independent authored artifact and pinned expected outputs. The parent may later
-declare a separately pinned pure-module compatibility check. A future scorer
-constructor still needs to translate this plain fixture's scope/anchors/gold/
-rejected/coverage into its own types; no import or caller/worker implementation is
-provided here. Retrieval normalization, complete coverage admission, candidate
-implementation, runner containment, review and exact-head CI remain separate gates.
+The committed unit tests use miniature independent artifacts, not either module.
+Primary's separate check exercised actual frozen corpus values through this
+adapter and explicit scorer-type construction across all tiers/scopes/families:
+24 cases passed, with six intentionally unavailable negation task mappings.
+This is schema/value compatibility only: oracle-fed samples are not retrieval
+predictions or quality measurements. No caller/worker implementation or imports
+of those modules are added here. Retrieval normalization, actual result coverage,
+candidate implementation, runner containment and exact-head CI remain separate
+gates. See the pinned protocol, observed limits and review attribution below.
 
 See [acceptance and verification](../../docs/progress/phase-1-evaluation-adapter.md).
