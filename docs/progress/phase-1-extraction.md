@@ -248,3 +248,112 @@ Passed locally on foundation HEAD plus this uncommitted unit:
 
 Parent must bind independent review and exact-head CI to its eventual commit.
 These local checks cannot close Phase 1.
+
+## Retained-owner cleanup repair (2026-11-12)
+
+TM-02/TM-04/TM-07/TM-10; P1-A1 failure/recovery and P1-A5 lifecycle
+evidence only, following [ADR 0006](../decisions/0006-phase-1-evaluation-protocol.md).
+The parent retained an actual `stderr` overflow failure: the original target
+could exit before `killpg`, which raised macOS `EPERM` and skipped reaping/pipe
+closure. Normal completion also reaped that group owner before signaling it,
+creating a stale/reusable PID window. Catching the permission error alone would
+not repair ownership. Earlier broad cleanup claims above describe the historical
+implementation, not proof that this failure was safe.
+
+`bounded()` now launches the existing authored
+`experiments/host-isolation/process_supervisor.py` with fixed interpreter
+`-I -S`, private readiness/status descriptors and an owner-control pipe. The
+helper owns the group, waits for the actual target and stays alive/unreaped
+through the final group signal. Target stdin is null; caller-owned clean
+environment policy is unchanged. Stdout remains byte-exact and separate from
+stderr; both count against the unchanged 256 KiB live aggregate ceiling and
+15-second worker deadline (tests may select stricter limits). Cleanup has its
+own two-second deadline, a 0.5-second TERM grace, then KILL and bounded reaping.
+SIGTERM/SIGINT are deferred across launch ownership recording and the entire
+cleanup/descriptor-restoration region. No helper API or evaluation-runner change.
+
+Canonical private target identity/wait-status records, successful final signaling
+and supervisor reaping are required cleanup proof. Missing proof or signaling /
+descriptor failures raise content-free `CleanupUnverified` and latch this Python
+process against further invocations; a still-unreaped owner reference is retained.
+Control EOF remains the existing helper's parent-death fallback, not a cleanup
+success acknowledgment. This is cooperative POSIX lifecycle evidence, **not**
+universal containment, escaped-session detection or orphan-grandchild reaping.
+Known cooperative descendants are checked using fixture-owned terminal evidence.
+
+The SIGTERM regression now calls the recorded PID `group_owner`, not `worker`,
+and removes its unsafe redundant signal after that owner was reaped. Failure
+cleanup kills only the still-owned driver (closing the helper control channel),
+never a released group ID. Other regressions assert final-signal/reap order,
+owner liveness, no early poll/communicate, descriptor/pipe closure, real
+launch-boundary and cleanup-time signals, actual aggregate overflow, per-failure
+fresh recovery, closed-output timeout, cooperative descendant reaping, actual
+nonzero target status, launch failure and truthful fail-closed cleanup errors.
+
+Local verification on base
+`07e1c802c3e84fc6d2d0b9afb9205ce68f3e4efb` plus these uncommitted changes:
+
+- `python3 -B -W error::ResourceWarning experiments/extraction/test_harness.py`:
+  all 17 tests passed in three consecutive final runs; no ResourceWarnings.
+- `python3 -B -W error::ResourceWarning experiments/host-isolation/test_harness.py`:
+  all 25 portable tests passed; this did not run the real macOS sandbox probe.
+- `python3 scripts/check.py` and `cargo deny --locked check`: passed.
+- After staging only the three repair files (preserving the parent's staged
+  integration work), `python3 scripts/secrets.py`, `git diff --cached --check`
+  and `python3 scripts/check.py docs`: passed.
+
+No Graphify/candidate worker, source-corpus execution, installation, network,
+Docker, runtime or product authority was added or exercised. Full integration,
+independent review, final tested commit SHA and exact-head CI remain parent-owned
+pending gates; no commit, push, PR or merge in this repair. Production Graphify
+adoption remains deferred and Phase 1 remains **OPEN**.
+
+## Cooperative fixture readiness repair (2026-11-12)
+
+TM-02/TM-04/TM-07/TM-10; P1-A1 failure/recovery and P1-A5 lifecycle
+evidence only. Parent-reported PR #20 failure in run `43302394977`, job
+`131476701572` (macos-15 arm64 image `20261104`, Python 3.15.2): the closed-output
+case raised timeout but had no fixture `terminal.json`. Inspection confirms the
+old 0.3-second deadline included interpreter startup/fork/handler installation;
+the supervisor's target-PID record does not attest fixture readiness. The
+failure is retained, not retried or waived here; no production defect was
+established by this fixture failure.
+
+Only `experiments/extraction/test_harness.py` changes behavior. A fixed synthetic
+worker now publishes an atomic ready record only after installing its TERM
+handler, receiving its child's readiness, and (in closed mode) closing both
+processes' output. The known child waits for an explicit owned release file.
+A private selector-entry seam waits at most five real seconds for readiness,
+checks both PIDs are alive, then releases work. Startup failure has a distinct
+assertion rather than counting as the intended active-work timeout.
+
+A test-only clock subtracts the **measured setup interval**, not invented elapsed
+time; subsequent active work and cleanup advance with real monotonic time. The
+active-work budget remains 0.3 seconds and aggregate test output remains 1 KiB.
+Closed mode must specifically time out; overflow mode must specifically exceed
+the aggregate output bound via its real descendant writer. The new delayed-start
+regression exercises both modes with a deliberate 0.45-second setup delay,
+asserting setup exceeds the active budget. This is synchronization/lifecycle
+evidence, **not** a launch-inclusive performance measurement. Production
+`run.py`, supervisor, 15-second/256-KiB budgets and two-second cleanup are untouched.
+
+Real TERM/KILL, supervisor target-wait proof, fixture descendant `waitpid`, exact
+ready/terminal PID matching, TERM exit status and both PIDs' absence remain
+required before deleting successful owned temporary state or launching fresh
+recovery. Any helper/assertion failure quarantines further invocations in that
+test process; it never signals recorded IDs after reap or fabricates missing
+terminal proof. Failed selector entry closes its own selector descriptor.
+
+Local verification on base `d0a5cba8164d88bd239f896009b48e807980fd48`
+plus this uncommitted repair, using Python 3.12.6:
+
+- Focused original/new readiness tests: 2 passed (both modes each).
+- Extraction suite after final selector-entry repair: all 18 tests passed with
+  ResourceWarnings treated as errors (the original 17 plus delayed-start test).
+- Host-isolation portable suite: all 25 tests passed with ResourceWarnings as
+  errors; no real sandbox probe, compilation or network test was invoked.
+- `python3 scripts/check.py` and `cargo deny --locked check`: passed.
+
+Parent owns independent review, final commit/tested SHA, full integration and
+native exact-head CI. No commit/push, runtime adoption, corpus execution,
+installation, Docker, provider access or Phase 1 closure is claimed.

@@ -22,7 +22,8 @@ def _dependencies(method):
     return (import_module("experiments.evaluation-corpus.corpus"),
             import_module("experiments.evaluation-adapter.adapter"),
             (import_module("experiments.evaluation-lexical.lexical") if method == "lexical"
-             else import_module("experiments.evaluation-symbol.symbol")),
+             else import_module("experiments.evaluation-symbol.symbol") if method == "symbol"
+             else import_module("experiments.evaluation-directcall.directcall")),
             import_module("experiments.evaluation-scoring.scoring"))
 
 
@@ -38,7 +39,7 @@ def build(artifact, selected_scope, family, *, method="lexical", canceled=None):
 
     Only the reviewed SMALL recipe is approved here. Its pin comes from authored
     repository policy, not artifact/candidate fields. Scope labels are consistency
-    values, NOT authentication. method is exactly lexical (default) or symbol;
+    values, NOT authentication. method is lexical (default), symbol or candidate;
     invalid methods block after the preparation probe, before dependencies.
     canceled(stage) is an optional synchronous probe
     at preparation, retrieval, admission and final_return; it cannot abort work.
@@ -69,10 +70,13 @@ def _build(artifact, selected_scope, family, *, method="lexical", canceled=None,
         # Freeze the sole mutable caller input before any probe/dependency call.
         selected = dict(selected_scope) if type(selected_scope) is dict else selected_scope
         checkpoint(stage)
-        if type(method) is not str or method not in ("lexical", "symbol"):
+        if type(method) is not str or method not in ("lexical", "symbol", "candidate"):
             raise _Closed("invalid_method")
         corpus, adapter, retriever, scoring = _dependencies(method)
+        trusted = import_module("experiments.evaluation-candidate._trusted")
         try:
+            if method == "candidate":
+                trusted._policy()
             adapter.scope(selected)
             if type(family) is not str or family not in adapter.FAMILIES:
                 raise ValueError("unsupported family")
@@ -95,14 +99,8 @@ def _build(artifact, selected_scope, family, *, method="lexical", canceled=None,
                 raise _Closed("unsupported_family")
             # Only adapter-produced immutable lineage enters the trusted fixture.
             # Its complete map includes irrelevant lines and all rejected anchors.
-            data = json.loads(case.fixture)
-            fixture = scoring.Fixture(
-                tuple(data["scope"][k] for k in scoring.SCOPE_KEYS),
-                tuple(data["coverage"]),
-                tuple(scoring.Anchor(**a) for a in data["anchors"]),
-                frozenset(scoring.Anchor(**a) for a in data["gold"]),
-                frozenset(scoring.Anchor(**a) for a in data["rejected"]),
-                data["family"])
+            expected = trusted._prepare(case, method)
+            fixture = expected.fixture
             method_task = case.arm_input.method_task
             task = json.loads(method_task)
             scoring.build_manifest(task)  # Actual task/schema/original-budget API.
@@ -111,6 +109,7 @@ def _build(artifact, selected_scope, family, *, method="lexical", canceled=None,
 
         stage = "retrieval"
         checkpoint(stage)
+        trusted._recheck(expected)
         # No fixture, oracle, coverage, hashes or private sidecar crosses this call.
         anchors = retriever.retrieve(case.arm_input.sources, task)
         if scoring.canonical(task) != method_task:
@@ -118,6 +117,9 @@ def _build(artifact, selected_scope, family, *, method="lexical", canceled=None,
 
         stage = "admission"
         checkpoint(stage)
+        trusted._recheck(expected)
+        if scoring.canonical(task) != method_task:
+            raise _Closed("task_changed")
         if type(anchors) is not tuple or any(type(a) is not retriever.Anchor for a in anchors):
             raise _Closed("malformed_retrieval")
         candidate = _envelope(scoring, fixture, [asdict(a) for a in anchors])
@@ -131,6 +133,9 @@ def _build(artifact, selected_scope, family, *, method="lexical", canceled=None,
         # Scorer metrics are internal plumbing, never returned/logged as results.
         stage = "final_return"
         checkpoint(stage)
+        trusted._recheck(expected)
+        if scoring.canonical(task) != method_task:
+            raise _Closed("task_changed")
         return Result("ready", "admitted_limited_envelope", original, payload)
     except _Closed as error:
         reason = error.args[0]

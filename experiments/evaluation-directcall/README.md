@@ -1,9 +1,10 @@
 # Evaluation-only static direct-call prerequisite
 
 **TM-02/04/07/10; P1-A1/P1-A5 PARTIAL. Phase 1 OPEN.** This is a conservative
-authored resolver for the frozen candidate arm, **pending independent policy and
-observed-coverage review, NOT ARMED**. It is not Graphify adoption, a production
-graph replacement, daemon, index, worker integration or comparative study.
+authored resolver for the frozen candidate arm. The standalone prerequisite was
+reviewed **NOT ARMED**; the new candidate/runner normalization integration requires
+fresh independent parent review before any actual candidate worker. It is not
+Graphify adoption, a production graph replacement, daemon, index or comparative study.
 The full [product](../../docs/product.md), [Phase 1](../../docs/spec/phase-1-feasibility.md)
 and proposed [ADR 0006](../../docs/decisions/0006-phase-1-evaluation-protocol.md)
 remain unchanged. No context/refinement/hosts/inference/UX/safety scope is waived.
@@ -22,6 +23,8 @@ python3 -B -m unittest discover -s experiments/evaluation-directcall -v
 project/worktree/revision/path/line/text. Both close with a generic `ValueError`
 without parser-content diagnostics, partial results, fallback, cache or mutation.
 There is no cancellation callback, process, timeout or resource-containment API.
+Directcall now owns its frozen six-field `Anchor` class rather than aliasing symbol;
+serialized values/ranking are unchanged, but exact selected-arm guards distinguish it.
 
 Inputs use exactly the existing symbol boundary: tuple of `(str path, bytes)`
 pairs, strictly increasing UTF-8 paths including the selected project root;
@@ -215,19 +218,23 @@ calls/zero-gap claims. There is deliberately **no `complete=true`**.
 
 The existing adapter's authored source-map envelope is a different fact from
 observed parsing/resolution and from language coverage. None can authorize the
-others. Future candidate **and** runner admission must independently reconstruct
+others. Candidate **and** runner admission independently reconstruct
 this policy and observations from the same trusted sources, reject missing/
 partial/mismatched data, validate exact anchors and count **all metadata** inside
 the full 8192-byte envelope. Retriever self-reported coverage is not authorization.
-This integration is intentionally absent; current runner/candidate do not select
-this arm, and no comparative run is permitted by these tests.
+The new shared private normalization is documented in
+[candidate](../evaluation-candidate/README.md) and its
+[staged evidence](../../docs/progress/phase-1-evaluation-directcall-admission.md).
+It adds compact policy/observation commitments without promoting source-map
+`complete` to semantic completeness. No comparative run is permitted by these tests.
 
 `policy_manifest()` returns immutable supplemental canonical bytes with version,
 Python grammar, explicit symbol internal-dependency SHA-256, preserved scorer
 contract/source and corpus/source pins, policy descriptions, pending-review state
 and a digest (excluding its own field). It does not rewrite the frozen scorer
 CONTRACT, schema, corpus recipe, algorithm pins, digest, historical
-`NOT_IMPLEMENTED` / `NOT_RUN` strings or runner binding list. The source of the
+`NOT_IMPLEMENTED` / `NOT_RUN` strings. The integration separately extends runner
+code bindings with directcall and the shared normalization helper. The source of the
 fixed repository-owned symbol module is checked once at import through its loader;
 the pure extraction/retrieval calls perform **no input filesystem IO**. Missing/
 changed import dependencies fail rather than choosing another parser. Pins are
@@ -251,7 +258,7 @@ UTF-8/CRLF/blank/multiline coordinates, identity/revision/rename/delete/fresh
 recovery, late invalid input, dependency/coverage/endpoint/span rejection and
 exact inclusive canonical budgets. No medium/large retrieval, metrics or study.
 
-No new actual runner worker, candidate/runner integration, daemon, storage, source
+No actual candidate-arm worker has been run by the integration child. No daemon, storage, source
 discovery/export, listener, credential/provider/config/clipboard/telemetry/login,
 site/runtime/dependency/lockfile/Docker or deployment capability is added.
 Review, committed implementation SHA and exact-head CI remain parent-owned.

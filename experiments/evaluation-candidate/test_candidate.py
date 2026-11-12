@@ -453,7 +453,7 @@ class SelectedMethodTests(unittest.TestCase):
                 raise AssertionError("must not compare")
             def __str__(self):
                 raise AssertionError("must not coerce")
-        for method in (None, True, 1, b"symbol", [], {}, "", "Symbol", "candidate",
+        for method in (None, True, 1, b"symbol", [], {}, "", "Symbol", "directcall",
                        "experiments.evaluation-symbol.symbol", String("symbol"), Hostile()):
             calls = []
             with patch.object(candidate, "_dependencies") as dependencies:

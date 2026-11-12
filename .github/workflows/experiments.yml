@@ -26,22 +26,26 @@ jobs:
           persist-credentials: false
       - name: Check runner-provided runtimes (no installation)
         run: |
-          python3 -c 'import sys; assert sys.version_info >= (3, 10)'
+          python3 -B scripts/ci_python.py
           node -e 'if (Number(process.versions.node.split(".")[0]) < 22) process.exit(1)'
+      - name: Verify selected reviewed Python grammar
+        run: |
+          "$THREADMARK_PYTHON" -c 'import sys; assert sys.version_info[:2] == (3, 12); print(sys.version); print("native AST grammar:", tuple(sys.version_info[:2]))'
+          "$THREADMARK_PYTHON" -B scripts/test_ci_python.py
       - name: Python offline contracts and fixture preparation
         run: |
-          python3 -B experiments/extraction/test_harness.py
-          python3 -B -m unittest discover -s experiments/host-isolation -p 'test_*.py' -v
-          python3 -B -m unittest discover -s experiments/evaluation-corpus -v
-          python3 -B -m unittest discover -s experiments/evaluation-scoring -v
-          python3 -B -m unittest discover -s experiments/evaluation-adapter -v
-          python3 -B -m unittest discover -s experiments/evaluation-lexical -v
-          python3 -B -m unittest discover -s experiments/evaluation-candidate -v
-          python3 -B -m unittest discover -s experiments/evaluation-symbol -v
-          python3 -B -m unittest discover -s experiments/evaluation-directcall -v
-          python3 -B -m unittest discover -s experiments/evaluation-runner -v
+          "$THREADMARK_PYTHON" -B experiments/extraction/test_harness.py
+          "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/host-isolation -p 'test_*.py' -v
+          "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/evaluation-corpus -v
+          "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/evaluation-scoring -v
+          "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/evaluation-adapter -v
+          "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/evaluation-lexical -v
+          "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/evaluation-candidate -v
+          "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/evaluation-symbol -v
+          "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/evaluation-directcall -v
+          "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/evaluation-runner -v
       - name: Node offline host and UX contracts
         run: node --test experiments/opencode/contract.test.mjs experiments/t3-handoff/prepare.test.mjs experiments/ux-walkthrough/model.test.mjs
       - name: Actual synthetic macOS guard (never an installed host)
         if: runner.os == 'macOS'
-        run: python3 -B experiments/host-isolation/harness.py --synthetic-guard
+        run: '"$THREADMARK_PYTHON" -B experiments/host-isolation/harness.py --synthetic-guard'

@@ -22,7 +22,14 @@ def _dependency():
     return _symbol
 
 
-Anchor = _symbol.Anchor
+@dataclass(frozen=True)
+class Anchor:
+    project: str
+    worktree: str
+    revision: str
+    path: str
+    line: int
+    text: str
 
 
 @dataclass(frozen=True)
