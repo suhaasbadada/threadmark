@@ -1,6 +1,6 @@
 # Product requirements
 
-[Documentation home](../README.md) · [Roadmap](roadmap.md)
+[Documentation home](../README.md) · [Roadmap](roadmap.md) · [Detailed phase specifications](spec/README.md)
 
 **Status:** proposed product behavior, not shipped functionality.
 
@@ -25,12 +25,16 @@ The first audience is an individual developer working locally on macOS. The arch
 | TM-09 | Maintain useful knowledge across clients. | An endorsed correction applies in a later relevant request in another certified client. |
 | TM-10 | Keep the user in control. | Cancel sends nothing; no silent execution, credential reuse, or permission escalation occurs. |
 
-## Application areas
+## Background-companion experience
+
+The coding environment remains the developer's workspace. Threadmark runs in the menu bar, maintains knowledge in the background, and offers native host commands/hooks where certified. Explicit refinement uses host review where possible or a temporary companion panel where necessary. There is no replacement chat, editor, task dashboard, or agent launcher.
+
+The menu-bar surface shows project/status, pause/resume, management, connections, and quit. A small management window is opened occasionally for the following areas—not as the destination for everyday coding:
 
 - **Projects:** add folders, select a project, inspect indexing progress, freshness, exclusions, and gaps.
 - **Context:** editable notes, constraints, decisions, pitfalls, sources, scopes, conflicts, and history.
 - **Connections:** inference providers separately from coding-client adapters; exact capability and trust status.
-- **Activity:** original request, selected evidence, generated brief, approval, delivery state, and observable outcomes.
+- **Receipts:** inspect limited preparation/approval/handoff metadata in project details. Content-bearing history requires explicit retention consent; original text and evidence remain ephemeral by default.
 - **Privacy:** source access, network destinations, budgets, retention, export, and forgetting.
 
 ## Onboarding
@@ -38,6 +42,8 @@ The first audience is an individual developer working locally on macOS. The arch
 Add project → approve sources → choose inference profile if needed → inspect scan scope and estimated work/cost → Build understanding → review gaps → add/correct context → enable a certified client adapter.
 
 Structural-only indexing does not require a model. Semantic extraction and refinement require explicitly authorized inference. A coding-agent subscription or login does not automatically authorize Threadmark to reuse its tokens as an API credential.
+
+Closing management leaves the companion running; Quit stops owned background work. Launch-at-login is opt-in. Project identity is visible during refinement; a host/worktree mismatch requires resolution rather than silently using the menu-bar selection. Routine updates do not generate popups. Detailed journeys, status semantics, privacy defaults, and accessibility acceptance appear in [Phase 3](spec/phase-3-background-experience.md).
 
 ## Modes
 

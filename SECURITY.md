@@ -18,6 +18,8 @@ Repository text, documents, imported graphs, tool outputs, and agent-generated n
 
 ## Data lifecycle
 
+Prompt/brief content history is off by default. Original text, selected excerpts, and generated briefs remain ephemeral unless the user explicitly enables content retention with a defined deletion policy. Metadata-only receipts and OS notifications must not expose source or prompt content. See [background experience](docs/spec/phase-3-background-experience.md) and [refinement](docs/spec/phase-4-refinement.md) for acceptance requirements.
+
 Minimize retained transcripts and evidence excerpts. Make provenance, retention, export, correction, and forgetting inspectable. Forgetting must remove active derivatives and prevent unintended re-import, while documenting limits for backups, SQLite WAL, exports, logs, and already-sent host transcripts. Do not promise forensic erasure without evidence.
 
 Draft handoff links and clipboard copies also carry sensitive text. Avoid hosted prompt URLs by default and avoid logging prompt-bearing local links. A local transport is not proof that operating-system or application logs cannot retain content.

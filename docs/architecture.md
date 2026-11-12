@@ -1,6 +1,6 @@
 # Architecture and knowledge lifecycle
 
-[Documentation home](../README.md) · [Integrations](integrations.md)
+[Documentation home](../README.md) · [Integrations](integrations.md) · [Phase specifications](spec/README.md)
 
 **Status:** proposed architecture. Dependencies, packaging, and performance require validation.
 
@@ -9,11 +9,13 @@
 - **Rust core:** project identity, knowledge records, retrieval, freshness, and execution-brief logic.
 - **Local daemon:** authorized API, bounded jobs, transports, and adapter coordination.
 - **CLI:** automation and diagnostics over the same core contracts.
-- **Desktop UI:** a thin client for onboarding, context editing, preview, and delivery. Tauri is the initial candidate, subject to accessibility and packaging tests.
+- **Companion shell:** a menu-bar presence and occasional management window for onboarding, context editing, connections, and privacy, plus temporary review/handoff panels. Native host UI is preferred for routine refinement. Tauri is the initial candidate, subject to accessibility and packaging tests. No replacement coding UI is planned.
 - **Client adapters:** small native plugins/hooks or MCP transports where supported. TypeScript may be required by a host SDK.
 - **Extraction workers:** versioned, replaceable structural and semantic extraction.
 
 Start with three Rust crates—core, daemon, and CLI—rather than a distributed service per feature. Use SQLite transactions, WAL, FTS5, and adjacency tables. Do not add an external graph database, unsafe Rust, or custom allocator without a demonstrated requirement.
+
+The shell does not become an independent executor or own a parallel conversation model. Window close and process quit have distinct lifecycle semantics. Phase [2](spec/phase-2-knowledge-core.md) specifies knowledge/job ownership, Phase [3](spec/phase-3-background-experience.md) specifies shell behavior, and Phase [4](spec/phase-4-refinement.md) specifies preparation/approval boundaries. Concrete schemas and protocols remain implementation deliverables, not claims that an API already exists.
 
 ## mem-z
 
@@ -56,6 +58,8 @@ Project identity uses a stable local identifier and verified repository aliases.
 Version every extraction, context/brief request, observation, and delivery record. Bind requests to authorized project/worktree scope, source revision, original text, attachment metadata, mode, and budgets. Caller-supplied IDs are not authorization.
 
 Keep preparation and delivery separate. A brief can be ready, require input, fail, or be canceled independently of whether it is copied, handed to a composer, admitted by a host, or left in an unknown delivery state.
+
+Approval binds exact brief content, destination, attachments, and scope; material changes invalidate it. Content-bearing prompts/briefs are ephemeral by default, with explicit retention consent for any persisted history. Metadata receipts must not leak private content.
 
 Use host idempotency keys where documented. An unknown send result is reconciled, never retried blindly. A successful preparation, host admission, completed tool, or green test is not a blanket claim of successful implementation.
 

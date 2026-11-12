@@ -1,8 +1,10 @@
 # Coding-environment integrations
 
-[Documentation home](../README.md) · [Roadmap](roadmap.md)
+[Documentation home](../README.md) · [Roadmap](roadmap.md) · [MVP specification](spec/phase-5-mvp-integrations.md)
 
 **No Threadmark integration is shipped or runtime-certified yet.** Host documentation informs the following proposed workflows; versions and environments must be tested before support is advertised. Command names are placeholders, not installation instructions.
+
+Threadmark runs in the background. Prefer native host invocation/review; use a temporary companion review surface only where needed. The management window is not a replacement conversation or coding workspace. Defaults do not persist prompt/brief content; retained content history requires explicit consent.
 
 ## Four distinct paths
 
@@ -17,7 +19,7 @@ Capability manifests record mode, host, version, execution environment, capture 
 
 Proposed flow: `/threadmark-refine <request>` → server-owned preparation with prompt attachments and delivery mode → TUI preview → explicit approval → one normal session admission.
 
-Use a server command for attachment fidelity and a pending-brief/approval contract for the UI. Preserve original input in Threadmark activity. Use a client-generated message ID and supported admission reconciliation rather than blind retries. Closing the preview or disconnecting is not approval.
+Use a server command for attachment fidelity and a pending-brief/approval contract for the UI. Preserve original input in ephemeral review or explicitly enabled retained history. Bind approval to exact content, attachments, destination, and scope. Use a client-generated message ID and supported admission reconciliation rather than blind retries. Closing the preview or disconnecting is not approval.
 
 Opt-in automatic Context uses a non-persisting context hook with a stable turn-scoped evidence packet. Deduplicate across tool continuations. Do not mutate persisted user input by default, particularly when another client such as T3 maintains its own visible transcript.
 

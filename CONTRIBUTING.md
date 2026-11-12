@@ -8,6 +8,7 @@ Threadmark is currently documentation-first. This guide establishes the intended
 - Make the smallest complete, reversible change consistent with the architecture.
 - Preserve unrelated work and use task-isolated branches/worktrees rather than another task's checkout.
 - Keep scope tied to a [roadmap phase](docs/roadmap.md) and [product requirement](docs/product.md).
+- Use the [phase specifications](docs/spec/README.md) for behavior and stable acceptance IDs. Implementation work items and evidence records must reference the applicable IDs; specification publication does not close a phase.
 - Distinguish documentation-backed possibilities, prototypes, certified integrations, and released behavior.
 
 ## Change workflow

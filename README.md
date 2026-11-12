@@ -2,7 +2,7 @@
 
 ## Project intelligence for every coding agent.
 
-Threadmark is a planned local-first application that turns rough developer intent into grounded, project-aware execution briefs. It keeps project understanding portable across coding agents without replacing their tools, permissions, or workflows.
+Threadmark is a planned local-first background companion that turns rough developer intent into grounded, project-aware execution briefs. It keeps project understanding portable across coding agents without replacing their tools, permissions, or workflows. It is not another chat application, editor, task dashboard, or agent launcher.
 
 > Explain less. Carry context forward. Give every agent a better starting point.
 
@@ -18,10 +18,10 @@ Threadmark aims to supply the right evidence for the task, identify likely failu
 
 1. Add a project and approve which sources Threadmark may read.
 2. Build project understanding: a source-backed map, evidence index, and editable decisions. Structural analysis runs locally; inference-backed stages require an explicit provider and budget.
-3. Add or correct context in the app. Your decisions survive reindexing and remain distinguishable from observed implementation facts.
-4. Enter a rough request and inspect a brief containing relevant context, constraints, unknowns, likely failure mechanisms, and verification guidance.
-5. Edit, approve, and hand it to your coding agent. Canceling refinement never submits a task.
-6. Keep understanding current as files change; carry accepted corrections into other certified clients.
+3. Add or correct context in an occasional management window. Your decisions survive reindexing and remain distinguishable from observed implementation facts.
+4. Continue working in your coding tool. Invoke explicit refinement through a supported host command or a small companion surface; inspect relevant context, constraints, unknowns, likely failure mechanisms, and verification guidance.
+5. Edit, approve, and hand the brief to your coding tool through its certified workflow. Canceling refinement never submits a task; draft-only bridges leave Send to you.
+6. Threadmark stays in the menu bar and maintains understanding in the background. Carry accepted corrections into other certified clients without adopting a new coding workspace.
 
 ## Working with your tools
 
@@ -34,7 +34,7 @@ MCP access, automatic context injection, editable prompt refinement, and sending
 
 ## Architecture direction
 
-A Rust core, local daemon, and CLI; a thin desktop UI; SQLite-backed evidence and retrieval; and small host-specific adapters. Graphify is the initial candidate for a replaceable structural/semantic extraction worker, not an unquestionable source of truth or a mandatory graph database.
+A Rust core, local daemon, and CLI; a thin menu-bar/management shell with temporary review surfaces; SQLite-backed evidence and retrieval; and small host-specific adapters. Graphify is the initial candidate for a replaceable structural/semantic extraction worker, not an unquestionable source of truth or a mandatory graph database.
 
 The internal knowledge layer is provisionally named **mem-z**.
 
@@ -45,7 +45,7 @@ The scope is divided into [Phases 0–9](docs/roadmap.md):
 0. Engineering and SDLC foundation
 1. Feasibility and integration contracts
 2. Rust mem-z core
-3. Desktop onboarding and editable context
+3. Background onboarding and editable context
 4. Grounded context and prompt refinement
 5. First complete OpenCode and T3 workflows — functional MVP
 6. Cross-agent continuity — private alpha
@@ -58,6 +58,7 @@ Phases are acceptance gates, not release dates. Only planning documents have bee
 ## Documentation
 
 - [Product requirements and user experience](docs/product.md)
+- [Detailed phase-wise product specification](docs/spec/README.md) — ten phase contracts with journeys, behavior, failure paths, and acceptance IDs
 - [Architecture and knowledge lifecycle](docs/architecture.md)
 - [Coding-environment integrations](docs/integrations.md)
 - [Numbered phases and exit gates](docs/roadmap.md)

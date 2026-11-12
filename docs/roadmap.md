@@ -1,8 +1,10 @@
 # Roadmap: Phases 0–9
 
-[Documentation home](../README.md) · [Product requirements](product.md)
+[Documentation home](../README.md) · [Product requirements](product.md) · [Detailed phase-wise specification](spec/README.md)
 
 **Current status: planning documents published. No implementation phase is complete.** These are gated scopes, not calendar estimates. Security, tests, and failure handling begin with each feature; Phase 8 does not postpone them.
+
+This is the concise roadmap. The linked specifications expand each phase into user outcomes, behavior, work packages, exclusions, and testable acceptance IDs. Threadmark is a background companion; no phase introduces a replacement chat, editor, task dashboard, or agent launcher.
 
 ## Release boundaries
 
@@ -13,6 +15,8 @@
 
 ### Phase 0 — Engineering and SDLC foundation
 
+[Full product specification and acceptance criteria](spec/phase-0-foundation.md)
+
 **Scope:** requirements/non-goals, canonical repository and task isolation, architecture decisions, supported Rust toolchain, CI, review standards, test strategy, secret handling, threat model, dependency/license policy, release/versioning rules, and evaluation fixture format.
 
 **Deliverables:** requirement IDs, ADRs, contributor guide, initial backlog, risk register, reproducible workspace/CI, and definition of done.
@@ -20,6 +24,8 @@
 **Exit:** a clean checkout builds, formats, lints, and passes a bounded smoke test in CI with secret checks; scope and critical risks are reviewed. This documentation commit is not completion of Phase 0.
 
 ### Phase 1 — Feasibility and integration contracts
+
+[Full product specification and acceptance criteria](spec/phase-1-feasibility.md)
 
 **Scope:** disposable Graphify extraction/provider/packaging spikes; OpenCode command, preview, context, and attachment behavior; T3 draft prefill; inference adapters; a representative task/evidence corpus and retrieval baselines.
 
@@ -29,21 +35,27 @@
 
 ### Phase 2 — Rust mem-z core
 
+[Full product specification and acceptance criteria](spec/phase-2-knowledge-core.md)
+
 **Scope:** project identity and source authorization, structural indexing/graph import, SQLite evidence store, lexical/symbol retrieval, freshness/coverage, bounded incremental updates, restart/migration recovery, export/forget, and versioned local API.
 
 **Deliverables:** daemon/CLI and tested extraction, storage, and retrieval contracts. Structural-only operation needs no inference.
 
 **Exit:** a real project can be indexed and queried with resolvable evidence. File changes, renames, deletion, and branch switches do not silently leave invalid facts active. Projects remain isolated and recovery preserves knowledge.
 
-### Phase 3 — Desktop onboarding and editable context
+### Phase 3 — Background onboarding and editable context
+
+[Full product specification and acceptance criteria](spec/phase-3-background-experience.md)
 
 **Scope:** add/select projects, Build understanding, source and egress consent, inference profiles, estimates/budgets, progress/cancel/resume, context CRUD, scopes, history/conflicts, activity inspection, and privacy controls.
 
-**Deliverables:** a thin desktop app using the same daemon API; semantic extraction jobs only under an authorized profile and budget.
+**Deliverables:** a thin menu-bar companion and occasional management window using the same daemon API; semantic extraction jobs only under an authorized profile and budget. Native host UI or temporary review surfaces serve routine refinement, not a standalone workbench.
 
 **Exit:** a user excludes sensitive content, builds understanding, adds/corrects context, rebuilds without losing edits, and forgets an entry without active retrieval resurrecting it. Partial, stale, and failed coverage remain visible.
 
 ### Phase 4 — Grounded context and prompt refinement
+
+[Full product specification and acceptance criteria](spec/phase-4-refinement.md)
 
 **Scope:** relevant evidence/decisions, source rechecks, missing-context detection, applicable failure guidance, proposed verification, explicit inference-backed refinement, original/diff preview, editing, clarification, and output budgets.
 
@@ -52,6 +64,8 @@
 **Exit:** constraints, negations, identifiers, scope, and permissions survive. Unsupported additions are labeled or rejected. Material ambiguity is exposed. Canceling never sends. Compare raw, retrieval-only, refinement, and refinement-with-risk-guidance using the same executor and supplied facts.
 
 ### Phase 5 — First complete OpenCode and T3 workflows
+
+[Full product specification and acceptance criteria](spec/phase-5-mvp-integrations.md)
 
 **Scope:** OpenCode server/TUI command → preview → approval → one admission; opt-in context, sources, faithful attachments, status, owned config install/uninstall; T3 desktop draft prefill with copy fallback. OpenCode Desktop composer support stays experimental until independently certified.
 
@@ -63,6 +77,8 @@
 
 ### Phase 6 — Cross-agent continuity
 
+[Full product specification and acceptance criteria](spec/phase-6-cross-agent.md)
+
 **Scope:** Claude Code and Codex adapters, user-approved correction inbox, and T3 provider-specific certification where applicable. No universal inheritance assumptions.
 
 **Deliverables:** both named adapters with a certified mode, correction provenance, and request-scoped observational feedback.
@@ -73,6 +89,8 @@
 
 ### Phase 7 — Broader coding-environment coverage
 
+[Full product specification and acceptance criteria](spec/phase-7-coverage.md)
+
 **Scope:** Antigravity, Copilot CLI/VS Code, Cursor's supported subset, and selected further clients. Version, environment, mode, capture, and acknowledgment differences are explicit.
 
 **Deliverables:** reusable adapter conformance tests, compatibility manifests, and host-specific install/trust guidance.
@@ -81,6 +99,8 @@
 
 ### Phase 8 — Hardening and public beta
 
+[Full product specification and acceptance criteria](spec/phase-8-beta.md)
+
 **Scope:** performance/resource profiling, large repositories, adversarial memory/prompt injection, local API/privacy review, recovery/migrations, accessibility, signed/notarized packaging, updates, documentation, opt-in content-free diagnostics, and real-user evaluation.
 
 **Deliverables:** security/performance/reliability evidence, reproducible beta artifacts, and support runbooks.
@@ -88,6 +108,8 @@
 **Exit:** no unresolved release-blocking leakage, intent inversion, data loss, unsafe submission, or permission bypass. Establish bounded resources and measured user value against chosen baselines without meaningful correctness regression. Publishing requires explicit release approval.
 
 ### Phase 9 — Stable release and sustainable operation
+
+[Full product specification and acceptance criteria](spec/phase-9-stable.md)
 
 **Scope:** stable contract/version policy, supported client/OS matrix, compatibility regression CI, update/rollback recovery, dependency/host-change monitoring, incident response, privacy-respecting support, and ongoing evaluation.
 
