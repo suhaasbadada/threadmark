@@ -38,6 +38,7 @@ jobs:
           python3 -B -m unittest discover -s experiments/evaluation-lexical -v
           python3 -B -m unittest discover -s experiments/evaluation-candidate -v
           python3 -B -m unittest discover -s experiments/evaluation-symbol -v
+          python3 -B -m unittest discover -s experiments/evaluation-runner -v
       - name: Node offline host and UX contracts
         run: node --test experiments/opencode/contract.test.mjs experiments/t3-handoff/prepare.test.mjs experiments/ux-walkthrough/model.test.mjs
       - name: Actual synthetic macOS guard (never an installed host)
