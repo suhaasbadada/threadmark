@@ -87,6 +87,9 @@ class PolicyTests(unittest.TestCase):
             self.assertFalse(policy.allows("file-read*", path), path)
             self.assertFalse(policy.allows("file-write*", path), path)
         self.assertTrue(policy.allows("file-read-metadata", Path("/")))
+        self.assertTrue(policy.allows("file-read-data", Path("/")))
+        for path in (Path("/Users"), Path("/private"), root, root / "sibling"):
+            self.assertFalse(policy.allows("file-read-data", path))
         self.assertFalse(policy.allows("file-read-metadata", Path("/private/unrelated")))
         for path in (root / "workspace" / "check", root / "probe", root / "guard.sb"):
             self.assertFalse(policy.allows("file-write*", path))

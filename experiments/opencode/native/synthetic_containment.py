@@ -85,7 +85,7 @@ class Policy:
             if (not rule.path.is_absolute() or ".." in rule.path.parts
                     or rule.kind not in ("literal", "subpath")
                     or not rule.operations
-                    or any(op not in ("file-read*", "file-read-metadata", "file-write*",
+                    or any(op not in ("file-read*", "file-read-data", "file-read-metadata", "file-write*",
                                       "file-map-executable", "process-exec")
                            for op in rule.operations)):
                 raise Blocked("invalid fixed policy model")
@@ -98,8 +98,11 @@ def policy(root):
         raise Blocked("invalid owned root")
     executable = root / "probe"
     rules = [Rule(("process-exec",), "literal", executable),
-             Rule(("file-read*", "file-map-executable"), "literal", executable),
-             Rule(("file-read*",), "literal", root / "read-canary")]
+              Rule(("file-read*", "file-map-executable"), "literal", executable),
+             Rule(("file-read*",), "literal", root / "read-canary"),
+             # Diagnostic candidate: dyld opens the root directory itself.
+             # This permits neither recursive reads nor bytes beneath '/'.
+             Rule(("file-read-data",), "literal", Path("/"))]
     for name in STATE:
         rules.append(Rule(("file-read*", "file-write*"), "subpath", root / "state" / name))
     for path in (Path("/usr/lib"), Path("/System/Library/dyld")):

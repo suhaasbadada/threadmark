@@ -236,7 +236,9 @@ The policy is deny-default, without network or process-fork allowances. It
 permits only literal fixture exec, individual fixture/canary reads, exact ancestor
 metadata and writes into six fresh owned state directories. `/usr/lib` and
 `/System/Library/dyld` subtrees are an explicitly **SYNTHETIC C baseline**, not
-Node's reviewed minimum inventory. `/` has literal metadata only. Private/home/
+Node's reviewed minimum inventory. A diagnostic policy candidate additionally
+allows `file-read-data` on the **literal `/` directory only**, not its descendants,
+to investigate dyld bootstrap. This is not a recursive root read allowance. Private/home/
 repository read subtrees and workspace/probe/policy/inventory writes are absent.
 SBPL strings reject controls/non-ASCII and escape quotes/backslashes. The actual
 artifact root deliberately contains quotes and injection-shaped text. Pure tests

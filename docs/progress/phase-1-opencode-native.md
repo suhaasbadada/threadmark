@@ -663,3 +663,37 @@ tests pass. Primary authorizes one **diagnostic-only** repeat with the exact sam
 policy and C fixture, retaining bounded stderr privately for root-cause inspection
 without printing it or publishing private paths. This is evidence collection, not
 a blind success retry or permission expansion. Compiler/Node/SDK remain CLOSED.
+
+## Bootstrap diagnosis and narrow policy candidate
+
+The diagnostic-only repeat again blocked before any fixture observation: mode
+`filesystem`, target exit **-6 (SIGABRT)**, zero stdout/stderr, empty stderr
+SHA-256 `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+Both parser controls passed; C binary identity matched the first run. Cleanup
+was verified, no Node/TypeScript/host ran, and private bounded diagnostic evidence
+was retained outside the repository. No raw captured output was published.
+
+The existing independently exercised host guard documents that dyld opens the
+root directory itself. The new policy allowed root metadata but not that read.
+This is a **bootstrap hypothesis, not an observed root cause**: the abort supplied
+no target diagnostic. Targeted system-log inspection did not establish a usable
+denial record. Unattributed crash reports were not treated as owned evidence.
+
+Primary proposes exactly one narrow candidate change for independent review:
+`file-read-data` on **literal `/` only**, retaining existing root metadata. This
+can expose root directory entries, not descendant file bytes; it grants no
+recursive root, private/home/repository reads, writes, fork/spawn or network.
+Pure policy tests require literal root-data access and deny it for `/Users`,
+`/private`, owned ancestors and sibling canaries. No further measured run is
+authorized until this candidate's independent safety review and a new explicit
+primary diagnostic decision. No broad permission expansion is inferred from the
+failed bootstrap, and all compiler/SDK/product gates remain CLOSED.
+
+Joffrey independently reviewed this literal-root candidate and its diagnostic
+changes, found no blocking findings, and passed all 11 pure policy tests. He
+confirmed exact literal SBPL scope, unchanged fork/network restrictions and that
+pure operation-name matching is not actual SBPL wildcard/runtime proof. Primary
+now authorizes **one exact fixed C-only diagnostic candidate run** with only that
+reviewed literal root-data addition. No other relaxation or automatic retry is
+authorized. The first two failures above remain evidence even if it bootstraps;
+all actual denial controls must still pass before any synthetic success claim.
