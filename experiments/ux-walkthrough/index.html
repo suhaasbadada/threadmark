@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <title>Synthetic context walkthrough</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.mjs"></script>
+</head>
+<body>
+  <header><strong>Synthetic feasibility prototype — no app, indexing, inference, copy or send.</strong> Memory only; reload discards changes. Not installed or published.<p class="identity" id="identity">No project selected</p></header>
+  <main>
+    <h1>Context walkthrough</h1>
+    <p>Occasional project inspection and temporary review, not a coding workspace. Use synthetic text only.</p>
+    <label for="theme">Appearance</label>
+    <select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select>
+    <section aria-labelledby="project-heading">
+      <h2 id="project-heading">1. Select fixture scope</h2>
+      <label for="project">Synthetic project</label>
+      <select id="project"><option value="">Choose a fixture</option><option value="fixture-cedar">Cedar — fixture-cedar</option><option value="fixture-cedar-lab">Cedar Lab — fixture-cedar-lab</option></select>
+      <label for="worktree">Worktree fixture</label><select id="worktree"><option value="primary">Declared worktree</option><option value="alternate">Alternate worktree (mismatch)</option></select>
+      <label for="revision">Revision fixture</label><select id="revision"><option value="current">Declared revision</option><option value="changed">Changed revision (mismatch)</option></select>
+      <p id="scope">No fixture context selected.</p>
+      <p>Source scope explanation: only the predeclared decision excerpt below is available. Excluded: fixture private-notes/, generated/, external paths and unsupported binary sources. No files are selected, opened or indexed. Exclusions are explanatory, not filesystem controls.</p>
+      <h3>Evidence thread — fixture only</h3>
+      <p id="rule"></p><p id="anchor"></p>
+      <p>Provenance: hand-authored synthetic decision, not observed implementation. Coverage: one decision excerpt; implementation and permissions unknown. The other project's conflicting decision is never included.</p>
+      <label><input type="checkbox" id="stale"> Simulate changed source / stale evidence</label>
+      <label><input type="checkbox" id="unavailable"> Simulate unavailable daemon (no connection attempted)</label>
+    </section>
+    <section aria-labelledby="review-heading">
+      <h2 id="review-heading">2. Temporary review</h2>
+      <p class="identity" id="review-identity"></p>
+      <h3>Original fixture request (retained)</h3><p id="original"></p>
+      <label for="choice">Material ambiguity: who may invite? Proposed example only, not permission to act.</label>
+      <select id="choice"><option value="">Leave unresolved — review blocked</option><option value="owners">Propose owners only</option><option value="members">Propose all members</option></select>
+      <button type="button" id="prepare">Load canned prepared example (no model)</button>
+      <label for="candidate">Prepared example — editable synthetic text, 2,000 characters maximum</label>
+      <textarea id="candidate" maxlength="2000" rows="9" aria-describedby="difference"></textarea>
+      <p id="difference">Compare with the original above. Added: selected fixture decision, proposed permission and suggested checks. No automatic semantic validation; edits can contradict the original. “Reviewed” is only local stage metadata, never a safety certification.</p>
+      <p id="blocker"></p>
+      <button type="button" id="review">Mark reviewed (simulation)</button>
+      <button type="button" id="return">Return without enrichment</button>
+      <button type="button" id="cancel">Cancel review</button>
+      <p id="stage"></p>
+    </section>
+    <p id="status" role="status" aria-live="polite" aria-atomic="true"></p>
+    <noscript>This prototype needs JavaScript for fixture interaction. No sources are read; no host effects occur.</noscript>
+  </main>
+</body>
+</html>
