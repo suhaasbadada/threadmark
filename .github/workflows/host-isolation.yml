@@ -1,0 +1,47 @@
+name: Synthetic host isolation
+on:
+  pull_request:
+    paths:
+      - 'experiments/host-isolation/**'
+      - '.github/workflows/host-isolation.yml'
+      - 'docs/decisions/0004-synthetic-host-containment.md'
+      - 'docs/progress/phase-1-host-isolation.md'
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/host-isolation/**'
+      - '.github/workflows/host-isolation.yml'
+      - 'docs/decisions/0004-synthetic-host-containment.md'
+      - 'docs/progress/phase-1-host-isolation.md'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: host-isolation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  portable:
+    name: Portable validation (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - run: python3 -B -W error::ResourceWarning -m unittest discover -s experiments/host-isolation -p 'test_*.py' -v
+  guard:
+    name: Real macOS guard (blocking, never skipped)
+    runs-on: macos-15
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Fixed synthetic guard; failure requires investigation, not fallback
+        run: python3 experiments/host-isolation/harness.py --synthetic-guard
