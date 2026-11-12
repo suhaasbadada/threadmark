@@ -369,3 +369,9 @@ class Runner:
                 # final resource restoration failed. Never leak it as success.
                 _QUARANTINED = True
                 return Result("cleanup_unverified", "unverified", count, code)
+            # Returning from the try evaluates a receipt before TemporaryDirectory
+            # and this finalizer finish. Cancellation can arrive during either;
+            # close the ownership-return boundary only after resource restoration.
+            # Never mask missing cleanup proof with an ordinary canceled result.
+            if not _QUARANTINED and canceled():
+                return Result("canceled", cleanup, count, code)

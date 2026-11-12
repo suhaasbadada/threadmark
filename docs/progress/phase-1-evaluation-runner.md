@@ -134,3 +134,31 @@ discovery/export, clipboard, configuration, listener, runtime/site/dependency/
 lockfile or Docker change. No performance/quality metrics or full-study manifest
 is fabricated. All representative environment, comparative retrieval/graph arm,
 refinement, real-host, inference, UX and safety gates remain open.
+
+## Parent review and finalization-cancellation repair
+
+Initial committed implementation: `4e2ed88aa08c1b8af01c94bb9e188b50d9422d04`.
+Joffrey independently reviewed it, ran 15 runner fixture tests and one existing
+supervisor regression, and identified a medium finalization-cancellation race.
+The final cancellation check preceded temporary-state/FD/stream cleanup; an
+already constructed ready receipt could survive cancellation during cleanup.
+Primary reproduced `ready` instead of `canceled` with an actual fixture process
+and mocked admission receipt, triggering Event cancellation during actual
+temporary-state removal. No actual candidate worker was launched.
+
+The repair checks cancellation after resource restoration at ownership return,
+superseding constructed receipts with byte-free `canceled`. Cleanup-unverified
+and quarantine retain precedence. Regression covers both Event and SIGTERM;
+the existing simulated final resource-error test now also requests cancellation
+and confirms cleanup-unverified still wins. Repaired local suite: **16 fixture
+tests PASS**; primary independently ran **263 integrated tests** (183 Python +
+80 Node) plus actual synthetic macOS guard, foundation and cached cargo-deny:
+PASS. Actual candidate worker remains NOT_RUN pending fresh repaired-head review.
+
+Base post-merge CI was freshly verified successful on exact base
+`f2697fb289cda6db6404898b078056b0b7ed7187`: foundation
+[43279335179](https://github.com/suhaasbadada/threadmark/actions/runs/43279335179)
+and integrated
+[43279334934](https://github.com/suhaasbadada/threadmark/actions/runs/43279334934).
+These base runs are not final-head CI for this runner. Initial child 15/262-test
+and uncommitted statements above are historical snapshots, not repaired totals.

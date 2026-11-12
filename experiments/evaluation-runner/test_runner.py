@@ -158,6 +158,7 @@ class RunnerTests(unittest.TestCase):
     def test_final_resource_error_supersedes_receipt_and_restores_handlers(self):
         pipe, close = os.pipe, os.close
         pipes = []
+        cancel = threading.Event()
         before = {n: signal.getsignal(n) for n in (signal.SIGTERM, signal.SIGINT)}
         def owned_pipe():
             pair = pipe()
@@ -168,9 +169,10 @@ class RunnerTests(unittest.TestCase):
             if pipes and fd == pipes[0][0]:
                 # Already closed: simulate a resource-restoration error without
                 # deliberately leaking any OS resource in the negative test.
+                cancel.set()
                 raise OSError("synthetic close failure")
         with mock.patch.object(os, "pipe", owned_pipe), mock.patch.object(os, "close", close_with_reported_failure):
-            result = self.runner._fixture("complete")
+            result = self.runner._fixture("complete", cancel=cancel)
         self.assertEqual((result.status, result.cleanup), ("cleanup_unverified", "unverified"))
         self.assertEqual(before, {n: signal.getsignal(n) for n in before})
         self.assertEqual(r.Runner()._fixture("complete").status, "quarantined")
@@ -182,6 +184,29 @@ class RunnerTests(unittest.TestCase):
             self.assertEqual(r.Runner()._fixture("complete").status, "quarantined")
             self.assertEqual(r.Runner().run("lexical", "harbor").status, "quarantined")
             spawn.assert_not_called()
+
+    def test_finalization_cancellation_supersedes_constructed_receipt(self):
+        cleanup = tempfile.TemporaryDirectory.cleanup
+        for use_signal in (False, True):
+            event = threading.Event()
+            observed = []
+            def finish(state):
+                cleanup(state)
+                observed.append(not Path(state.name).exists())
+                if use_signal:
+                    os.kill(os.getpid(), signal.SIGTERM)
+                else:
+                    event.set()
+            # Fixture process only; a mocked admission receipt isolates final
+            # ownership return without executing the actual candidate worker.
+            with self.subTest(signal=use_signal), \
+                    mock.patch.object(tempfile.TemporaryDirectory, "cleanup", finish), \
+                    mock.patch.object(r, "_admit", return_value=("ready", b"synthetic-original", b"synthetic-candidate")):
+                result = self.runner._fixture("complete", cancel=event)
+            self.assertEqual(observed, [True])
+            self.assertEqual((result.status, result.cleanup), ("canceled", "verified"))
+            self.assertIsNone(result.candidate)
+            self.assertIsNone(result.original_input)
 
     def test_active_cancellation_and_sigterm_have_real_reap_evidence(self):
         for use_signal in (False, True):
