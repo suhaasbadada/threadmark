@@ -15,11 +15,26 @@ signal.signal(signal.SIGTERM, hold)
 signal.signal(signal.SIGINT, hold)
 signal.pthread_sigmask(signal.SIG_UNBLOCK, {signal.SIGTERM, signal.SIGINT})
 status_fd = int(sys.argv[1])
+arguments = sys.argv[2:]
+# Optional private readiness channel for the offline runner. The original harness
+# argv/status protocol is unchanged. Target identity is reported by its owner,
+# not inferred from output EOF; the target never inherits this descriptor.
+ready_fd = None
+if arguments[:1] == ["--ready-fd"]:
+    ready_fd = int(arguments[1])
+    arguments = arguments[2:]
 try:
     try:
-        target = subprocess.Popen(sys.argv[2:], stdin=subprocess.DEVNULL, close_fds=True)
+        target = subprocess.Popen(arguments, stdin=subprocess.DEVNULL, close_fds=True)
     except OSError:
         target = None
+    if ready_fd is not None:
+        try:
+            os.write(ready_fd, f"{target.pid if target is not None else 0}\n".encode("ascii"))
+        except BrokenPipeError:
+            pass
+        finally:
+            os.close(ready_fd)
     # Only the target retains output pipes. Status has a separate private pipe.
     os.close(1)
     os.close(2)
