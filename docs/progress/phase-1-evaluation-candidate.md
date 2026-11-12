@@ -212,3 +212,22 @@ quality/performance claims, installed-host certification or phase/product closur
 No network/inference/source execution/discovery/export/host/config/clipboard,
 new process worker or Docker capability is added. Existing integrated containment
 and guard checks are separate tooling, not synchronous API abort guarantees.
+
+### Parent exact-commit verification
+
+Implementation committed as `86747abe9776dc9f7f87b7894d38ac7e956a1ddf` on
+the base above. Joffrey independently reviewed this exact commit against that
+base: **no substantive findings**; independently ran **124 tests** (candidate
+24, symbol 37, lexical 21, adapter 18, scorer 24), whitespace passed and checkout
+remained clean. Primary independently ran the actual integrated workflow
+commands: **247 tests PASS** plus actual synthetic macOS guard, foundation,
+cached cargo-deny, tracked secrets and whitespace checks PASS. No fresh advisory
+or native host certification is claimed. This follow-up is evidence-only.
+
+The base's actual post-merge CI was freshly verified successful at
+`c25d2f6f73a9e964d5bf80e56610c672a24b84e8`: foundation
+[43277254526](https://github.com/suhaasbadada/threadmark/actions/runs/43277254526)
+and integrated
+[43277254527](https://github.com/suhaasbadada/threadmark/actions/runs/43277254527).
+These are **base evidence**, not this new commit's CI. Final-head PR/remote CI
+remain pending publication; no phase closure or reduced product scope implied.
