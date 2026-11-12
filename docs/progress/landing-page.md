@@ -1,5 +1,19 @@
 # Static landing-page unit
 
+## Publication authorization — 2026-11-12 UTC
+
+The repository owner explicitly authorized merging both PRs and public publishing.
+Foundation PR #1 merged after fresh exact-head checks at
+`42b3c764e3685e7d3d061c0fdd5f1d5ef804acd6` (2026-11-12 08:24:59 UTC).
+GitHub Pages was enabled for Actions with enforced HTTPS at
+<https://suhaasbadada.github.io/threadmark/>. Enabling the site is not evidence
+of a successful deployment. PR #2 incorporated current main without altering its
+site-only diff; its combined head must pass all declared CI before merge.
+The earlier no-authorization/no-settings statements below record the state at
+implementation time and are superseded by this explicit owner authorization.
+Only the static landing page is authorized for deployment; no product binary,
+resident daemon, inference service or host adapter is being released.
+
 ## Scope and revision
 
 ### Parent finalization — 2026-11-12 UTC
