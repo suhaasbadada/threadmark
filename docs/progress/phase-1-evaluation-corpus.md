@@ -4,6 +4,28 @@
 Phase 1 remains open; Phase 2 is not authorized. This does not close P1-A5 or
 establish representative quality, performance, user value or certified hosts.
 
+## Parent finalization and independent review
+
+Full committed implementation: `df49ecbfd38dbd6c39be3ff214bf2de383dd51a1`.
+Primary inspected all five additions and reran all ten corpus tests on that exact
+revision successfully. Foundation checks, cargo-deny, staged secrets and staged
+whitespace also passed on the implementation tree before committing it.
+
+Joffrey independently reviewed that exact revision against inherited
+`9227571c6e9f0b090ec883121dc9babfc25cc59f`: no substantive findings or must-fix
+blockers. His independent ten-test run, all three finite CLI tier checks and
+committed whitespace check passed; source/oracle isolation and inert-byte-only
+scope verified. No hostile-input containment, retrieval/scoring, extraction,
+runtime or product-quality claim follows. He did not rerun the foundation,
+cargo-deny or secret checks. No code repairs were required.
+
+The sections below retain the delegate's uncommitted handoff snapshot. Parent
+publication is a separate dependent PR based on unmerged PR #8's branch, so the
+protocol documents are not duplicated into an independent main-targeted runtime
+change. This follow-up changes only this evidence record. Final PR-head CI must
+target its own full SHA; the run/head is attached to the PR when available.
+No merge, deployment, provider/host action or Phase 1 closure authorized.
+
 ## Preregistered boundary and protocol
 
 Inherited base: `9227571c6e9f0b090ec883121dc9babfc25cc59f` (unmerged PR #8).
