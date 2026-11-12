@@ -7,6 +7,30 @@ synthetic tests. This addresses the retrieval-method gap recorded by Joffrey in
 the [feasibility ledger](phase-1-feasibility-ledger.md), not representative
 retrieval quality or the full [P1-A5](../spec/phase-1-feasibility.md) gate.
 
+## Parent finalization and independent review
+
+Full committed implementation: `00bd8e957c45ba8ad9742a320751364263391da4`.
+Primary inspected all five files, ran the 24-test suite on the implementation
+tree and again on that exact commit: passed. Offline foundation checks,
+`cargo deny --offline --locked check` (cached advisory data), staged secrets and
+whitespace passed before committing the same implementation tree.
+
+Joffrey independently reviewed that exact SHA against inherited
+`9227571c6e9f0b090ec883121dc9babfc25cc59f`: no substantive findings or must-fix
+issues. His independent 24-test run passed; clean worktree retained. Scope and
+coverage rejection, exact unique scoring, undefined denominators, duplicate
+budgets, conformance-only classification and evidence limitations verified.
+He did not rerun foundation, dependency/license/advisory, secret or remote CI
+checks. No code repair or additional review of this evidence-only follow-up
+is claimed.
+
+Parent publication is a separate dependent PR on unmerged PR #8, not a merge
+of sibling corpus PR #9. The earlier child handoff below remains historical.
+Final PR-head CI must bind its own full SHA and run, recorded on that PR;
+neither the inherited protocol CI nor sibling corpus CI is sufficient. No
+retrieval pilot, evaluation worker, inference, host action, merge, deployment
+or Phase 1 completion authorized.
+
 ## Scope and predeclared bounds
 
 - [Scorer/manifest](../../experiments/evaluation-scoring/scoring.py),
