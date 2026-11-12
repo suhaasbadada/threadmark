@@ -47,6 +47,8 @@ jobs:
           "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/evaluation-runner -v
       - name: Node offline host and UX contracts
         run: node --test experiments/opencode/contract.test.mjs experiments/t3-handoff/prepare.test.mjs experiments/ux-walkthrough/model.test.mjs
-      - name: Actual synthetic macOS guard (never an installed host)
+      - name: Actual synthetic macOS guards (never installed hosts)
         if: runner.os == 'macOS'
-        run: '"$THREADMARK_PYTHON" -B experiments/host-isolation/harness.py --synthetic-guard'
+        run: |
+          "$THREADMARK_PYTHON" -B experiments/host-isolation/harness.py --synthetic-guard
+          "$THREADMARK_PYTHON" -B experiments/opencode/native/synthetic_containment.py --synthetic-compiler-guard

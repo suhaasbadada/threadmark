@@ -697,3 +697,45 @@ now authorizes **one exact fixed C-only diagnostic candidate run** with only tha
 reviewed literal root-data addition. No other relaxation or automatic retry is
 authorized. The first two failures above remain evidence even if it bootstraps;
 all actual denial controls must still pass before any synthetic success claim.
+
+## Reviewed literal-root candidate — measured C-only PASS
+
+At exact candidate commit `af95ba6619b826efa208f8e020009cb130c189bf`, the single
+authorized fixed C run passed all **32** required controls on Darwin kernel 27.0.0.
+The only policy change from the two blocked runs was the independently reviewed
+literal root-directory data read; fork/spawn/network restrictions and the system-
+only synthetic baseline were not relaxed. The successful counterfactual supports
+the dyld root-directory bootstrap explanation; it does not erase either earlier
+failure or turn an unattributed crash report into evidence.
+
+Observed: approved read and six state writes; denied sibling/home/repo/config and
+symlink reads; denied symlink/workspace/probe/policy/inventory writes; actual fork,
+spawn and direct exec denial; IPv4/IPv6 connect/UDP/bind/listen denial; no owned
+receiver traffic; both malformed-policy controls and quoted injection-shaped root.
+The fixed probe required EPERM/EACCES, not generic errno. All checks were
+`observed-pass`, `result: synthetic-only-pass`, cleanup
+`verified-owned-artifacts-removed`, `host_launched: false`,
+`typescript_launched: false`. The final target status was 0 with empty stderr.
+
+Measured SHA-256 identities:
+
+- Fixture: `66d808157b24ced28ad7245379dcd8615573d45cdbf1749d449657c5cf67fdde`
+- C binary: `3bd996ff05cf332a38ae25f3b033208ef43f7a4589fd55ffd6e13cd0d63b5065`
+- Harness: `53c4421d028edd4f0ea0d3b781016cc26a574364144e7407042009829d6371ec`
+- Policy: `785ee715e177a63b69c415d496b618198b258c12449ad7d01ab1c5543e511673`
+- Shared owner: `cea23401c8d15de10b40464d4f01d432d945efc7c90513b3335924f23a21276b`
+- Supervisor: `4f88bfeee095c9d29783284b5e5d661b11723a70808419357ed4e3b3c4d75e32`
+
+Primary now adds the exact reviewed fixed C action to the existing macOS
+integrated guard step, after the unchanged older host guard. No install, extra
+workflow, host launch or provider step is added. Remote macOS execution/CI remains
+pending until its exact final head is verified. Diagnostic observation fragments
+were renamed neutrally from `observed-pass-before-failure` to
+`observed-pass-fragment`, since successful attempts also have summaries; no policy,
+fixture or success oracle changed. Final full local verification follows.
+
+DNS/resolver IPC, escaped-descendant proof beyond measured no-fork/spawn, Node
+loader/plugins/config, V8/total memory, authentic declaration/consumed-file closure,
+full runtime provenance and native capture/review/admission remain unestablished.
+No Node, TypeScript, SDK/TUI or provider ran. P1-A2/P1-A5 remain PARTIAL; Phase 1
+and the full agreed product scope remain OPEN.

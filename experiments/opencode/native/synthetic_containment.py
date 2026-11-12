@@ -195,7 +195,7 @@ def attempt_summary(mode, code, output, diagnostics):
     """Bounded content-free failure evidence, never a successful control oracle."""
     expected = _MODES.get(mode, _NETWORK.get(mode.removeprefix("network-"), set()))
     # Preserve only exact known labels. Partial observations never complete a mode.
-    observed = {name: "observed-pass-before-failure" for name in expected
+    observed = {name: "observed-pass-fragment" for name in expected
                 if (name + ":PASS").encode("ascii") in output.split(b"\n")}
     hint = ("dyld-bootstrap" if b"dyld[" in diagnostics or b"dyld:" in diagnostics
             else "sandbox-bootstrap" if b"sandbox-exec:" in diagnostics else "unclassified")

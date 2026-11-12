@@ -167,7 +167,7 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(summary["mode"], "filesystem")
         self.assertEqual(summary["exitStatus"], -6)
         self.assertEqual(summary["diagnosticHint"], "dyld-bootstrap")
-        self.assertEqual(summary["partialObservations"], {"approved-read": "observed-pass-before-failure"})
+        self.assertEqual(summary["partialObservations"], {"approved-read": "observed-pass-fragment"})
         self.assertNotIn("SYNTHETIC-PRIVATE-CONTENT", json.dumps(summary))
         self.assertNotIn("/private/fixture", json.dumps(summary))
         self.assertEqual(c.attempt_summary("fork", 1, b"", b"sandbox-exec: " + private)["diagnosticHint"],
