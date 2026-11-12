@@ -162,3 +162,32 @@ and integrated
 [43279334934](https://github.com/suhaasbadada/threadmark/actions/runs/43279334934).
 These base runs are not final-head CI for this runner. Initial child 15/262-test
 and uncommitted statements above are historical snapshots, not repaired totals.
+
+### Fresh repaired-head review and positive transport conformance
+
+Exact repaired reviewed implementation:
+`dedfeaa89ed4b94310b0d342a18a3d96984ace25`. Joffrey freshly reviewed the full
+unit: **no substantive issues**, independently **16 runner tests + two existing
+supervisor lifecycle regressions PASS**, clean checkout. Review and exercised
+negative gates cleared tiny actual-SMALL conformance only, not study/host/inference.
+Primary staged secrets and whitespace checks also passed on the repair.
+
+Only after that review, primary launched four fixed normal `Runner.run` cases:
+lexical/symbol × harbor/harbour. All returned `ready`, target exit zero, verified
+cleanup, eight scope-bound items and immutable original/candidate bytes; descriptor
+sets were unchanged after each invocation and no quarantine/active owner remained.
+No timing/RSS/quality comparison, generated-source execution, network or host
+action occurred. Actual worker transport is now observed locally, superseding
+only the historical NOT_RUN statements above. Memory enforcement is still
+unavailable, SMALL only, no universal process containment claim.
+
+The parent retained these four normal-entrypoint cases as one conformance test
+after review. CI now runs that reviewed worker as well as fixture negatives;
+README/test description updated accordingly. This follow-up changes tests and
+evidence only, not the reviewed runner/worker/supervisor implementation.
+Primary reran all actual workflow commands after adding the positive regression:
+**17 runner tests, 264 integrated tests PASS** (184 Python + 80 Node), actual
+synthetic macOS guard PASS, foundation/staged secrets/whitespace PASS. The prior
+cached cargo-deny PASS remains unchanged-dependency evidence, not advisory
+freshness. Remote exact-head CI remains pending publication and will be recorded
+on the exact PR head, never inferred from base runs. Phase 1 stays open.

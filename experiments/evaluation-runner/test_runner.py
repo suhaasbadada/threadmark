@@ -1,4 +1,4 @@
-"""Observable fixed-fixture tests ONLY. Actual candidate worker is NOT run."""
+"""Lifecycle negatives plus reviewed fixed SMALL worker transport conformance."""
 from dataclasses import FrozenInstanceError
 import json
 import os
@@ -33,6 +33,25 @@ class RunnerTests(unittest.TestCase):
         self.assertIsNone(result.original_input)
         with self.assertRaises(FrozenInstanceError):
             result.status = "ready"
+
+    def test_reviewed_actual_small_transport_admission_both_arms_and_roots(self):
+        # Added by parent only AFTER independent review and lifecycle gates passed.
+        # Source strings remain inert; this is not a quality/performance study.
+        for arm in ("lexical", "symbol"):
+            for project in ("harbor", "harbour"):
+                with self.subTest(arm=arm, project=project):
+                    result = self.runner.run(arm, project)
+                    self.assertEqual((result.status, result.cleanup, result.target_exit),
+                                     ("ready", "verified", 0))
+                    self.assertIs(type(result.candidate), bytes)
+                    self.assertIs(type(result.original_input), bytes)
+                    payload = json.loads(result.candidate)
+                    self.assertEqual(payload["scope"], r.scope(project))
+                    self.assertEqual(len(payload["items"]), 8)
+                    for item in payload["items"]:
+                        self.assertEqual({k: item[k] for k in r.scope(project)}, r.scope(project))
+                    self.assertFalse(r._QUARANTINED)
+                    self.assertFalse(r._ACTIVE)
 
     def test_public_preflight_never_launches_or_accepts_private_overrides(self):
         with mock.patch.object(subprocess, "Popen") as spawn:

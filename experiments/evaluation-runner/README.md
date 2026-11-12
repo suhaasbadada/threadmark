@@ -13,11 +13,12 @@ prospective. This README declares the protocol **before any actual worker run**.
 python3 -B -m unittest discover -s experiments/evaluation-runner -v
 ```
 
-That command and CI launch **only authored lifecycle fixtures**, never `worker.py`.
-The child implementation has NOT launched the actual candidate worker. Parent
-must review the committed runner/helper/worker/fixtures and independently verify
-these lifecycle gates BEFORE separately authorizing tiny actual-small conformance
-through `Runner.run`. That later result is not quality/performance evidence.
+The child implementation launched **only authored lifecycle fixtures**, never
+`worker.py`. Parent subsequently repaired a review finding and obtained fresh
+independent review of `dedfeaa89ed4b94310b0d342a18a3d96984ace25`, then verified
+all lifecycle gates before launching tiny actual-SMALL transport conformance.
+That passed for both arms and both roots; the suite and CI now retain those four
+fixed cases in one additional test. This is not quality/performance evidence.
 There is deliberately no CLI that launches actual evaluation, no default run,
 study loop, repetition/order scheduler, scoring report or fake cache measurements.
 
@@ -144,7 +145,9 @@ there is no last-good fallback, persistence or automatic retry.
    identity and absent child PID; tests additionally check worker/child PID absence.
    Missing identity/status/attestation or cleanup errors produce unverified.
 7. Only after verified cleanup validate the full protocol and admit bytes. An
-   active cancellation still closes admission at final return.
+   active cancellation still closes admission at final return, including after
+   temporary-state removal and final resource restoration. Missing cleanup proof
+   retains precedence over an ordinary canceled result.
 
 On owner death, the retained supervisor control pipe sees EOF, sends TERM, gives
 its existing at-most-0.5 s cooperative target-wait opportunity, and group-KILLs
@@ -171,9 +174,10 @@ candidate. Unit fixtures exercise mixed-stream/descendant overflow, active Event
 and SIGTERM cancellation, launch-boundary SIGTERM, timeout after output closure,
 malformed/partial/foreign scope/revision/arm/pin/bindings, dependency/nonzero
 failure, owner death, verified fresh recovery and quarantine after missing proof.
-No actual worker positive admission is claimed from these tests. That branch of
-the transport remains unrun pending parent review and separately authorized tiny
-SMALL conformance using the normal public entrypoint.
+The parent added actual worker positive transport admission only after fresh
+independent review and passing lifecycle negatives. The additional conformance
+test uses normal `Runner.run` for both arms and roots; no study, generated-source
+execution, host or inference operation is authorized or inferred from it.
 
 There is no index/cache in the worker: immutable input, fresh process only.
 Neither cold/warm measurements nor OS page-cache eviction are claimed. Full-study
