@@ -165,3 +165,135 @@ no SDK/TUI host import or startup. Complete real declaration checking, not ambie
 SDK stubs or `skipLibCheck`, is required. Native bridge implementation proceeds
 only after this conditional dependency gate actually passes. This does not reduce
 the full agreed product scope or close Phase 1.
+
+## Declaration-only alternative — implementation gate, not execution approval
+
+The full runtime acquisition path remains blocked on package-specific notice/
+provenance gaps. It has not passed because archive hashes matched. Primary ran
+the previously unfinished archive tests: **18 PASS** without dependency imports.
+Sherlock's prior alternative and a fresh independent Joffrey design review identify
+a separate legitimate static-analysis path, **not approval of runtime closure**.
+
+Parent authorizes implementation and pure synthetic testing of a declaration-only
+projection utility/ledger now, with **no compiler execution, new download, npm
+installation or SDK/TUI import**. Keep byte-identical complete package manifests,
+original package-relative paths and nested dependency identities; authentic
+declaration/JSX/type source bytes only, never fabricated ambient SDK types or
+substitute aliases. Missing mandatory types/notices remain blockers. The eventual
+pinned compiler must perform official resolution; a projection cannot claim the
+full npm/runtime graph or assume excluded packages are irrelevant.
+
+Materialization must write only selected regular bytes into a newly owned private
+destination, never general tar extraction; reject effective PAX/GNU traversal,
+links/sparse/special files, case-folded collisions, file/ancestor conflicts,
+pre-existing destination links, malformed/oversized archives and count/total
+overflow. Rehash archives and output; interrupted/incomplete projection is not
+usable. Add negative tests and fix redirect prevention before any future acquisition
+reuse: checking a final URL after following a redirect is too late.
+
+Compiler execution needs a **separate subsequent reviewed launcher/plan**: verified
+compiler and pinned Node; empty allowlisted environment; explicit owned config/
+roots/typeRoots/types; no NODE_OPTIONS/NODE_PATH, plugins, extends, custom resolver,
+watch/build, allowJs, either library-skip option or owned-source suppressions;
+strict non-any positive assertions and intended-diagnostic negative fixtures.
+Trace every consumed file back to approved bytes/notices; genuinely unresolved
+requested modules fail. Deny network and reads outside approved types/compiler,
+necessary Node/system files and owned state; prove negative controls and the
+120-second/output/heap/two-second cleanup limits before execution. No existing
+host containment policy may be broadened for convenience. This revision changes
+only the acquisition-design gate, not product scope or native acceptance.
+
+## Bob implementation handoff — declaration preparation only
+
+Assigned branch `t3/004628d1`, unchanged base HEAD
+`13bdeb0be2bc4f5375b46ad902c6dba876cc682c`; tested working-tree changes are
+staged only, not a new committed/tested SHA. Parent owns independent review,
+exact eventual committed SHA/CI run/head and later publication decisions. No CI
+run for these uncommitted changes, merge, deployment or certification is claimed.
+
+TM-04/TM-05/TM-08/TM-10, P1-A2/P1-A5 supporting dependency-boundary evidence:
+`project_types.py` prepares only explicitly reviewed, hash-bound authentic files
+and complete unmodified metadata in nested npm locations. It does not implement
+package resolution. Its full-archive preflight is deliberately stricter than the
+inert archive inspector (all duplicates reject); explicit non-`package` roots
+are supported. Fresh private output uses nofollow/exclusive descriptor-relative
+writes, copied-byte verification and a verified atomic ledger with an incomplete
+marker until success. Failure artifacts remain owned/incomplete, not usable or
+claimed cleaned. Parent path ancestors are trusted; this is not arbitrary
+hostile same-UID containment. Prepared means only `prepared_not_compiled`, never
+type/runtime closure. There is no actual SDK selection or projection result.
+
+The archive inspector now denies redirects before network follow, retaining its
+final-URL defense. The existing Python-3.12 workflow discovery automatically
+includes new pure tests; no install/compiler/acquisition CI step was added.
+Historical audit remains unchanged; regenerated package files, provisional
+notices, conditional blocked ledger and source-notice evidence are retained.
+
+Local verification on this working tree:
+
+- Python **3.12** native discovery: **41 PASS** = 18 retained archive tests,
+  2 redirect regressions and 21 projection tests. Synthetic inert byte fixtures
+  cover exact metadata/exports-null/wildcard preservation, selected declarations/
+  JSX/source, nested versions/nonstandard roots, approval/hash/identity/missing
+  requirements, unsafe effective PAX/GNU names, special/sparse/link members,
+  duplicates/case/NFC/ancestor conflicts, inclusive bounds/overflow, preexisting
+  roots/links, child-link injection, interruption/copied-file/ledger corruption.
+- Existing integrated suites: **381 PASS** (296 Python experiment tests,
+  5 Python selection tests, 80 Node tests); thus **422** with native discovery.
+- Actual macOS synthetic guard: `synthetic-only-pass`, `host_launched: false`.
+- `python3 scripts/check.py`: PASS (format/build/clippy/workspace tests/docs,
+  CLI/daemon offline smoke, documentation links and intentional failure probe).
+- `cargo deny --locked --offline check`: PASS using cached advisory data;
+  no claim of a refreshed online advisory database.
+- After staging all 12 unit files, `python3 scripts/secrets.py`: PASS for
+  history/tracked working-tree scan and the intentional secret rejection probe.
+- `git diff --cached --check`: **FAIL (370 diagnostics)** confined to authentic
+  upstream notice whitespace/CRLF and terminal blank line in the provisional
+  `THIRD-PARTY-NOTICES.txt`. Legal evidence was preserved rather than silently
+  reformatted. The same check excluding that single notice artifact: PASS;
+  all implementation/configuration/docs/JSON files pass. No global whitespace
+  rule was disabled and the full check is not represented as green.
+
+The runtime notice/provenance gaps (agent/eastasianwidth/three AWS packages),
+mandatory authentic declaration needs including `@types/emscripten`, Node/OpenTUI
+engine mismatch, full type closure and all real native acceptance remain
+**BLOCKED/unestablished**. Neither synthetic tests nor this utility close P1-A2,
+P1-A5 or Phase 1. Separate reviewed compiler/containment plan and actual consumed-
+file verification are still required. No compiler, SDK import, host, new download,
+install, provider, credential reuse, model, service or Docker was used in this unit.
+
+## Primary review and repair — prerequisite tooling only
+
+Joffrey independently reviewed the staged projection/acquisition implementation,
+tests, workflow, identities and evidence claims; his 41 native tests passed. He
+found one medium acquisition defect: aggregate declared member sizes were checked,
+but aggregate decompressed tar bytes (headers/padding included) were not. Primary
+reproduced the boundary with real synthetic archives and repaired the inspector/
+acquisition return, enforcement and evidence fields. Two regression tests check
+the inclusive actual-expanded total and one-byte aggregate overflow. The primary's
+Python 3.12 native discovery now passes **43 tests**. The blocked historical ledger
+is retained unchanged and does **not** prove an aggregate actual-expanded bound;
+no corrected acquisition, SDK projection or compiler run is asserted.
+
+The original 370 notice whitespace diagnostics are retained above as actual
+failure evidence. Primary added a narrowly scoped `.gitattributes` `-whitespace`
+attribute for the single authentic upstream `THIRD-PARTY-NOTICES.txt` artifact.
+No legal text was rewritten, no global check was disabled, and no other path is
+exempted. Full staged whitespace validation now passes with this explicit legal-
+evidence policy; the original notice blob remains byte-identical to Bob's handoff.
+
+Primary reran foundation checks and cached offline cargo-deny successfully.
+Fresh integrated verification passed **424 tests**: 344 Python tests (including
+43 native tests) and 80 Node tests. The actual macOS synthetic guard returned
+`synthetic-only-pass`, `host_launched: false`. Both new acquisition regressions
+were also executed against the pre-fix inspector: missing expanded-byte evidence
+and an incorrectly accepted overflow failed as expected. The repaired inspector
+passes both. No network, compiler or dependency execution was used by these tests.
+The optional no-mistakes CLI reported this repository is not initialized; no
+no-mistakes pipeline, second worktree or gate configuration was created. Existing
+repository checks and independent review remain the verification route.
+Staged secrets, final tested commit, exact-head CI and merge acceptance will be
+recorded separately; none is implied by this entry.
+P1-A2/P1-A5 remain PARTIAL and Phase 1 OPEN. Full runtime acquisition, authentic
+mandatory type closure, compiler containment/execution and native behavior remain
+separate unpassed gates.

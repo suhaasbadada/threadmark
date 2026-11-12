@@ -1,0 +1,3 @@
+# Preserve authentic upstream legal evidence, including its original whitespace.
+# This exception affects diff whitespace diagnostics only, not file contents.
+experiments/opencode/native/THIRD-PARTY-NOTICES.txt -whitespace
