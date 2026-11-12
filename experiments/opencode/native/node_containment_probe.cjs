@@ -33,7 +33,7 @@ function filesystem() {
     denied('deny-' + label, () => fs.readFileSync(path.join(root, relative)));
   const writes = {'symlink-write': 'state/home/outside-link', 'workspace-write': 'workspace/check',
     'probe-write': 'probe.cjs', 'policy-write': 'guard.sb',
-    'inventory-write': 'config-inventory/settings.json'};
+    'inventory-write': 'config-inventory/settings.json', 'openssl-write': 'openssl.cnf'};
   for (const [label, relative] of Object.entries(writes))
     denied('deny-' + label, () => fs.writeFileSync(path.join(root, relative), 'forbidden'));
   // A real spawn request. ENOENT/ENOEXEC or missing error are NOT denial evidence.

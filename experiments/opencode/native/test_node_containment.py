@@ -240,6 +240,10 @@ class SyntheticRuntime(unittest.TestCase):
             self.assertFalse(decoded.allows('file-write*', p))
         self.assertTrue(decoded.allows('file-read-data', Path('/')))
         self.assertFalse(decoded.allows('file-read-data', Path('/private')))
+        self.assertTrue(decoded.allows('file-read*', root / 'openssl.cnf'))
+        self.assertFalse(decoded.allows('file-map-executable', root / 'openssl.cnf'))
+        self.assertFalse(decoded.allows('file-write*', root / 'openssl.cnf'))
+        self.assertFalse(decoded.allows('file-read*', Path('/opt/homebrew/etc/openssl@3/openssl.cnf')))
         recursive = {str(rule.path) for rule in decoded.rules if rule.kind == 'subpath'
                      and 'file-map-executable' in rule.operations}
         self.assertEqual(recursive, set(n.BASELINE))
@@ -258,7 +262,10 @@ class SyntheticRuntime(unittest.TestCase):
         def target(command, cwd, env, **bounds):
             roots.append(cwd.parent)
             self.assertEqual(command, [str(n.c.SANDBOX), '-f', str(cwd.parent / 'guard.sb'),
-                                      str(self.node), '--max-old-space-size=64', '--version'])
+                                      str(self.node), '--max-old-space-size=64',
+                                      '--openssl-config=' + str(cwd.parent / 'openssl.cnf'), '--version'])
+            self.assertEqual((cwd.parent / 'openssl.cnf').read_bytes(),
+                             b'# Fixed empty Threadmark discovery configuration; no host settings.\n')
             self.assertLessEqual(bounds['timeout'], 5)
             self.assertEqual(bounds['limit'], 16 * 1024)
             self.assertEqual(env, n.clean_env(cwd.parent))
@@ -286,6 +293,25 @@ class SyntheticRuntime(unittest.TestCase):
         self.assertEqual(len(calls), 2)
         self.assertEqual(evidence['checks']['version'], 'observed-pass')
         self.assertEqual(evidence['checks']['approved-read'], 'failed-or-unverified')
+
+    def test_mock_openssl_config_drift_quarantines_and_retains(self):
+        roots = []
+
+        def target(command, cwd, env, **bounds):
+            roots.append(cwd.parent)
+            (cwd.parent / 'openssl.cnf').write_bytes(b'changed synthetic config\n')
+            return 0, n.VERSION, b'', 0.1
+
+        try:
+            with mock.patch.object(n.c.owner, 'bounded', target), self.assertRaises(n.c.Blocked):
+                n._run(self.review, self.evidence())
+            self.assertTrue(n.c._QUARANTINED)
+            self.assertEqual(n.c._RETAINED_ARTIFACTS, roots)
+            self.assertTrue(roots[0].is_dir())
+        finally:
+            for root in roots:
+                if root.exists():
+                    shutil.rmtree(root)
 
     def test_mock_zero_exit_after_drift_quarantines_and_retains(self):
         roots = []

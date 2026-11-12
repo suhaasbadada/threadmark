@@ -24,6 +24,7 @@ CELLAR = Path('/opt/homebrew/Cellar')
 NODE_SHA = 'e7daf91e350dcfc19c3f67bef0a463c1269e98e084606c2e38edf2c349e3842a'
 VERSION = b'v24.10.0\n'
 SOURCE = Path(__file__).with_name('node_containment_probe.cjs')
+OPENSSL_CONFIG = b'# Fixed empty Threadmark discovery configuration; no host settings.\n'
 BASELINE = ('/usr/lib', '/System/Volumes/Preboot/Cryptexes/OS/System/Library/dyld',
             '/System/Library/Frameworks/CoreFoundation.framework',
             '/System/Library/Frameworks/Security.framework')
@@ -35,7 +36,7 @@ _FS = {'approved-read', 'cache-disabled', 'deny-spawn',
        *('write-' + name for name in c.STATE),
        *('deny-' + name for name in ('sibling', 'home', 'repo', 'config',
           'symlink-read', 'symlink-write', 'workspace-write', 'probe-write',
-          'policy-write', 'inventory-write'))}
+           'policy-write', 'inventory-write', 'openssl-write'))}
 _NET = {family: {family + '-' + name for name in ('connect', 'udp', 'bind', 'listen')}
         for family in ('v4', 'v6')}
 REQUIRED = _FS | set.union(*_NET.values()) | {'version', 'no-receiver-traffic'}
@@ -348,14 +349,14 @@ def policy(root, review):
     path(str(root))
     rules = [c.Rule(('process-exec',), 'literal', NODE),
              c.Rule(('file-read-data',), 'literal', Path('/'))]
-    reads = {NODE, root / 'probe.cjs', root / 'read-canary'}
+    data_reads = {root / 'probe.cjs', root / 'read-canary', root / 'openssl.cnf'}
+    reads = {NODE, *data_reads}
     reads.update(Path(name) for name in review['runtime']['files'])
     reads.update(Path(edge['lookup']) for edges in review['runtime']['loads'].values()
                  for edge in edges if edge['canonical'] is not None)
     reads.update(Path(name) for name in review['runtime']['aliases'])
     for p in sorted(reads):
-        operations = ('file-read*', 'file-map-executable') if p not in (
-            root / 'probe.cjs', root / 'read-canary') else ('file-read*',)
+        operations = ('file-read*', 'file-map-executable') if p not in data_reads else ('file-read*',)
         rules.append(c.Rule(operations, 'literal', p))
     for name in c.STATE:
         rules.append(c.Rule(('file-read*', 'file-write*'), 'subpath', root / 'state' / name))
@@ -433,8 +434,9 @@ def _run(review, evidence):
         (root / 'exec-marker').chmod(0o700)  # ENOEXEC is NOT denial proof.
         (root / 'state/home/outside-link').symlink_to(root / 'sibling')
         create(root / 'probe.cjs', SOURCE.read_bytes())
+        create(root / 'openssl.cnf', OPENSSL_CONFIG)
         create(root / 'guard.sb', serialized_policy(root, review).encode('ascii'))
-        protected.extend((root / 'probe.cjs', root / 'guard.sb'))
+        protected.extend((root / 'probe.cjs', root / 'guard.sb', root / 'openssl.cnf'))
         hashes = {p: file_record(p) for p in protected}
         evidence['identities_sha256'] = {'source': sha(SOURCE.read_bytes()),
                                         'policy': c.digest(root / 'guard.sb')}
@@ -458,7 +460,8 @@ def _run(review, evidence):
             try:
                 code, output, diagnostics, _ = c.owner.bounded([
                     str(c.SANDBOX), '-f', str(root / 'guard.sb'), str(NODE),
-                    '--max-old-space-size=64', *arguments], root / 'workspace',
+                    '--max-old-space-size=64', '--openssl-config=' + str(root / 'openssl.cnf'),
+                    *arguments], root / 'workspace',
                     clean_env(root), timeout=min(5, remaining), limit=16 * 1024)
                 evidence['lastAttempt'] = {'mode': mode, 'exitStatus': code,
                     'stdoutBytes': len(output), 'stderrBytes': len(diagnostics),

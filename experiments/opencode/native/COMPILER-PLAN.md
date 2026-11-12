@@ -99,6 +99,11 @@ control is not yet measured; absence of NODE_ENV avoids the development-only
 source-map-support branch. The separate fixed Node-only guard must observe
 `getCompileCacheDir() === undefined` and the named `compileCacheStatus.DISABLED`
 result before any later compiler authorization. No numeric enum is assumed.
+The first contained Node-only CommonJS attempt exposed denied ambient OpenSSL
+configuration loading. A separate candidate now supplies a fixed owned config
+through documented `--openssl-config`, never host settings. Its review and
+measurement remain a prerequisite; this inert compiler descriptor does not yet
+model that configuration and is not executable authorization.
 The fixed PATH is not spawn permission. Read/write names are typed JSON strings
 and argv arrays, not interpolated shell or SBPL. Quotes are preserved as data;
 controls reject. A later policy serializer must use reviewed SBPL string escaping

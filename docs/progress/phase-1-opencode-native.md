@@ -941,6 +941,57 @@ failure. No TypeScript/compiler, SDK/TUI, native host, provider or external netw
 target is authorized. Actual outcomes, cleanup and remaining limitations must be
 recorded separately; synthetic tests cannot satisfy this measurement gate.
 
+## First Node-only measurement — version PASS, CommonJS/OpenSSL BLOCKED
+
+Reviewed implementation commit `712e8ac73f3d116fb717b0408890f7213f52f76a` was
+measured once using exact approved digest
+`1e87d0598ab2b6dea9c616f22d0de5b92c0ef9e370ca5fbe64b2d7adef1d1fd5`.
+The contained fixed version action passed exact `v24.10.0` output, binding that
+observed version to the reviewed local Node/runtime bytes (not publisher
+provenance). The next fixed CommonJS attempt exited **1**, stdout 0 bytes, stderr
+243 bytes, SHA-256
+`6b74abc6ca21daee1edf2a5e4923807378ac5043328b446158415ea16aa3dff4`.
+All filesystem/cache controls remained failed-or-unverified; network controls
+were NOT_RUN. Cleanup was verified-or-not-launched; no TypeScript or host ran.
+Both runtime pre/postchecks completed. Owned artifacts were removed; bounded
+private diagnostic copies were retained outside the repository.
+
+Private startup diagnosis identified **OpenSSL ambient configuration loading
+denied by the sandbox**, specifically its BIO_new_file/fopen path. No private
+config was read or allowed and no raw captured diagnostics/path is public here.
+The installed Node 24.10 manpage lines 374–377 documents `--openssl-config=file`;
+lines 858–865 documents that this flag overrides OPENSSL_CONF. This establishes
+a specific isolation repair, not permission to allow ambient host configuration.
+
+Primary proposes a fresh candidate with a fixed comment-only owned OpenSSL config,
+literal read-only (not executable-map) permission, exclusive creation/protected
+hashes and a new write-denial control. Every fixed Node attempt receives the
+documented explicit flag; environment inheritance stays disabled. No system,
+Homebrew config, fork, network, Mach or sysctl allowance is added. Pure Node tests
+pass **28**, including config-drift quarantine and exact argv/bytes/policy checks.
+
+Regenerated UNAPPROVED candidate digest:
+`b5efaf1b9be6fe427f5996274c5eea5f4a47a17b83c617874985d43082e178c4`.
+It needs independent review and new primary authorization before one measurement.
+The prior failure remains preserved. Compiler/SDK/native execution stays CLOSED;
+the inert compiler plan does not yet model the required owned OpenSSL config.
+
+Joffrey independently reviewed this owned-config delta and exact regenerated
+candidate. He verified only the expected two source bindings changed; static
+18-file/24-alias/6-source validation passes; literal data-only access and protected
+config bytes remain bound; documented flag precedence is correct. He found no
+substantive blocker for one separately authorized measurement. His review did
+not rerun the 28 pure tests; primary ran those successfully. Neither review nor
+tests claim comment-only config startup behavior or CommonJS control success.
+
+Primary now authorizes **one exact fixed Node-only measurement** for digest
+`b5efaf1b9be6fe427f5996274c5eea5f4a47a17b83c617874985d43082e178c4` after
+committing the reviewed change, with the same bounded exact-forwarding private
+diagnostic observer. No host OpenSSL settings are read/reused or changed. This
+synthetic empty config does not establish host crypto/FIPS equivalence or authorize
+a later compiler/SDK. Stop on any new failure; no automatic retry, ambient config
+permission, network or other relaxation follows.
+
 ## Fixed Node-only preflight and guard candidate — implementation, NOT RUN
 
 Bob completed the next bounded code/pure-test unit in the same assigned branch,

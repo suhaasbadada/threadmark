@@ -295,7 +295,7 @@ compiler config, actual consumed-file/type closure, V8/total memory containment,
 native OpenCode admission, SDK/TUI capture or full product acceptance. Those
 gates, runtime provenance and Phase 1 remain OPEN.
 
-## Fixed Node-only discovery candidate — NOT RUN
+## Fixed Node-only discovery candidate — version observed, controls BLOCKED
 
 `node_containment.py` and the separately hash-bound `node_containment_probe.cjs`
 are the next review candidate, not an execution authorization. They support
@@ -339,8 +339,16 @@ read is disclosed separately and grants no recursive subtree access. No whole
 System, PrivateFrameworks, Homebrew, home, repository or private-data read is
 allowed. A bootstrap failure does not authorize a broader allowance.
 
-Only fixed Node `--max-old-space-size=64 --version` followed by the owned hashed
-CommonJS probe is proposed. Replacement environment adds
+Only fixed Node `--max-old-space-size=64`, a fixed owned `--openssl-config=...`,
+and `--version` or the owned hashed CommonJS probe are proposed. The first
+reviewed run observed `v24.10.0`, then blocked at OpenSSL's attempt to read ambient
+host configuration. No controls were marked passed from that failed mode.
+The candidate repair adds a fixed comment-only owned OpenSSL configuration,
+literal data-read permission only, protected hash checks and a write-denial
+control; it does not allow reading host OpenSSL configuration. The installed
+Node manpage documents the flag and its precedence over OPENSSL_CONF. This
+changed candidate requires fresh review/authorization before execution.
+Replacement environment adds
 `NODE_DISABLE_COMPILE_CACHE=1`; no ambient Node/cache/coverage/inspector/ICU/
 OpenSSL/DYLD overrides are inherited. Per-attempt budgets are 5 s and 16 KiB
 combined output, using the retained process owner and its 2 s cleanup proof; a
@@ -349,14 +357,16 @@ old-space flag is not a total RSS bound. Fresh private artifacts use exclusive
 creation; verified ordinary failures remove them, unknown cleanup/drift retains
 them and blocks reuse. Evidence is status/count/hash/constant-label only.
 
-The proposed 29 observations cover exact ASCII version, approved read/six state
+The proposed 30 observations cover exact ASCII version, approved read/six state
 writes, forbidden private/home/repo/config-shaped canaries and escaping symlink,
-protected writes, real unauthorized `spawnSync` (only EPERM/EACCES counts), IPv4/
+protected writes (including owned OpenSSL config), real unauthorized `spawnSync`
+(only EPERM/EACCES counts), IPv4/
 IPv6 TCP connect/UDP send/bind/listen permission denials, zero traffic at owned
 loopback receivers, and compile-cache disablement via named Node APIs. Unknown
 API behavior, nonpermission errors, stderr, partial/duplicate/extra labels or
-any malformed version fail closed. These APIs and Node bootstrap have **not
-been executed**. DNS/IPC/JIT, full system closure, publisher provenance, V8/total
+any malformed version fail closed. The version-only action was observed; the
+CommonJS controls/cache APIs have **not passed**. DNS/IPC/JIT, full system closure,
+publisher provenance, V8/total
 memory, compiler/consumed-file/type closure and native integration remain open.
 Independent code/policy review, exact inventory approval and explicit primary
-authorization are mandatory before the first actual Node guard execution.
+authorization are mandatory before each changed candidate's actual execution.
