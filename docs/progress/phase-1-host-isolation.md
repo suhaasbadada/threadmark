@@ -53,6 +53,14 @@ No installed host or host plugin has been launched. macos-15 CI remains required
 before this unit can be accepted; review and repairs are recorded above. Even a passing
 synthetic guard does not authorize host-specific permissions or real admission.
 
+Full committed code revision after current-main integration:
+`d5de9e12cec28b339e41539328ee06851b960335`. On this exact revision the parent
+reran all 25 portable tests with ResourceWarning as error, the actual synthetic
+macOS guard (`host_launched=false`), and the full foundation check script: all
+passed. Staged/history Gitleaks, cargo-deny and whitespace checks also passed for
+the unit. This follow-up is evidence-only; the final PR head still requires its
+own CI. No automatic merge, new publication or installed-host test is authorized.
+
 ## Delegate snapshot before parent repair
 
 The sections below retain the initial failures, original two-listener protocol
