@@ -1,0 +1,15 @@
+[package]
+name = "threadmark-daemon"
+description = "Bounded offline Threadmark foundation worker"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+threadmark-core = { path = "../core", version = "0.1.0" }
+
+[lints]
+workspace = true

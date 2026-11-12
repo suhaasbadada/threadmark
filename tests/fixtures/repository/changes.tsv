@@ -1,0 +1,5 @@
+revision	operation	path	previous_path
+rev-a	present	src/old.rs	-
+rev-b	rename	src/new.rs	src/old.rs
+rev-c	delete	src/new.rs	-
+rev-c	exclude	.env	-

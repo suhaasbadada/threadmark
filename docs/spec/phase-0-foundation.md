@@ -2,7 +2,7 @@
 
 [Specification index](README.md) · Next: [Phase 1](phase-1-feasibility.md)
 
-**Status:** open. **Requirements:** TM-01–TM-10. **User outcome:** future product behavior can be built, tested, reviewed, and recovered without relying on undocumented operator knowledge.
+**Status:** engineering evidence accepted for the [recorded tested revision](../progress/phase-0.md); PR merge and publication remain unapproved. **Requirements:** TM-01–TM-10. **User outcome:** future product behavior can be built, tested, reviewed, and recovered without relying on undocumented operator knowledge.
 
 ## Scope and product boundaries
 
