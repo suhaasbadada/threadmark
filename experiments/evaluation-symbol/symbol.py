@@ -15,7 +15,9 @@ KINDS = {"fn", "struct", "enum", "trait", "type", "const", "static", "mod"}
 RESERVED = set(("as async await break const continue crate dyn else enum extern false fn "
                 "for if impl in let loop match mod move mut pub ref return self Self "
                 "static struct super trait true type unsafe use where while abstract "
-                "become box do final macro override priv typeof unsized virtual yield try").split())
+                 "become box do final macro override priv typeof unsized virtual yield try").split())
+# These became keywords after edition 2015, where they can name macros.
+LEGACY_MACRO_NAMES = {"async", "await", "dyn", "try"}
 
 
 @dataclass(frozen=True)
@@ -99,7 +101,10 @@ def _python(text, lines):
             index += 1
         # Explicit continuations have no intervening token, but row must agree.
         name = tokens[index + 1]
+        suffix = lines[name.end[0] - 1][name.end[1]:]
         if (name.type == tokenize.NAME and IDENT.fullmatch(name.string)
+                and name.string == node.name
+                and (not suffix or not _id_part(suffix[0]))
                 and tokens[index].start[0] == name.start[0] == keyword.start[0]):
             yield name.string, keyword.start[0]
 
@@ -232,7 +237,8 @@ def _rust(text):
             if j < len(tokens) and tokens[j][0] == "[":
                 i = pairs[j] + 1
                 continue
-        if (kind in ("id", "raw") and (kind == "raw" or word not in RESERVED)
+        if (kind in ("id", "raw")
+                and (kind == "raw" or word not in RESERVED or word in LEGACY_MACRO_NAMES)
                 and i + 1 < len(tokens) and tokens[i + 1][0] == "!"
                 and (i + 2 == len(tokens) or tokens[i + 2][0] != "=")):
             j = i + 2

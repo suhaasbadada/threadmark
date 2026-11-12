@@ -5,7 +5,7 @@ Phase 1 remains open, ADR 0006 remains proposed, and the full agreed product
 scope remains required. No quality, performance, working-companion or Phase 2
 claim follows from this prerequisite.
 
-## Change and checkout identity
+## Historical child handoff (superseded by parent verification below)
 
 - Task branch: `t3/phase1-symbol-declaration-baseline`, existing assigned worktree;
   no branch switching, alternate checkout edits or new worktree.
@@ -86,3 +86,34 @@ Independent review: **not run by child; parent-owned**. Remote CI run/head:
 **not run by child; parent-owned**. Exact committed tested implementation SHA:
 **not available (staged/uncommitted handoff)**. No commit, push, PR, merge, deploy,
 watch, scheduler or delegation performed. No phase closure.
+
+## Parent integration and reproduced review repairs
+
+The assigned branch was fast-forwarded to actual merged main
+`992997be44a14c5a66dc7d3c45ef7e758c15f1e4`, preserving the child changes.
+The parent added one symbol-suite command to the existing integrated workflow;
+no duplicate workflow or changes to other arms. Initial implementation commit:
+`ee5d348892a04bff09ef3d102c2787604ac3338b`.
+
+- Primary reproduced valid Rust unary-not / inequality expressions causing a
+  closed error through mistaken macro recognition, and added a passing behavior
+  regression distinguishing operators from macros.
+- Joffrey independently reviewed that exact initial commit and found two medium
+  issues. Primary reproduced both: `resolve` incorrectly matched the ASCII prefix
+  of `resolvé` on Python 3.9.6, and declarations inside legacy Rust `try!` leaked.
+- Repair checks the raw token's complete identifier boundary and AST name,
+  rejecting Unicode/NFKC-derived false ASCII matches. Tests cover functions,
+  async functions and classes. Macro opacity now includes edition-2015 names
+  `try`, `async`, `await`, `dyn`, preserving the operator regression. All three
+  delimiter forms are covered. No edition/grammar certification is implied.
+
+Repaired working-tree verification (2026-11-12): **37 symbol tests PASS** on
+Python 3.12.6 and, additionally, legacy-tokenizer Python 3.9.6. The latter is
+diagnostic compatibility evidence, not a change to advertised Python 3.10+
+support. Python 3.10/3.11 were unavailable; no certification is claimed for them.
+All actual integrated workflow commands passed: **239 experimental tests**
+(159 Python + 80 Node), plus actual synthetic macOS guard. Foundation checks and
+cached `cargo deny --offline --locked check` passed; advisory freshness remains
+unverified. Synthetic corpus source was not executed or compiled. Fresh repaired
+commit review, staged secrets, exact SHA and remote CI are recorded below when
+available; initial 34/35-test evidence is historical, not the repaired total.

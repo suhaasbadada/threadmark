@@ -161,7 +161,15 @@ fn resolve() {}
                 "static PTR: fn() = target;\n"
                 "const fn resolve() {}\n")
         self.assertEqual([(a.line, a.text) for a in retrieve(sources(text), task("resolve fn"))],
-                         [(9, 'const fn resolve() {}')])
+                          [(9, 'const fn resolve() {}')])
+
+    def test_rust_edition_2015_macro_names_keep_token_trees_opaque(self):
+        for name in ("try", "async", "await", "dyn"):
+            for body in ("({ fn resolve() {} Ok(()) })", "{ fn resolve() {} }",
+                         "[fn resolve() {}]"):
+                with self.subTest(name=name, body=body):
+                    text = "fn actual() {\n " + name + "!" + body + ";\n}\nfn resolve() {}\n"
+                    self.assertEqual([a.line for a in retrieve(sources(text), task())], [4])
 
     def test_generic_function_type_return_arrows_and_union_parameters(self):
         text = ("union Storage<const resolve: usize> { bytes: [u8; resolve] }\n"
@@ -207,6 +215,15 @@ def resolve(): pass
     def test_python_unicode_names_no_nfkc_or_ascii_split(self):
         text = "def résolve(): pass\ndef resolveé(): pass\ndef K(): pass\ndef resolve\u0301(): pass\ndef resolve(): pass"
         self.assertEqual([a.line for a in retrieve(sources(text, "py"), task("resolve K"))], [5])
+
+    def test_python_split_unicode_name_prefixes_all_declaration_kinds(self):
+        for declaration in ("def {name}(): pass", "async def {name}(): pass",
+                            "class {name}: pass"):
+            for name in ("resolve\u0301", "resolve\u0327", "resolveé", "K"):
+                with self.subTest(declaration=declaration, name=name):
+                    text = declaration.format(name=name) + "\ndef resolve(): pass\n"
+                    self.assertEqual([a.line for a in retrieve(sources(text, "py"),
+                                                              task("resolve K"))], [2])
 
     def test_keyword_name_and_async_share_physical_lf_line(self):
         rust = "fn\nresolve() {}\nstatic mut\nresolve: u8 = 0;\nfn resolve() {}"
