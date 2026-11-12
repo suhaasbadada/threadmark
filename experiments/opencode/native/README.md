@@ -107,6 +107,16 @@ real-SDK selection is provided. The existing workflow's native `test_*.py`
 discovery includes all synthetic projection tests without another workflow step.
 Compiler execution still needs the separate containment-plan review in progress.
 
+`compiler_plan.py` now validates an externally reviewed compiler-only inventory
+and produces an **inert candidate descriptor**, not a launcher or execution
+approval. See [the plan and trust boundaries](COMPILER-PLAN.md). It revalidates
+projection bytes against owned archives, exact ledger, compiler/Node/source
+inventories, fixed strict config and clean environment. Compiler archive provenance
+and Node version identity require external reviewed inventory authority, not a
+self-approved copied ledger. All actual runtime/system policy and negative controls
+remain pending; containment/type closure are explicitly unestablished. Only pure
+synthetic tests ran. No real SDK selection, compiler projection or execution.
+
 Acquisition redirects now reject in `HTTPRedirectHandler.redirect_request`
 **before** following, while retaining the final-response URL check. Pure tests
 verify callback denial and opener wiring without listeners or network.

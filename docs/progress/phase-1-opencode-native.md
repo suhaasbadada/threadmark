@@ -297,3 +297,159 @@ recorded separately; none is implied by this entry.
 P1-A2/P1-A5 remain PARTIAL and Phase 1 OPEN. Full runtime acquisition, authentic
 mandatory type closure, compiler containment/execution and native behavior remain
 separate unpassed gates.
+
+## Published prerequisite — exact-head CI pending
+
+PR: <https://github.com/suhaasbadada/threadmark/pull/21>, target `main`.
+Full implementation/tested head:
+`3f3f1893a30b31e7530e0eb4a363b3e5d2a7f768` (tree
+`3674164aea82acdea205fc7d10c87e859598ae11`). All local results above apply to
+this implementation; staged secrets and full whitespace checks passed before
+commit. Worktree was clean following publication; this appended evidence is a
+local progress update, not an additional published head or claim of remote green.
+
+Initial PR inspection confirmed that exact head and seven registered jobs:
+
+- Foundation CI: <https://github.com/suhaasbadada/threadmark/actions/runs/43317833157>
+  — both Rust platforms and dependencies/licenses/secrets IN_PROGRESS.
+- Integrated experiments:
+  <https://github.com/suhaasbadada/threadmark/actions/runs/43317832992>
+  — Linux/macOS IN_PROGRESS.
+- OpenCode offline contracts:
+  <https://github.com/suhaasbadada/threadmark/actions/runs/43317833155>
+  — Linux/macOS SUCCESS; these remain abstract offline contracts, not native proof.
+
+No remote approval/review was present at initial inspection. Joffrey's independent
+review and the primary's repair/regression evidence are recorded above. Merge
+remains gated on fresh complete exact-head checks and approval/discussion/target
+verification. No merge, runtime deployment, phase closure or native certification
+is claimed. Plum coordination remains unavailable (`plum did not answer`); no
+coordination reply was inferred or fabricated.
+
+## PR #21 merge gate and continuation
+
+Fresh PR inspection verified all seven exact-head checks SUCCESS for
+`3f3f1893a30b31e7530e0eb4a363b3e5d2a7f768`, target `main`, MERGEABLE/CLEAN,
+no unresolved review threads, no draft state, and no repository branch-protection
+or ruleset approval requirement. No forge approval was invented; independent
+Joffrey review plus primary repair/regression verification are recorded above.
+The same three PR runs linked above completed successfully. This accepts only
+the prerequisite unit, not the still-partial P1-A2/P1-A5 phase acceptance.
+
+Under Suhaas's standing qualified-merge authorization, PR #21 was squash-merged
+at `3ae73eaa7be65ce7b4c2187b72f10e8f26e06287`. Its tree is exactly
+`3674164aea82acdea205fc7d10c87e859598ae11`, matching the tested implementation
+tree. No binary/runtime deployment or phase closure followed. The PR watch was
+stopped. Assigned task branch/worktree and local progress updates were preserved;
+the exact merged main was integrated without reset, branch switch or cleanup.
+
+Post-merge runs were freshly bound to the merge SHA: foundation CI
+<https://github.com/suhaasbadada/threadmark/actions/runs/43318520271> and integrated
+experiments <https://github.com/suhaasbadada/threadmark/actions/runs/43318520767>
+were IN_PROGRESS at inspection; OpenCode offline contracts
+<https://github.com/suhaasbadada/threadmark/actions/runs/43318520581> were SUCCESS.
+No pending post-merge run is called green. Next authorized work remains a reviewed
+compiler-only preflight/containment plan and pure tests, not compiler execution,
+new dependency acquisition, SDK loading or native certification.
+
+## Bob continuation — inert compiler-only preflight candidate
+
+Assigned branch `t3/004628d1`, full local merge HEAD
+`2c001f3d20ae1dda86a53b8001ea4cbd6d677e6a`; integrated main/base
+`3ae73eaa7be65ce7b4c2187b72f10e8f26e06287`. The parent-owned progress text
+above is preserved, with this append only. This unit is staged/uncommitted:
+there is **no new tested implementation commit or exact-change CI run**. Parent
+owns independent review, final tested SHA, publication and exact-head CI. The
+post-merge run IDs/states above were not polled or reclassified by Bob.
+
+TM-04/TM-05/TM-08/TM-10, supporting P1-A2/P1-A5 prerequisites only:
+`compiler_plan.py` now validates an out-of-band operator-reviewed manifest digest,
+reconstructs authentic selected projection bytes from already-owned archives,
+requires exact prepared ledger bytes/hash and absence of incomplete/extra files,
+and validates complete metadata, source/Node/compiler inventories and notices.
+Canonical paths, single-link regular files, aliases, roots, hashes, source
+suppressions, compiler modes and known missing requirements fail closed.
+Owned fixtures retain normal node_modules ancestry without aliases. The returned
+descriptor exposes per-read-file/config hashes, fixed strict no-emit config,
+explicit roots/typeRoots/types, clean environment, fixed compiler argv and
+independent bounds. No config is written and there is **no launch entrypoint**.
+
+The [compiler plan](../../experiments/opencode/native/COMPILER-PLAN.md) documents
+authority, exact compiler archive pin and notice/helper/lib inventory review,
+Node version/hash inventory trust, same-UID parent-path assumptions, pending
+macOS system/dyld/owner policy, typed policy serialization and the future measured
+negative-control matrix. Compiler archive provenance is an **external reviewed
+inventory attestation**, not new archive verification/projection by this builder;
+Node version identity likewise cannot be proved from a hash without external
+review. Synthetic fixtures are inert invented bytes, not authentic compiler/Node
+proof. All actual selection/inventory approvals remain future gates.
+
+Every descriptor says `executionApproved: false`, `containmentVerified: false`,
+type/runtime closure `NOT established`. Future execution separately requires
+independent plan review, explicit parent authorization, complete reviewed minimum
+runtime/system inventory, launch-time revalidation and measured negative controls.
+Retained process-owner/status/control semantics are required; 120 s wall,
+16 MiB combined output, 1 GiB V8 old-space and 2 s cleanup proof are budgets,
+not measurements. Unknown cleanup/EPERM quarantines rather than claiming success.
+No system read allowance, generic process framework or host policy was added.
+Actual strict non-any positive/negative diagnostics and consumed-file closure
+remain unrun; unknown module problems require the future official compiler.
+
+Verification on the uncommitted tree:
+
+- Native discovery: **69 PASS** = retained 43 + **26 new pure synthetic tests**.
+  Final native rerun used selected installed Python **3.12** and ResourceWarning
+  as error. Tests inspect observable descriptor/config/environment/hash contracts;
+  they do not grep implementation text or simulate compiler/type closure success.
+  Source/entrypoint bytes containing dynamic process-import syntax remain inert;
+  guarded process/socket/acquisition APIs were not called by the builder.
+- Full existing integrated workflow suites plus new tests: **450 PASS** =
+  370 Python (including the 69 native tests) + 80 existing Node offline-contract
+  tests. No Node probe/compiler/SDK command was invoked. Existing bounded worker
+  tests remain synthetic contracts, not native compiler containment proof.
+- `python3 scripts/check.py`: **PASS**, including Rust format/build/Clippy/tests,
+  docs, finite foundation diagnostics and intentional-failure rejection. Local
+  Markdown links rerun after plan changes: **PASS**.
+- `cargo deny --locked --offline check`: **PASS**, cached advisories only;
+  no online freshness or npm audit claim.
+- Initial direct `scripts/ci_python.py` invocation lacked its required CI-only
+  `GITHUB_ENV` and failed; corrected by using its existing selector API without
+  writing global/CI state. Reviewed installed Python 3.12 selection and its five
+  tests passed; no interpreter was acquired.
+- After staging the five handoff files, `python3 scripts/secrets.py`: **PASS**
+  (tracked/history scan and intentional synthetic-secret rejection).
+  `git diff --cached --check`, `git diff --check`, and Markdown links: **PASS**.
+  No new workflow/dependency, compiler, acquisition, SDK/TUI import, native host,
+  provider, credential reuse, Docker, delegate, scheduler, watch, commit, push,
+  PR, merge or deployment was used. Actual macOS compiler negative controls and
+  the standalone synthetic guard were **NOT RUN** in this unit.
+
+Full runtime notice/provenance gaps, authentic mandatory types (including
+`@types/emscripten`), Node/OpenTUI engine compatibility and actual SDK selection
+remain blocked. Native capture/attachments, immutable fidelity, exclusive review
+lease, scope/revision/admission, context ownership and full agreed product scope
+remain open. P1-A2/P1-A5 remain PARTIAL; no Phase 1/native acceptance is claimed.
+
+## Primary compiler-preflight review and encoding repair
+
+Primary freshly verified the two pending PR #21 post-merge runs above: foundation
+`43318520271` and integrated `43318520767` completed SUCCESS on exact merge head
+`3ae73eaa7be65ce7b4c2187b72f10e8f26e06287`. Together with offline contracts
+`43318520581`, the three recorded merge-head workflows passed. This remains
+offline CI, not a deployment or native acceptance gate.
+
+Joffrey independently reviewed the compiler-preflight unit and ran its 26 pure
+tests. He requested a medium fix: raw ASCII-byte suppression scans accepted
+BOM-marked UTF-16 source directives. Primary repaired the owned-source contract
+to strict UTF-8 (optional UTF-8 BOM), rejecting malformed encodings and NUL before
+directive checking. Authentic upstream bytes are not rewritten. Two new tests
+cover both UTF-16 byte orders/all three directives, invalid UTF-8/NUL, UTF-8 BOM
+directives, and valid UTF-8 with/without BOM while preserving exact byte hashes.
+
+The encoding regression was executed against the pre-fix implementation and
+failed in the six directive cases plus malformed/NUL cases, as expected. The
+repaired native suite passes **71 tests** with ResourceWarning treated as error.
+No compiler, Node probe, SDK import, acquisition or network was used by these
+reproductions. Primary cached offline cargo-deny also passes; no advisory-refresh
+claim is made. Fresh full-suite/foundation/staged checks and publication evidence
+will follow separately; execution approval and measured containment remain CLOSED.
