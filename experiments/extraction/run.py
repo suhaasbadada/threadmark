@@ -21,6 +21,78 @@ VERSION = "0.9.101"
 TIMEOUT = 15
 OUTPUT_LIMIT = 256 * 1024
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
+SUPERVISOR = FIXTURES.parent.parent / "host-isolation" / "process_supervisor.py"
+CLEANUP_SECONDS = 2
+_QUARANTINED = False
+_UNVERIFIED_OWNERS = []
+
+
+class CleanupUnverified(ValueError):
+    """Missing ownership/termination proof blocks subsequent invocations."""
+
+
+def _target_status(ready, status):
+    """Only canonical private helper records count as target wait evidence."""
+    try:
+        pid = int(ready)
+        if pid < 0 or ready != f"{pid}\n".encode("ascii"):
+            raise ValueError
+        if pid == 0 and status == b"launch-error\n":
+            return None
+        code = int(status)
+        if pid == 0 or status != f"{code}\n".encode("ascii"):
+            raise ValueError
+        return code
+    except (ValueError, UnicodeError):
+        raise CleanupUnverified("worker cleanup unverified; further invocations blocked") from None
+
+
+def _finish(process, read_fd, ready_fd, status, ready):
+    """Signal the still-owned group, then reap; never infer target exit from EOF."""
+    end = time.monotonic() + CLEANUP_SECONDS
+    failed = False
+    def drain(fd, record):
+        try:
+            record.extend(os.read(fd, 33))
+        except BlockingIOError:
+            pass
+        if len(record) > 32:
+            raise ValueError("invalid private worker record")
+
+    try:
+        os.set_blocking(read_fd, False)
+        os.set_blocking(ready_fd, False)
+        until = min(end - 1, time.monotonic() + 0.7)
+        while not ready.endswith(b"\n") and time.monotonic() < until:
+            drain(ready_fd, ready)
+            time.sleep(0.005)
+        os.killpg(process.pid, signal.SIGTERM)
+        until = min(end - 0.5, time.monotonic() + 0.5)
+        while time.monotonic() < until:
+            drain(read_fd, status)
+            time.sleep(0.005)
+    except (OSError, ValueError):
+        failed = True
+    finally:
+        try:
+            # The supervisor remains alive and unreaped through this final signal.
+            os.killpg(process.pid, signal.SIGKILL)
+        except OSError:
+            failed = True
+        finally:
+            # EOF is also the helper's parent-death fallback, not proof of cleanup.
+            try:
+                process.stdin.close()
+            except OSError:
+                failed = True
+            try:
+                process.wait(timeout=max(0.001, end - time.monotonic()))
+            except (OSError, subprocess.TimeoutExpired):
+                _UNVERIFIED_OWNERS.append(process)
+                failed = True
+    if failed or time.monotonic() > end or process.returncode != -signal.SIGKILL:
+        raise CleanupUnverified("worker cleanup unverified; further invocations blocked")
+    return _target_status(ready, status)
 
 
 class Canceled(Exception):
@@ -35,46 +107,102 @@ def install_cancellation_handler():
 
 
 def bounded(command, cwd, env, timeout=TIMEOUT, limit=OUTPUT_LIMIT):
-    """Bound both pipes while running, not after communicate has allocated them."""
+    """Private POSIX harness primitive; aggregate live output, retained group owner."""
+    global _QUARANTINED
+    if _QUARANTINED:
+        raise CleanupUnverified("worker cleanup unverified; further invocations blocked")
+    if not 0 < timeout <= TIMEOUT or not 0 < limit <= OUTPUT_LIMIT:
+        raise ValueError("invalid worker budget")
     start = time.monotonic()
     process = None
     chunks = {}
+    descriptors = []
+    status, ready = bytearray(), bytearray()
+    code = None
     try:
-        process = subprocess.Popen(command, cwd=cwd, env=env, stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE, start_new_session=True)
+        read_fd, write_fd = os.pipe()
+        descriptors.extend((read_fd, write_fd))
+        ready_fd, ready_write = os.pipe()
+        descriptors.extend((ready_fd, ready_write))
+        mask = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM, signal.SIGINT})
+        try:
+            process = subprocess.Popen(
+                [sys.executable, "-I", "-S", str(SUPERVISOR), str(write_fd),
+                 "--ready-fd", str(ready_write), *command],
+                cwd=cwd, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE, close_fds=True, pass_fds=(write_fd, ready_write),
+                start_new_session=True)
+            for fd in (write_fd, ready_write):
+                os.close(fd)
+                descriptors.remove(fd)
+        finally:
+            # Pending cancellation can run only after the owner has been recorded.
+            signal.pthread_sigmask(signal.SIG_SETMASK, mask)
         chunks = {process.stdout: bytearray(), process.stderr: bytearray()}
         with selectors.DefaultSelector() as selector:
             for stream in chunks:
-                selector.register(stream, selectors.EVENT_READ)
+                selector.register(stream, selectors.EVENT_READ, chunks[stream])
+            selector.register(read_fd, selectors.EVENT_READ, status)
+            selector.register(ready_fd, selectors.EVENT_READ, ready)
             total = 0
             while selector.get_map():
                 remaining = timeout - (time.monotonic() - start)
                 if remaining <= 0:
                     raise ValueError("worker timeout")
                 for key, _ in selector.select(min(remaining, 0.1)):
-                    data = os.read(key.fileobj.fileno(), 8192)
+                    data = os.read(key.fd, 8192 if key.fileobj in chunks else 33)
                     if not data:
                         selector.unregister(key.fileobj)
                         continue
-                    total += len(data)
-                    if total > limit:
-                        raise ValueError("worker output budget exceeded")
-                    chunks[key.fileobj].extend(data)
-            process.wait(timeout=max(0.001, timeout - (time.monotonic() - start)))
-        if process.returncode:
-            # Never echo third-party diagnostics or source paths on failure.
-            raise ValueError("worker failed; dependency/API prerequisite unavailable")
-        return bytes(chunks[process.stdout]), round(time.monotonic() - start, 4)
+                    if key.fileobj in chunks:
+                        total += len(data)
+                        if total > limit:
+                            raise ValueError("worker output budget exceeded")
+                    elif len(key.data) + len(data) > 32:
+                        raise ValueError("invalid private worker record")
+                    key.data.extend(data)
+    except OSError:
+        raise ValueError("worker launch or I/O failed") from None
     finally:
-        # This experiment is POSIX-only. Reap the group even on cancellation.
-        if process is not None:
+        # Defer asynchronous cancellation through signals, reaping and FD restoration.
+        mask = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM, signal.SIGINT})
+        cleanup_error = None
+        try:
+            if process is not None:
+                try:
+                    code = _finish(process, read_fd, ready_fd, status, ready)
+                except (OSError, ValueError, subprocess.TimeoutExpired):
+                    _QUARANTINED = True
+                    cleanup_error = CleanupUnverified(
+                        "worker cleanup unverified; further invocations blocked")
+        finally:
             try:
-                os.killpg(process.pid, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
-            process.wait()
-        for stream in chunks:
-            stream.close()
+                if process is not None:
+                    for stream in (process.stdin, process.stdout, process.stderr):
+                        if stream is not None:
+                            try:
+                                stream.close()
+                            except OSError:
+                                _QUARANTINED = True
+                                cleanup_error = CleanupUnverified(
+                                    "worker cleanup unverified; further invocations blocked")
+                for fd in descriptors:
+                    try:
+                        os.close(fd)
+                    except OSError:
+                        _QUARANTINED = True
+                        cleanup_error = CleanupUnverified(
+                            "worker cleanup unverified; further invocations blocked")
+            finally:
+                try:
+                    signal.pthread_sigmask(signal.SIG_SETMASK, mask)
+                finally:
+                    if cleanup_error is not None:
+                        raise cleanup_error
+    if code != 0:
+        # Never echo third-party diagnostics or source paths on failure.
+        raise ValueError("worker failed; dependency/API prerequisite unavailable")
+    return bytes(chunks[process.stdout]), round(time.monotonic() - start, 4)
 
 
 def validate(reply, scope, manifest):

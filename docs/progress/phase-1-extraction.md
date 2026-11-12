@@ -248,3 +248,62 @@ Passed locally on foundation HEAD plus this uncommitted unit:
 
 Parent must bind independent review and exact-head CI to its eventual commit.
 These local checks cannot close Phase 1.
+
+## Retained-owner cleanup repair (2026-11-12)
+
+TM-02/TM-04/TM-07/TM-10; P1-A1 failure/recovery and P1-A5 lifecycle
+evidence only, following [ADR 0006](../decisions/0006-phase-1-evaluation-protocol.md).
+The parent retained an actual `stderr` overflow failure: the original target
+could exit before `killpg`, which raised macOS `EPERM` and skipped reaping/pipe
+closure. Normal completion also reaped that group owner before signaling it,
+creating a stale/reusable PID window. Catching the permission error alone would
+not repair ownership. Earlier broad cleanup claims above describe the historical
+implementation, not proof that this failure was safe.
+
+`bounded()` now launches the existing authored
+`experiments/host-isolation/process_supervisor.py` with fixed interpreter
+`-I -S`, private readiness/status descriptors and an owner-control pipe. The
+helper owns the group, waits for the actual target and stays alive/unreaped
+through the final group signal. Target stdin is null; caller-owned clean
+environment policy is unchanged. Stdout remains byte-exact and separate from
+stderr; both count against the unchanged 256 KiB live aggregate ceiling and
+15-second worker deadline (tests may select stricter limits). Cleanup has its
+own two-second deadline, a 0.5-second TERM grace, then KILL and bounded reaping.
+SIGTERM/SIGINT are deferred across launch ownership recording and the entire
+cleanup/descriptor-restoration region. No helper API or evaluation-runner change.
+
+Canonical private target identity/wait-status records, successful final signaling
+and supervisor reaping are required cleanup proof. Missing proof or signaling /
+descriptor failures raise content-free `CleanupUnverified` and latch this Python
+process against further invocations; a still-unreaped owner reference is retained.
+Control EOF remains the existing helper's parent-death fallback, not a cleanup
+success acknowledgment. This is cooperative POSIX lifecycle evidence, **not**
+universal containment, escaped-session detection or orphan-grandchild reaping.
+Known cooperative descendants are checked using fixture-owned terminal evidence.
+
+The SIGTERM regression now calls the recorded PID `group_owner`, not `worker`,
+and removes its unsafe redundant signal after that owner was reaped. Failure
+cleanup kills only the still-owned driver (closing the helper control channel),
+never a released group ID. Other regressions assert final-signal/reap order,
+owner liveness, no early poll/communicate, descriptor/pipe closure, real
+launch-boundary and cleanup-time signals, actual aggregate overflow, per-failure
+fresh recovery, closed-output timeout, cooperative descendant reaping, actual
+nonzero target status, launch failure and truthful fail-closed cleanup errors.
+
+Local verification on base
+`07e1c802c3e84fc6d2d0b9afb9205ce68f3e4efb` plus these uncommitted changes:
+
+- `python3 -B -W error::ResourceWarning experiments/extraction/test_harness.py`:
+  all 17 tests passed in three consecutive final runs; no ResourceWarnings.
+- `python3 -B -W error::ResourceWarning experiments/host-isolation/test_harness.py`:
+  all 25 portable tests passed; this did not run the real macOS sandbox probe.
+- `python3 scripts/check.py` and `cargo deny --locked check`: passed.
+- After staging only the three repair files (preserving the parent's staged
+  integration work), `python3 scripts/secrets.py`, `git diff --cached --check`
+  and `python3 scripts/check.py docs`: passed.
+
+No Graphify/candidate worker, source-corpus execution, installation, network,
+Docker, runtime or product authority was added or exercised. Full integration,
+independent review, final tested commit SHA and exact-head CI remain parent-owned
+pending gates; no commit, push, PR or merge in this repair. Production Graphify
+adoption remains deferred and Phase 1 remains **OPEN**.

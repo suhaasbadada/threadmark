@@ -1,4 +1,4 @@
-"""Candidate parity via pure bytes only; new actual worker launch is parent-gated."""
+"""Candidate parity plus SMALL worker conformance added after independent review."""
 import base64
 from importlib import import_module
 import json
@@ -38,6 +38,25 @@ class CandidateReadmissionTests(unittest.TestCase):
             self.assertEqual(status, "ready")
             self.assertEqual(payload, base64.b64decode(value["result"]["candidate"]))
             self.assertEqual(original, base64.b64decode(value["result"]["original"]))
+
+    def test_reviewed_actual_candidate_small_worker_both_roots(self):
+        # Parent added only after exact integration review and lifecycle negatives.
+        # Eight SMALL declarations are transport evidence, not call-quality proof.
+        for project in ("harbor", "harbour"):
+            with self.subTest(project=project):
+                result = r.Runner().run("candidate", project)
+                self.assertEqual((result.status, result.cleanup, result.target_exit),
+                                 ("ready", "verified", 0))
+                self.assertIs(type(result.candidate), bytes)
+                self.assertIs(type(result.original_input), bytes)
+                payload = json.loads(result.candidate)
+                self.assertEqual(payload["scope"], r.scope(project))
+                self.assertEqual(len(payload["items"]), 8)
+                coverage = payload["coverage"]["envelope"]
+                self.assertTrue(coverage[-2].startswith("candidate policy sha256="))
+                self.assertTrue(coverage[-1].startswith("candidate observation sha256="))
+                self.assertFalse(r._QUARANTINED)
+                self.assertFalse(r._ACTIVE)
 
     def test_exact_protocol_mutations_closed(self):
         for field, wrong in (("schema", "evaluation-runner/99"), ("arm", "symbol"),

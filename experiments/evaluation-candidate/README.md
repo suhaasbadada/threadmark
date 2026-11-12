@@ -104,8 +104,10 @@ observation/admission rules. It does not rewrite the old pending manifest to
 manufacture approval. Grammar 3.10–3.14 states have predeclared authored-manifest
 digests; unknown versions reject rather than self-approve. Only **Python 3.12.6**
 was locally exercised; native CI records its actual version/grammar, not universal
-runtime certification. Independent integration review, committed pins, exact-head
-CI and the first actual candidate-worker test are **parent-owned pending gates**.
+runtime certification. Parent independently reviewed exact integration
+`07e1c802c3e84fc6d2d0b9afb9205ce68f3e4efb` through Joffrey (no substantive
+findings), then verified two actual SMALL candidate-worker transport cases.
+Exact-head native CI remains pending; these are not comparative quality results.
 
 SMALL's eight returned declarations do not prove calls work. Separate fixed-pin
 tiny Rust/Python fixtures prove call anchors after normalization; public build

@@ -91,7 +91,7 @@ class ReadySelector(selectors.DefaultSelector):
     announced = False
     def select(self, timeout=None):
         if not self.announced:
-            print(json.dumps({"worker": children[0].pid, "temp": directory}), flush=True)
+            print(json.dumps({"group_owner": children[0].pid, "temp": directory}), flush=True)
             self.announced = True
         return super().select(timeout)
 run.selectors.DefaultSelector = ReadySelector
@@ -118,13 +118,10 @@ except run.Canceled:
             self.assertEqual(process.returncode, 130)
             self.assertFalse(Path(state["temp"]).exists())
             with self.assertRaises(ProcessLookupError):
-                os.kill(state["worker"], 0)
+                os.kill(state["group_owner"], 0)
         finally:
-            if state is not None:
-                try:
-                    os.killpg(state["worker"], signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
+            # Killing the still-owned parent closes the helper control pipe.
+            # Never signal a recorded group ID after its owner has been reaped.
             if process.poll() is None:
                 process.kill()
             process.communicate(timeout=5)
@@ -147,6 +144,198 @@ except run.Canceled:
             output, _ = run.bounded([sys.executable, "-I", "-B", "-c", "print('recovered')"],
                                     Path(directory), env)
             self.assertEqual(output, b"recovered\n")
+
+    def python(self, code, **kwargs):
+        with tempfile.TemporaryDirectory(prefix="threadmark-owned-test-") as directory:
+            return run.bounded([sys.executable, "-I", "-S", "-c", code],
+                               Path(directory), {"HOME": directory, "PATH": os.defpath},
+                               **kwargs)
+
+    def test_owner_alive_unreaped_until_final_signal_and_all_fds_closed(self):
+        events, children, fds = [], [], []
+        spawn, kill, wait, pipe = subprocess.Popen, os.killpg, subprocess.Popen.wait, os.pipe
+
+        def record_pipe():
+            pair = pipe()
+            fds.extend(pair)
+            return pair
+
+        def record_spawn(*args, **kwargs):
+            self.assertEqual(args[0][:4], [sys.executable, "-I", "-S", str(run.SUPERVISOR)])
+            self.assertTrue(kwargs["close_fds"])
+            self.assertEqual(len(kwargs["pass_fds"]), 2)
+            child = spawn(*args, **kwargs)
+            children.append(child)
+            return child
+
+        def record_kill(group, number):
+            self.assertEqual(group, children[0].pid)
+            self.assertIsNone(children[0].returncode)
+            os.kill(group, 0)  # Retained helper alive, not just a stale cached PID.
+            events.append(number)
+            return kill(group, number)
+
+        def record_wait(child, *args, **kwargs):
+            events.append("reap")
+            return wait(child, *args, **kwargs)
+
+        with mock.patch.object(run.subprocess, "Popen", record_spawn), \
+                mock.patch.object(spawn, "wait", record_wait), \
+                mock.patch.object(spawn, "poll", side_effect=AssertionError("early owner poll")), \
+                mock.patch.object(spawn, "communicate", side_effect=AssertionError("early owner reap")), \
+                mock.patch.object(run.os, "killpg", record_kill), \
+                mock.patch.object(run.os, "pipe", record_pipe):
+            self.assertEqual(self.python("import sys; print('exact'); print('diagnostic', file=sys.stderr)")[0],
+                             b"exact\n")
+        self.assertEqual(events, [signal.SIGTERM, signal.SIGKILL, "reap"])
+        for stream in (children[0].stdin, children[0].stdout, children[0].stderr):
+            self.assertTrue(stream.closed)
+        for fd in set(fds):
+            with self.assertRaises(OSError):
+                os.fstat(fd)
+
+    def test_aggregate_budget_and_fresh_recovery_each_time(self):
+        for code in ("import os; os.write(2, b'x'*10000)",
+                     "import os; os.write(1, b'x'*700); os.write(2, b'y'*700)"):
+            with self.subTest(code=code), self.assertRaisesRegex(ValueError, "output budget"):
+                self.python(code, limit=1024)
+            self.assertEqual(self.python("print('fresh')")[0], b"fresh\n")
+
+    def test_closed_output_does_not_mean_target_completed(self):
+        with self.assertRaisesRegex(ValueError, "timeout"):
+            self.python("import os,time; os.close(1); os.close(2); time.sleep(30)", timeout=0.2)
+        self.assertEqual(self.python("print('fresh')")[0], b"fresh\n")
+
+    def test_cooperative_descendant_timeout_and_overflow_reaped(self):
+        # Fixed synthetic process fixture, not execution of an extraction corpus.
+        code = '''
+import json, os, signal, sys, time
+from pathlib import Path
+ready_read, ready_write = os.pipe()
+child = os.fork()
+if child == 0:
+    os.close(ready_write)
+    os.read(ready_read, 1)
+    os.close(ready_read)
+    if sys.argv[1] == 'overflow':
+        os.write(2, b'x' * 10000)
+    os.close(1)
+    os.close(2)
+    time.sleep(30)
+    os._exit(0)
+def stop(_number, _frame):
+    pid, status = os.waitpid(child, 0)
+    Path('terminal.json').write_text(json.dumps(
+        {'worker': os.getpid(), 'child': pid, 'status': status, 'reaped': True}))
+    raise SystemExit(0)
+signal.signal(signal.SIGTERM, stop)
+os.close(ready_read)
+os.write(ready_write, b'1')
+os.close(ready_write)
+if sys.argv[1] == 'closed':
+    os.close(1)
+    os.close(2)
+while True:
+    time.sleep(0.01)
+'''
+        for mode in ("closed", "overflow"):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:
+                with self.assertRaisesRegex(ValueError, "timeout|output budget"):
+                    run.bounded([sys.executable, "-I", "-S", "-c", code, mode],
+                                Path(directory), {"HOME": directory}, timeout=0.3, limit=1024)
+                evidence = json.loads((Path(directory) / "terminal.json").read_text())
+                self.assertTrue(evidence["reaped"])
+                self.assertEqual(os.waitstatus_to_exitcode(evidence["status"]), -signal.SIGTERM)
+                for key in ("worker", "child"):
+                    with self.assertRaises(ProcessLookupError):
+                        os.kill(evidence[key], 0)
+            self.assertEqual(self.python("print('fresh')")[0], b"fresh\n")
+
+    def test_launch_failure_closes_private_fds_without_quarantine(self):
+        pipe = os.pipe
+        fds = []
+        def record_pipe():
+            pair = pipe()
+            fds.extend(pair)
+            return pair
+        with mock.patch.object(run.os, "pipe", record_pipe), \
+                mock.patch.object(run.subprocess, "Popen", side_effect=OSError("synthetic")):
+            with self.assertRaisesRegex(ValueError, "launch or I/O"):
+                self.python("print('unused')")
+        for fd in fds:
+            with self.assertRaises(OSError):
+                os.fstat(fd)
+        self.assertFalse(run._QUARANTINED)
+        self.assertEqual(self.python("print('fresh')")[0], b"fresh\n")
+
+    def test_actual_launch_boundary_cancel_and_cleanup_signal_deferral(self):
+        spawn, kill = subprocess.Popen, os.killpg
+        children, events = [], []
+        old_handler = signal.getsignal(signal.SIGTERM)
+        old_mask = signal.pthread_sigmask(signal.SIG_BLOCK, set())
+
+        def record_spawn(*args, **kwargs):
+            child = spawn(*args, **kwargs)
+            children.append(child)
+            os.kill(os.getpid(), signal.SIGTERM)
+            return child
+
+        def record_kill(group, number):
+            self.assertIsNone(children[0].returncode)
+            events.append(number)
+            os.kill(os.getpid(), signal.SIGTERM)  # Must not interrupt cleanup.
+            return kill(group, number)
+
+        try:
+            run.install_cancellation_handler()
+            with mock.patch.object(run.subprocess, "Popen", record_spawn), \
+                    mock.patch.object(run.os, "killpg", record_kill):
+                with self.assertRaises(run.Canceled):
+                    self.python("import time; time.sleep(30)")
+            self.assertEqual(events, [signal.SIGTERM, signal.SIGKILL])
+            self.assertEqual(children[0].returncode, -signal.SIGKILL)
+            self.assertTrue(all(s.closed for s in
+                                (children[0].stdin, children[0].stdout, children[0].stderr)))
+            self.assertEqual(signal.pthread_sigmask(signal.SIG_BLOCK, set()), old_mask)
+            self.assertEqual(self.python("print('fresh')")[0], b"fresh\n")
+        finally:
+            signal.signal(signal.SIGTERM, old_handler)
+
+    def test_unverified_cleanup_blocks_further_launches(self):
+        # Real target/helper finish, but missing private wait proof cannot be success.
+        with mock.patch.object(run, "_QUARANTINED", False):
+            with mock.patch.object(run, "_target_status", side_effect=run.CleanupUnverified("missing proof")):
+                with self.assertRaisesRegex(run.CleanupUnverified, "cleanup unverified"):
+                    self.python("print('done')")
+            with mock.patch.object(run.subprocess, "Popen") as spawn:
+                with self.assertRaises(run.CleanupUnverified):
+                    self.python("print('must not launch')")
+                spawn.assert_not_called()
+
+    def test_signaling_permission_failure_is_not_silent_cleanup(self):
+        kill = os.killpg
+        def denied(group, number):
+            if number == signal.SIGTERM:
+                raise PermissionError("synthetic permission failure")
+            return kill(group, number)
+        with mock.patch.object(run, "_QUARANTINED", False), \
+                mock.patch.object(run.os, "killpg", denied):
+            with self.assertRaisesRegex(run.CleanupUnverified, "cleanup unverified"):
+                self.python("print('done')")
+            self.assertTrue(run._QUARANTINED)
+
+    def test_private_status_is_actual_target_status(self):
+        self.assertEqual(run._target_status(b"123\n", b"7\n"), 7)
+        for ready, status in ((b"", b"0\n"), (b"123\n", b""),
+                              (b"0123\n", b"0\n"), (b"123\n", b"0\n0\n")):
+            with self.subTest(ready=ready, status=status), self.assertRaises(run.CleanupUnverified):
+                run._target_status(ready, status)
+        with self.assertRaisesRegex(ValueError, "dependency/API"):
+            self.python("raise SystemExit(7)")
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(ValueError, "dependency/API"):
+                run.bounded(["/nonexistent-threadmark-extraction-fixture"], Path(directory), {})
+        self.assertEqual(self.python("import sys; print(sys.stdin.read() == '')")[0], b"True\n")
 
     def test_parent_cancellation_reaps_worker(self):
         with tempfile.TemporaryDirectory(prefix="threadmark-cancel-test-") as directory:

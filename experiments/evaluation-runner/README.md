@@ -122,11 +122,14 @@ all source anchors. Same-extractor consistency is not an independent semantic
 oracle or runtime proof. Unknown code/grammar/policy states close; historical
 standalone pending policy is not permission to launch this integration.
 
-**Actual candidate-arm worker: NOT RUN by implementation child.** New tests use
+**Actual candidate-arm worker: NOT RUN by implementation child.** Initial tests used
 pure `_admit` bytes from actual public candidate builds; prelaunch rejection spies
 never spawn. Existing reviewed lexical/symbol worker regressions still run. Parent
-must freshly review this integration, record committed pins and add/run the first
-candidate-worker positive case only after review. See
+subsequently obtained independent review of
+`07e1c802c3e84fc6d2d0b9afb9205ce68f3e4efb` with no substantive findings,
+verified lifecycle negatives, then passed the first two actual SMALL candidate
+worker cases via normal `Runner.run`. Those two reviewed cases are now retained
+in one positive conformance test. This is not a study or Graphify adoption. See
 [integration handoff](../../docs/progress/phase-1-evaluation-directcall-admission.md).
 
 Frozen public `Result` contains status, cleanup, aggregate output byte count,
@@ -200,7 +203,7 @@ execution, host or inference operation is authorized or inferred from it.
 
 There is no index/cache in the worker: immutable input, fresh process only.
 Neither cold/warm measurements nor OS page-cache eviction are claimed. Full-study
-environment/run manifests, comparative protocol, candidate integration review and
-first worker conformance, representative outcomes, hard memory enforcement/scaling and all host/
+environment/run manifests, comparative protocol, representative outcomes,
+hard memory enforcement/scaling and all host/
 inference/UX acceptance remain separate gates. See [local evidence and parent
 handoff](../../docs/progress/phase-1-evaluation-runner.md).

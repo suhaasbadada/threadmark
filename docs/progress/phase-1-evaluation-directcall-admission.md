@@ -205,3 +205,63 @@ candidate and original bytes absent. Primary focused verification: **24 runner
 tests + 39 candidate tests PASS**. Child 23/364 counts above are historical;
 current full inventory is 365 pending the parent integrated rerun. Independent
 integration review remains required before any actual candidate-worker launch.
+
+## Parent exact integration review and first worker conformance
+
+Exact reviewed implementation: `07e1c802c3e84fc6d2d0b9afb9205ce68f3e4efb`.
+Joffrey independently reviewed normalization/admission policy, code and coverage:
+**no substantive findings**. Independently passed candidate 39, directcall 79
+and runner 24 tests, plus 15 probes covering all authored grammar manifests,
+source-pin mutations, helper-byte drift at three checkpoints and unsupported
+grammars with fresh recovery. Review cleared only tiny actual SMALL worker
+transport conformance under parent control, not studies or production adoption.
+
+Primary's first integrated-wrapper attempt stopped at the unchanged eight-test
+extraction harness. The wrapper had captured but failed to emit its test trace,
+so the initial subtest/cause is **unverified**, not repaired or waived. A direct
+diagnostic invocation passed all eight, and a subsequent full run with failure
+output preserved passed **365 integrated tests + actual synthetic macOS guard**.
+This unexplained initial failure remains a local-verification limitation; no
+baseline code or thresholds were changed. Foundation, cached cargo-deny and
+tracked secrets also passed; advisory freshness remains unverified.
+
+Only AFTER fresh review and exercised negative gates, primary launched the actual
+candidate worker through normal `Runner.run` for harbor and harbour. Both passed:
+ready immutable bytes, exit zero, verified cleanup, eight scope-bound items and
+both trusted commitments; FD sets unchanged after each, no active owner or
+quarantine. This supersedes only the historical NOT_RUN statements above, not
+coverage/quality/containment limitations. No source execution, inference, network,
+Graphify adoption or comparative study occurred.
+
+The parent added those two worker cases as one positive regression after review;
+current inventory is **366 tests** (286 Python + 80 Node), including 25 runner
+tests. This follow-up changes tests/evidence only, not the reviewed implementation
+or authored source/policy pins. Final full rerun and exact-head CI are recorded
+next/on the PR; full product scope and Phase 1 remain open.
+
+## Final-suite blocker: retained extraction process-group ownership
+
+The attempted final 366-test run failed again in the unchanged extraction harness,
+this time with its full trace retained: stderr-overflow correctly raised the
+output-budget error, but cleanup `os.killpg(..., SIGKILL)` raised macOS `EPERM`,
+skipping the old subsequent wait/pipe closure. ResourceWarnings named the test's
+owned process and open pipes. Primary's targeted PID check later found that PID
+absent, which is **not** evidence cleanup succeeded at the failure boundary.
+The earlier trace-less failure cannot be attributed conclusively to this cause.
+
+Publication was blocked rather than retrying for green. Bob implemented a focused
+repair of the actual root cause: the old extraction target was its own group owner
+and could exit (or be reaped on success) before the final group signal. The harness
+now reuses the already reviewed retained supervisor, defers cancellation during
+ownership/cleanup, signals before reaping, verifies target wait records, bounds
+cleanup and quarantines further invocations on missing proof. Stdout remains
+separate; aggregate output and original work budgets remain bounded. Unsafe
+post-reap signaling was removed from the SIGTERM regression's finalizer. No
+PermissionError is silently treated as cleanup success.
+
+Bob staged only extraction code/tests and its progress record. His focused checks:
+**17 extraction tests**, **25 host-isolation tests**, foundation/cached-deny/secrets/
+whitespace PASS; no Graphify or new candidate worker was launched by that repair.
+These add nine tests, making current integrated inventory **375**, pending primary
+full rerun and fresh independent review of the process-ownership repair. Prior
+integration review does not stand in for reviewing this additional lifecycle code.
