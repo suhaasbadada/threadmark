@@ -35,10 +35,18 @@ The first-release design uses draft handoff:
 
 1. The user selects a T3 thread destination using its copied link.
 2. Threadmark prepares a brief and shows the original, evidence, risks, and final text.
-3. Open draft in T3 prefills that thread's composer.
+3. A future runtime-certified Open draft mode would prefill that thread's composer;
+   the current Phase 1 offline experiment offers explicit copy preparation only.
 4. The user checks the destination, edits, and presses Send in T3.
 
-Official prompt links never execute and do not change permissions, branches, or worktrees. Existing drafts require replacement confirmation. The reviewed implementation limits prompts to 8,000 characters; oversized briefs use explicit copy, not silent truncation.
+Official prompt links prepare drafts, not execution, and use host permissions.
+Repository/PR/new-thread links may select or clone projects or create worktrees;
+they are not safe explicit-destination handoff substitutes. Pinned source checks
+8,000 raw UTF-16 units in the prompt-link parser before normalization; this is not
+a demonstrated general composer/paste limit. Existing nonempty, differing drafts
+require replacement confirmation; whitespace-only/identical drafts are exceptions.
+Oversized briefs need explicit copy, not silent truncation. See the
+[Phase 1 T3 source-contract record](progress/phase-1-t3.md) for evidence and untested gates.
 
 Prefer a locally handled app link after validating behavior on the installed version. Do not route private prompts through hosted HTTPS URLs by default. App links can still appear in operating-system/application logs; do not claim zero exposure. Sensitive content may require copy or a future approved local IPC route.
 
