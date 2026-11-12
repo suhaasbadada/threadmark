@@ -1,0 +1,33 @@
+name: T3 offline source-contract experiment
+on:
+  pull_request:
+    paths:
+      - 'experiments/t3-handoff/**'
+      - 'docs/progress/phase-1-t3.md'
+      - 'docs/integrations.md'
+      - 'docs/decisions/0005-t3-source-contract-copy-only.md'
+      - '.github/workflows/t3-handoff.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/t3-handoff/**'
+      - 'docs/progress/phase-1-t3.md'
+      - 'docs/integrations.md'
+      - 'docs/decisions/0005-t3-source-contract-copy-only.md'
+      - '.github/workflows/t3-handoff.yml'
+permissions:
+  contents: read
+jobs:
+  offline:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Synthetic offline tests (runner-provided Node; no install)
+        run: node --test experiments/t3-handoff/prepare.test.mjs
