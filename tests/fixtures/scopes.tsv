@@ -1,0 +1,5 @@
+project	worktree	revision	decision
+project-a	tree-a	rev-a	allow
+project-b	tree-a	rev-a	deny
+project-a	tree-b	rev-a	deny
+project-a	tree-a	rev-b	deny

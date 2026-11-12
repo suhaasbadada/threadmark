@@ -1,0 +1,35 @@
+name: Scoped work item
+description: Tie a change to a phase and acceptance evidence
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: User outcome and owner
+    validations:
+      required: true
+  - type: input
+    id: traceability
+    attributes:
+      label: TM requirement, phase and acceptance IDs
+      placeholder: TM-10, Phase 0, P0-A1
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and explicit non-goals
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Acceptance tests, evidence and failure/recovery paths
+    validations:
+      required: true
+  - type: textarea
+    id: privacy
+    attributes:
+      label: Privacy, authorization, dependencies and release implications
+      description: Never include credentials or private source material.
+    validations:
+      required: true

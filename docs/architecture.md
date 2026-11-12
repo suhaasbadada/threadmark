@@ -2,7 +2,7 @@
 
 [Documentation home](../README.md) · [Integrations](integrations.md) · [Phase specifications](spec/README.md)
 
-**Status:** proposed architecture. Dependencies, packaging, and performance require validation.
+**Status:** proposed product architecture with a small offline Phase 0 core/daemon/CLI foundation. Only scope/worker metadata contracts and finite diagnostics are implemented. Storage, adapters, shell, inference, service transport, packaging and performance require validation. See the [foundation ADR](decisions/0001-foundation-boundaries.md).
 
 ## Components
 

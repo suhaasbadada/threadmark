@@ -1,0 +1,20 @@
+[package]
+name = "threadmark-cli"
+description = "Offline Threadmark foundation diagnostics"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "threadmark"
+path = "src/main.rs"
+
+[dependencies]
+threadmark-core = { path = "../core", version = "0.1.0" }
+threadmark-daemon = { path = "../daemon", version = "0.1.0" }
+
+[lints]
+workspace = true
