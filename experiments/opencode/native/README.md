@@ -210,3 +210,84 @@ acceptable workaround. No CI download/install step was added.
 
 See the [progress record](../../../docs/progress/phase-1-opencode-native.md) for
 verification and all still-open product/host gates.
+
+## Fixed C-only containment experiment — locally measured, not native certification
+
+`synthetic_containment.py` is a separate synthetic prerequisite for
+TM-04/TM-05/TM-08/TM-10, supporting P1-A2/P1-A5 **PARTIAL** only. It does not
+consume a compiler descriptor or launch Node, TypeScript, an SDK or a host.
+Pure tests run through existing native discovery. After independent review and
+explicit primary authorization, the C fixture was compiled and sandboxed locally:
+all 32 fixed controls passed on Darwin kernel 27.0.0 with verified owned-artifact
+cleanup. The existing macOS integrated job now also runs this fixed guard; exact-
+head remote results remain a separate gate.
+
+The reviewed fixed action (macOS only):
+
+```sh
+python3.12 -B experiments/opencode/native/synthetic_containment.py --synthetic-compiler-guard
+```
+
+Policy changes require fresh review before execution. This requires already-installed
+Apple clang, SDK inspection and sandbox-exec; there is no installation fallback.
+There are no executable, descriptor, profile, command or budget CLI inputs.
+Unknown arguments and unsupported platforms close before any target launch.
+No automatic relaxation or retry follows a failed control. In particular, initial
+exec bootstrap failure is a blocker, **not** permission to restore process-fork.
+
+The policy is deny-default, without network or process-fork allowances. It
+permits only literal fixture exec, individual fixture/canary reads, exact ancestor
+metadata and writes into six fresh owned state directories. `/usr/lib` and
+`/System/Library/dyld` subtrees are an explicitly **SYNTHETIC C baseline**, not
+Node's reviewed minimum inventory. The separately reviewed bootstrap repair
+allows `file-read-data` on the **literal `/` directory only**, not its descendants,
+to let dyld open the root directory. Two preceding SIGABRT failures are preserved
+in the progress record; the counterfactual root-only candidate passed. This is not
+a recursive root read allowance. Private/home/
+repository read subtrees and workspace/probe/policy/inventory writes are absent.
+SBPL strings reject controls/non-ASCII and escape quotes/backslashes. The actual
+artifact root deliberately contains quotes and injection-shaped text. Pure tests
+independently decode and behaviorally evaluate the emitted policy subset; they
+cannot substitute for Apple's parser; the quoted-path control was also measured.
+
+The fixed C fixture checks approved read and each state's write; owned sibling,
+home/config/repository-shaped canary reads and symlink target read/write denial;
+workspace/probe/policy/inventory write denial; fork, unauthorized posix_spawn and
+separate direct exec denial (an invalid executable marker ensures ENOEXEC is not
+accepted). Probe/policy write controls are owner-writable so DAC does not create
+a false sandbox pass. Negative controls require EPERM/EACCES, not generic errors.
+Owned IPv4/IPv6 TCP/UDP receivers bound before each network launch check connect,
+UDP send, bind and listen denial, plus zero receiver traffic. There is no external
+internet attempt or DNS/resolver IPC proof. Two malformed policies must prevent
+fixture execution. Partial, duplicate, extra and malformed observations reject.
+
+The private shared `../../host-isolation/_bounded_process.py` is the one repaired
+retained-owner loop; `process_supervisor.py` and the older host guard are unchanged.
+Hard maxima are 120 s wall and 16 MiB combined output, with 2 s cleanup proof;
+this experiment uses 5 s controls, 30 s compilation, 256 KiB output and a 120 s
+overall launch deadline. Extraction's compatibility wrapper retains 15 s/256 KiB,
+stdout/elapsed and nonzero translation. No budget environment override exists.
+Owner readiness/status are independent of output EOF; cancellation is deferred
+through owner recording and cleanup; TERM and KILL are attempted before owner
+reaping. Missing/malformed proof, EPERM or reap failure quarantines all helper
+reuse and retains owner references. Group cleanup does not prove escaped child
+cleanup; actual sandbox fork denial is separately measured by this fixed C guard,
+not inferred from group cleanup or generalized to Node.
+
+Artifacts use a fresh private owned directory, not an unconditional temporary
+directory finalizer. Verified ordinary failure removes only that directory and
+permits a fresh deliberate run. Unknown cleanup retains artifacts and blocks
+reuse, without a production reset API. Removal failure likewise quarantines.
+Structured results expose only observed control states, fixture/binary/policy/
+code hashes and OS/kernel identity, never target output, canary bytes or paths.
+Failure is nonzero and cannot become synthetic-only-pass from partial evidence.
+Failure summaries expose only fixed mode/status, byte counts/hash, categorical
+diagnostic hints and exact known observation fragments. They are not whole-mode
+acceptance and never publish captured stderr. The first bootstrap failure exposed
+the need for this evidence; its diagnostic repeat and reviewed repair are retained
+in the progress record rather than replaced with a fabricated first-pass success.
+
+This synthetic pass cannot establish Node plugins/loaders, ambient
+compiler config, actual consumed-file/type closure, V8/total memory containment,
+native OpenCode admission, SDK/TUI capture or full product acceptance. Those
+gates, runtime provenance and Phase 1 remain OPEN.
