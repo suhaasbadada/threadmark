@@ -184,14 +184,23 @@ impl Store {
         drop(rows);
         drop(stmt);
         let mut history = Vec::new();
+        let marked = forget::markers(&tx, id)?;
         let mut stmt = tx.prepare("SELECT project,id,revision,kind,text,retired FROM context WHERE project=?1 ORDER BY id,revision LIMIT 4097").map_err(unavailable)?;
         let mut rows = stmt.query([id]).map_err(unavailable)?;
         let mut previous_id = String::new();
         let mut previous_revision = 0;
+        let mut history_rows = 0;
         while let Some(row) = rows.next().map_err(unavailable)? {
             canceled(cancel)?;
+            history_rows += 1;
+            if history_rows > 4096 {
+                return Err(invalid());
+            }
             let project: String = row.get(0).map_err(unavailable)?;
             let context_id: String = row.get(1).map_err(unavailable)?;
+            if marked.contains(&context_id) {
+                continue;
+            }
             let revision: i64 = row.get(2).map_err(unavailable)?;
             let kind: String = row.get(3).map_err(unavailable)?;
             let text: String = row.get(4).map_err(unavailable)?;

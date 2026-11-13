@@ -60,3 +60,17 @@ scan was performed. Remote exact-head CI is a separate subsequent gate.
 Native GUI/accessibility runtime, robust filesystem event watching/overflow,
 Forget, live providers/hosts and phase closure remain open. User work, inherited
 progress appends and worktrees were preserved; no orchestration reminder changed.
+
+## Publication outcome
+
+PR [#45](https://github.com/suhaasbadada/threadmark/pull/45) passed all five
+checks on `4fc7e510f8a1b1d60015d858df629aab81a335d7`: CI
+[43525483984](https://github.com/suhaasbadada/threadmark/actions/runs/43525483984)
+and integrated [43525483982](https://github.com/suhaasbadada/threadmark/actions/runs/43525483982).
+Fresh exact-head/main/discussion/rules checks found no blocker; independent review
+and repaired full-suite acceptance above applied. It merged at
+`2026-11-13T23:16:54Z` as `2cb693fbcb57f7772d488ff7c0baf0871297e643`;
+the PR watch was removed. Post-merge CI
+[43525928241](https://github.com/suhaasbadada/threadmark/actions/runs/43525928241)
+and integrated [43525928226](https://github.com/suhaasbadada/threadmark/actions/runs/43525928226)
+both passed on that exact merge. No live user-source refresh was enabled.

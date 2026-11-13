@@ -21,6 +21,10 @@ const FLAGS: OFlags = OFlags::RDONLY
     .union(OFlags::CLOEXEC);
 
 mod export;
+mod forget;
+mod schema;
+pub use forget::ForgetStage;
+pub use schema::UpgradeStage;
 #[cfg(test)]
 mod tests;
 
@@ -383,7 +387,10 @@ impl Store {
             file.read_exact(&mut header).map_err(unavailable)?;
             if &header[..16] != b"SQLite format 3\0"
                 || u16::from_be_bytes([header[16], header[17]]) != 4096
-                || u32::from_be_bytes(header[60..64].try_into().map_err(unavailable)?) != 1
+                || !matches!(
+                    u32::from_be_bytes(header[60..64].try_into().map_err(unavailable)?),
+                    1 | 2
+                )
                 || i64::from(u32::from_be_bytes(
                     header[68..72].try_into().map_err(unavailable)?,
                 )) != APP_ID
@@ -410,36 +417,10 @@ impl Store {
                 CREATE TABLE evidence(project TEXT NOT NULL, path TEXT NOT NULL, line INTEGER NOT NULL, text TEXT NOT NULL, hash TEXT NOT NULL, producer TEXT NOT NULL, PRIMARY KEY(project,path,line));
                 CREATE TABLE context(project TEXT NOT NULL, id TEXT NOT NULL, revision INTEGER NOT NULL, kind TEXT NOT NULL, text TEXT NOT NULL, retired INTEGER NOT NULL, PRIMARY KEY(project,id,revision));
                 CREATE INDEX context_project ON context(project,id,revision);").map_err(unavailable)?;
+            schema::install_v2(&tx)?;
             tx.commit().map_err(unavailable)?;
         }
-        let app: i64 = db
-            .pragma_query_value(None, "application_id", |r| r.get(0))
-            .map_err(unavailable)?;
-        let version: i64 = db
-            .pragma_query_value(None, "user_version", |r| r.get(0))
-            .map_err(unavailable)?;
-        if app != APP_ID || version != 1 {
-            return Err(Error::Unavailable);
-        }
-        // Validate the v1 shape before changing persistent journal settings. There
-        // is no guessed repair/migration of unknown application databases.
-        let page_size: i64 = db
-            .pragma_query_value(None, "page_size", |r| r.get(0))
-            .map_err(unavailable)?;
-        if page_size != 4096 {
-            return Err(Error::Unavailable);
-        }
-        let objects: i64 = db.query_row("SELECT count(*) FROM sqlite_schema WHERE (type NOT IN ('table','index')) OR (type='table' AND name NOT IN ('projects','evidence','context'))",[],|r|r.get(0)).map_err(unavailable)?;
-        if objects != 0 {
-            return Err(Error::Unavailable);
-        }
-        for sql in [
-            "SELECT id,root,root_identity,sources,snapshot,manifest FROM projects LIMIT 0",
-            "SELECT project,path,line,text,hash,producer FROM evidence LIMIT 0",
-            "SELECT project,id,revision,kind,text,retired FROM context LIMIT 0",
-        ] {
-            db.prepare(sql).map_err(unavailable)?;
-        }
+        schema::validate(&db)?;
         db.execute_batch("PRAGMA trusted_schema=OFF; PRAGMA foreign_keys=ON; PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL; PRAGMA max_page_count=32768;").map_err(unavailable)?;
         Ok(Self {
             db,
@@ -597,6 +578,10 @@ impl Store {
             .map_err(unavailable)?;
         progress(RemovalStage::ContextRemoved);
         canceled(cancel)?;
+        if schema::version(&tx)? == 2 {
+            tx.execute("DELETE FROM forgotten_context WHERE project=?1", [id])
+                .map_err(unavailable)?;
+        }
         tx.execute("DELETE FROM projects WHERE id=?1", [id])
             .map_err(unavailable)?;
         progress(RemovalStage::ReadyToCommit);
@@ -1034,6 +1019,7 @@ impl Store {
         let tx = self.db.transaction().map_err(unavailable)?;
         Self::require_project_root(&tx, project)?;
         let project = project.id.as_str();
+        forget::require_unmarked(&tx, project, id)?;
         let revision: Option<i64> = tx
             .query_row(
                 "SELECT max(revision) FROM context WHERE project=?1 AND id=?2",
@@ -1073,6 +1059,7 @@ impl Store {
         let tx = self.db.transaction().map_err(unavailable)?;
         Self::require_project_root(&tx, project)?;
         let project = project.id.as_str();
+        forget::require_unmarked(&tx, project, id)?;
         let (revision,kind,text): (i64,String,String) = tx.query_row("SELECT revision,kind,text FROM context WHERE project=?1 AND id=?2 ORDER BY revision DESC LIMIT 1", params![project,id], |r| Ok((r.get(0)?,r.get(1)?,r.get(2)?))).map_err(unavailable)?;
         let count: i64 = tx
             .query_row(
@@ -1098,7 +1085,9 @@ impl Store {
 
     /// List latest revisions (including retired markers); no source-content reads.
     pub fn contexts(&self, project: &str) -> Result<Value> {
+        let tx = self.db.unchecked_transaction().map_err(unavailable)?;
         self.project(project)?;
+        let marked = forget::markers(&tx, project)?;
         let mut stmt = self.db.prepare("SELECT id,revision,kind,retired FROM context c WHERE project=?1 AND revision=(SELECT max(revision) FROM context WHERE project=c.project AND id=c.id) ORDER BY id LIMIT 4097").map_err(unavailable)?;
         let rows = stmt
             .query_map([project], |r| {
@@ -1111,8 +1100,14 @@ impl Store {
             })
             .map_err(unavailable)?;
         let mut records = Vec::new();
-        for row in rows {
+        for (count, row) in rows.enumerate() {
             let (id, revision, kind, retired) = row.map_err(unavailable)?;
+            if count >= 4096 {
+                return Err(invalid());
+            }
+            if marked.contains(&id) {
+                continue;
+            }
             identity(&id)?;
             if !(1..=32).contains(&revision) || !context_kind(&kind) || records.len() >= 4096 {
                 return Err(invalid());
@@ -1124,8 +1119,10 @@ impl Store {
 
     /// Inspect one note's complete bounded edit history, distinct from source evidence.
     pub fn context(&self, project: &str, id: &str) -> Result<Value> {
+        let tx = self.db.unchecked_transaction().map_err(unavailable)?;
         self.project(project)?;
         identity(id)?;
+        forget::require_unmarked(&tx, project, id)?;
         let mut stmt = self.db.prepare("SELECT revision,kind,text,retired FROM context WHERE project=?1 AND id=?2 ORDER BY revision LIMIT 33").map_err(unavailable)?;
         let rows = stmt
             .query_map(params![project, id], |r| {
