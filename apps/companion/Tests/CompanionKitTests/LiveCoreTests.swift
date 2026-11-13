@@ -45,11 +45,31 @@ struct LiveCoreTests {
         }
         #expect(current.currentness == "current-at-read" && !current.results.isEmpty)
         #expect(current.results.allSatisfy { $0.project == "alpha" && $0.path == "a.rs" })
+        let original = "Do not change permissions or alpha_evidence. Preserve e\u{301}, café, 👩🏽‍💻.\n"
+        guard case .preview(let prepared) = try await adapter.perform(.prepareContext("alpha", "alpha_evidence", original)) else {
+            Issue.record("Missing Context preview"); return
+        }
+        #expect(prepared.state == "ready-for-review" && prepared.snapshot == current.snapshot)
+        #expect(prepared.original.utf8.elementsEqual(original.utf8) && prepared.proposed.utf8.starts(with: original.utf8))
+        #expect(prepared.proposed.contains("alpha_evidence") && prepared.provider == "not-invoked")
+        guard case .contexts(let noNotes) = try await adapter.perform(.contexts("alpha")) else {
+            Issue.record("Missing context list after preview"); return
+        }
+        #expect(noNotes.contexts.isEmpty) // Preparation is not human-note persistence.
         try Data("fn synthetic_alpha_changed() { /* alpha_changed */ }\n".utf8).write(to: source)
         guard case .query(let stale) = try await adapter.perform(.query("alpha", "alpha_evidence")) else {
             Issue.record("Missing stale report"); return
         }
         #expect(stale.currentness == "stale-or-unindexed")
+        guard case .preview(let stalePreview) = try await adapter.perform(.prepareContext("alpha", "alpha_evidence", original)) else {
+            Issue.record("Missing stale Context limitation"); return
+        }
+        #expect(stalePreview.state == "needs-input")
+        #expect(!stalePreview.proposed.contains("fn synthetic_alpha()"))
+        guard case .preview(let absent) = try await adapter.perform(.prepareContext("alpha", "nonexistent_token", original)) else {
+            Issue.record("Missing empty Context limitation"); return
+        }
+        #expect(absent.state == "needs-input" && absent.original.utf8.elementsEqual(original.utf8))
         _ = try await adapter.perform(.index("alpha"))
         _ = try await adapter.perform(.writeContext("alpha", "memo", "note", "Synthetic human note", update: false))
         _ = try await adapter.perform(.writeContext("alpha", "memo", "decision", "Synthetic declared decision", update: true))

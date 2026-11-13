@@ -9,6 +9,9 @@ public final class CompanionModel: ObservableObject {
     @Published public private(set) var contexts: [ContextEntry] = []
     @Published public private(set) var history: ContextHistory?
     @Published public private(set) var evidence: QueryReport?
+    @Published public private(set) var preview: ContextPreview?
+    @Published public private(set) var originalDraft = ""
+    @Published public private(set) var preparationQuery = ""
     @Published public private(set) var indexReport: IndexReport?
     @Published public private(set) var status = "Core unavailable — configure Connections"
     @Published public private(set) var busy = false
@@ -138,6 +141,30 @@ public final class CompanionModel: ObservableObject {
             self.history = result; self.status = "Human context history loaded"
         }
     }
+    public func editPreparation(query: String, original: String) {
+        guard !preparationQuery.utf8.elementsEqual(query.utf8) || !originalDraft.utf8.elementsEqual(original.utf8) else { return }
+        cancel(); preparationQuery = query; originalDraft = original
+    }
+    public var canPrepareContext: Bool {
+        configured && project?.id == selectedID && project != nil && !policyDirty &&
+        InputPolicy.sources(sourceDraft) && !busy && !quitting &&
+        InputPolicy.preparation(query: preparationQuery, original: originalDraft)
+    }
+    public func prepareContext() {
+        guard canPrepareContext, let id = selectedID else { cancel(); fail(.invalid); return }
+        let query = preparationQuery, original = originalDraft
+        start(status: "Preparing Context-only preview — no AI or handoff") { service in
+            [try await service.perform(.prepareContext(id, query, original))]
+        } apply: { replies in
+            guard case .preview(let result) = replies[0] else { throw ServiceError.invalid }
+            try result.validate(project: id, original: original)
+            self.preview = result
+            self.status = result.state == "needs-input"
+                ? "Needs input — missing current evidence or snapshot; no handoff"
+                : "Context-only preview — review required; no handoff"
+        }
+    }
+    public func dismissPreview() { cancel() }
     public func writeContext(id contextID: String, kind: String, text: String, update: Bool) {
         guard let id = selectedID, project != nil, InputPolicy.identifier(contextID), !text.isEmpty,
               text.utf8.count <= 4096, InputPolicy.contextKinds.contains(kind) else { fail(.invalid); return }
@@ -183,13 +210,15 @@ public final class CompanionModel: ObservableObject {
         for operation in pending { await operation.value }
     }
     public func cancel() {
+        preview = nil
         generation &+= 1; job?.cancel(); job = nil
         if busy { status = "Canceled — refresh persisted state before continuing"; clearResults() }
         busy = false
     }
-    private func clearResults() { evidence = nil; history = nil; indexReport = nil }
+    private func clearResults() { evidence = nil; history = nil; indexReport = nil; preview = nil }
     private func clearProject() {
         scopeRevision &+= 1
+        originalDraft = ""; preparationQuery = ""
         project = nil; contexts = []; sourceDraft = []; policyDirty = false; clearResults()
     }
     private func invalidate(clearProject: Bool) {

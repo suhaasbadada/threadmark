@@ -59,3 +59,20 @@ still fails rather than reusing an existing directory; cleanup remains confined
 to each successfully created fixture. No runtime source policy changed.
 The complete local Rust check pipeline passed, including all three CLI knowledge
 tests. This failure was diagnosed and repaired, not retried or waived.
+
+## Publication and merge outcome
+
+PR [#40](https://github.com/suhaasbadada/threadmark/pull/40) passed all five
+checks on `5b27d06d6981e87a6ee5ac63ada4850ef17e8ab9`: CI
+[43508743472](https://github.com/suhaasbadada/threadmark/actions/runs/43508743472)
+and integrated [43508743597](https://github.com/suhaasbadada/threadmark/actions/runs/43508743597).
+The macOS job successfully ran Swift tests, actual-core adapter and bundle/plist
+validation on the CI compiler. Fresh exact-head/main/discussion/rules checks
+found no remaining blocker; the independently reviewed implementation and the
+two narrow compiler/fixture repairs merged at `2026-11-13T21:16:27Z` as
+`bdc7e1e714f674d856f09a4c48ad45d62d6538a2`. PR watch was removed after merge.
+
+Post-merge CI [43509204977](https://github.com/suhaasbadada/threadmark/actions/runs/43509204977)
+and integrated [43509204983](https://github.com/suhaasbadada/threadmark/actions/runs/43509204983)
+both completed successfully on that exact merge. This is not GUI/runtime or live
+provider/host acceptance and does not close Phase 3 or Phase 4.

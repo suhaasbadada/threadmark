@@ -41,6 +41,18 @@ the real adapter, and removes its data. It does not launch an app GUI or host.
 
 ## Product boundary
 
+- Context includes explicit **Prepare context** for the selected project: a bounded
+  query plus an editable in-memory original (not a persisted human note). Actual
+  `context prepare` output shows the unchanged original and quoted untrusted
+  evidence as selectable plain text, snapshot and ready-for-review/needs-input.
+  Context-only means no AI, approval, save/copy/send action or host handoff.
+  Currentness is checked at preparation read, not guaranteed afterward. Editing
+  query/original cancels and invalidates pending/displayed previews immediately;
+  cancel/dismiss retains the draft. Project changes clear both draft fields.
+  Source changes, rebuilds, context mutations, configuration, cancel and Quit
+  also invalidate previews. Output is strictly checked and bounded to 8 KiB.
+  This covers only parts of P4-A1–P4-A3 and the P3 project/privacy boundaries;
+  refinement, approval, delivery and full native accessibility acceptance remain open.
 - Launch creates a quiet status item, **not** a management window or core call.
 - Projects require explicit root and exact relative file approval, then explicit
   Build. Omitted files are excluded. Editing policy cancels the current UI job
