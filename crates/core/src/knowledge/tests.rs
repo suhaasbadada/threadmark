@@ -49,6 +49,41 @@ fn token() -> AtomicBool {
     AtomicBool::new(false)
 }
 
+#[test]
+fn bound_removal_rejects_stale_root_and_identity_and_survives_restart() {
+    let (f, mut s) = removal_fixture();
+    let old = s.project("a").unwrap();
+    s.remove_project("a", &token()).unwrap();
+    let replacement = Fixture::new();
+    s.add_project("a", &replacement.source(), vec!["code.rs".into()])
+        .unwrap();
+    index(&mut s);
+    s.write_context("a", "replacement", "note", "synthetic replacement", false)
+        .unwrap();
+    let before = project_rows(&s, "a");
+    assert!(
+        s.remove_project_bound("a", &old.root, &old.root_identity, &token())
+            .is_err()
+    );
+    let current = s.project("a").unwrap();
+    assert!(
+        s.remove_project_bound("a", &current.root, &old.root_identity, &token())
+            .is_err()
+    );
+    assert_eq!(project_rows(&s, "a"), before);
+    assert_eq!(
+        s.context("a", "replacement").unwrap()["history"][0]["text"],
+        "synthetic replacement"
+    );
+    drop(s);
+    let mut s = f.store();
+    s.remove_project_bound("a", &current.root, &current.root_identity, &token())
+        .unwrap();
+    drop(s);
+    assert_eq!(project_rows(&f.store(), "a"), [0, 0, 0]);
+    assert!(replacement.source().join("code.rs").is_file());
+}
+
 // P2-A1/A3/A5, P3-A3/A4: local removal is isolated, atomic and never Forget.
 fn project_rows(store: &Store, id: &str) -> Vec<i64> {
     [

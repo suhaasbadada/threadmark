@@ -4,6 +4,18 @@ import Darwin
 
 let args = Array(CommandLine.arguments.dropFirst())
 let mode = args.count > 1 ? URL(fileURLWithPath: args[1]).lastPathComponent : "invalid"
+if mode.hasPrefix("removal-") {
+    guard Array(args.dropFirst(2)) == ["project", "remove", "alpha", "--confirm-remove-local-data", "--expected-root", "/synthetic/alpha", "--expected-root-identity", "r1"],
+          FileHandle.standardInput.readDataToEndOfFile().isEmpty else { exit(1) }
+    if mode == "removal-ack" { print("{}"); exit(0) }
+    if mode == "removal-large" { print(String(repeating: "x", count: 1025)); exit(0) }
+    var response: [String: Any] = ["project": "alpha", "removed": true, "retention_limits": "Local removal only, not Forget/suppression or forensic erasure. SQLite free pages, sidecars, backups and exports may retain historical bytes. Source files are untouched; explicit re-registration and reindexing can import source evidence again, not old human history."]
+    if mode == "removal-wrong" { response["project"] = "beta" }
+    if mode == "removal-false" { response["removed"] = false }
+    if mode == "removal-limits" { response["retention_limits"] = "erased forever" }
+    if mode == "removal-content" { response["content"] = "synthetic unexpected content" }
+    FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject: response)); exit(0)
+}
 if mode.hasPrefix("preview-") {
     let original = "synthetic original é\n"
     guard args.count == 6, Array(args.dropFirst(2)) == ["context", "prepare", "alpha", "synthetic query"],

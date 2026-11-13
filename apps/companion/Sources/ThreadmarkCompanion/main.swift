@@ -127,6 +127,8 @@ struct ProjectsView: View {
                 if let project = model.project {
                     Text("Registered root: \(project.root)").textSelection(.enabled)
                     Text("Root identity: \(project.root_identity?.description ?? "not supplied")").textSelection(.enabled)
+                    Button("Remove local project…", role: .destructive, action: model.requestRemoval)
+                        .disabled(!model.canRemoveProject)
                     Text("Last project inspection snapshot: \(project.snapshot?.description ?? "not built")").textSelection(.enabled)
                     Text("Exact approved relative FILE allowlist — remove a line to exclude/revoke it. Empty policy revokes all sources.")
                     TextEditor(text: Binding(get: { model.sourceDraft.joined(separator: "\n") }, set: { model.stageSources(lines($0)) }))
@@ -168,6 +170,19 @@ struct ProjectsView: View {
                 Button("Approve root and file allowlist") { model.addProject(id: newID, root: root, sources: newSources) }
                     .disabled(root.isEmpty || !InputPolicy.identifier(newID) || !InputPolicy.sources(newSources) || newSources.isEmpty || model.busy)
             }.padding()
+        }
+        .sheet(item: Binding(get: { model.pendingRemoval }, set: { if $0 == nil { model.cancelRemoval() } })) { confirmation in
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Remove local project data?").font(.headline)
+                Text("Project: \(confirmation.project.id)")
+                Text("Root: \(confirmation.project.root)").textSelection(.enabled)
+                Text("Root identity: \(confirmation.project.root_identity?.description ?? "unavailable")").textSelection(.enabled)
+                Text("Permanently removes all local notes and their revision history, source evidence and project policy. Never deletes source files. This is not Forget/suppression or forensic erasure: SQLite free pages, sidecars, backups and exports may retain historical bytes. Re-registration may import source evidence again, not old notes.")
+                HStack {
+                    Button("Cancel", action: model.cancelRemoval).keyboardShortcut(.defaultAction)
+                    Button("Remove all local project data", role: .destructive) { model.confirmRemoval(confirmation) }
+                }
+            }.padding().frame(width: 560)
         }
     }
     private func lines(_ text: String) -> [String] {

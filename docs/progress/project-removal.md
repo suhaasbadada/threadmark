@@ -49,3 +49,17 @@ staged secrets and whitespace checks passed. Remote exact-head CI and PR outcome
 remain subsequent gates. GUI/accessibility runtime, Forget, export, automatic
 watching, live provider/host acceptance and phase closure remain open. Inherited
 progress appends and worktrees were preserved; no real user project was removed.
+
+## Publication outcome
+
+PR [#42](https://github.com/suhaasbadada/threadmark/pull/42) passed all five
+checks on `8806ce1da1c98abcb3d5cd45aa95d4326220ceb9`: CI
+[43512825689](https://github.com/suhaasbadada/threadmark/actions/runs/43512825689)
+and integrated [43512825781](https://github.com/suhaasbadada/threadmark/actions/runs/43512825781).
+Fresh exact-head/main/discussion/rules checks found no blocker; independent
+review and the repaired replacement-root race acceptance above applied. It merged
+at `2026-11-13T21:44:51Z` as `90a9cce830f2d284edf5f9097a78dcf0fd026b9e`;
+the PR watch was removed. Post-merge CI
+[43513420854](https://github.com/suhaasbadada/threadmark/actions/runs/43513420854)
+and integrated [43513420917](https://github.com/suhaasbadada/threadmark/actions/runs/43513420917)
+both passed on that exact merge. No deployment or real user-data deletion occurred.

@@ -105,6 +105,28 @@ struct LiveCoreTests {
         }
         #expect(Set(projects.map(\.id)) == ["alpha", "beta"])
         #expect(persisted.history.last?.retired == true)
+        let identity = try #require(registered.root_identity)
+        guard case .string(let binding) = identity else { throw ServiceError.invalid }
+        guard case .removed(let receipt) = try await reopened.perform(.removeProject("alpha", registered.root, binding)) else {
+            Issue.record("Missing typed removal receipt"); return
+        }
+        try receipt.validate(project: "alpha")
+        #expect(fm.fileExists(atPath: source.path) && fm.fileExists(atPath: otherRoot.appendingPathComponent("b.rs").path))
+        guard case .projects(let afterRemoval) = try await adapter.perform(.projects),
+              case .query(let otherEvidence) = try await adapter.perform(.query("beta", "beta_evidence")) else { throw ServiceError.invalid }
+        #expect(afterRemoval.map(\.id) == ["beta"] && !otherEvidence.results.isEmpty)
+        let replacementRoot = base.appendingPathComponent("replacement", isDirectory: true)
+        try fm.createDirectory(at: replacementRoot, withIntermediateDirectories: false)
+        try Data("fn replacement_evidence() {}\n".utf8).write(to: replacementRoot.appendingPathComponent("a.rs"))
+        _ = try await adapter.perform(.addProject("alpha", replacementRoot.path, ["a.rs"]))
+        _ = try await adapter.perform(.index("alpha"))
+        guard case .contexts(let removedHistory) = try await adapter.perform(.contexts("alpha")) else { throw ServiceError.invalid }
+        #expect(removedHistory.contexts.isEmpty)
+        _ = try await adapter.perform(.writeContext("alpha", "replacement", "note", "Synthetic replacement note", update: false))
+        await #expect(throws: ServiceError.failed) { try await reopened.perform(.removeProject("alpha", registered.root, binding)) }
+        guard case .query(let preservedEvidence) = try await adapter.perform(.query("alpha", "replacement_evidence")),
+              case .context(let preservedNote) = try await adapter.perform(.context("alpha", "replacement")) else { throw ServiceError.invalid }
+        #expect(!preservedEvidence.results.isEmpty && preservedNote.history.count == 1)
         let empty = base.appendingPathComponent("empty-existing", isDirectory: true)
         try fm.createDirectory(at: empty, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
         let invalidStore = ProcessService(executable: URL(fileURLWithPath: path), dataDirectory: empty)

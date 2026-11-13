@@ -12,6 +12,8 @@ pub enum Command {
     AddProject(String, PathBuf, Vec<String>),
     /// Explicitly remove this project's local data only, never source files.
     RemoveProject(String),
+    /// Exact caller-bound approval; IDs and binding values are not credentials.
+    RemoveProjectBound(String, String, String),
     /// Inspect registered projects.
     Projects,
     /// Inspect one project's source policy.
@@ -40,6 +42,9 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
     if cancel.load(std::sync::atomic::Ordering::SeqCst) {
         return Err(Error::Canceled);
     }
+    if let Command::RemoveProjectBound(id, root, identity) = &command {
+        threadmark_core::knowledge::validate_removal_binding(id, root, identity)?;
+    }
     let mut store = Store::open(data_dir)?;
     let result = match command {
         Command::AddProject(id, root, sources) => {
@@ -47,6 +52,9 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
             json!({"project":id,"registered":true})
         }
         Command::RemoveProject(id) => store.remove_project(&id, cancel)?,
+        Command::RemoveProjectBound(id, root, identity) => {
+            store.remove_project_bound(&id, &root, &identity, cancel)?
+        }
         Command::Projects => {
             serde_json::to_value(store.projects()?).map_err(|_| Error::Unavailable)?
         }

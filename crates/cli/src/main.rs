@@ -31,6 +31,9 @@ fn usage() -> std::process::ExitCode {
     eprintln!(
         "usage: threadmark --version | status | smoke; or --data-dir ABSOLUTE_NEW_PRIVATE_DIR project add ID ROOT [FILE ...] | project list | project show ID | project sources ID [FILE ...] | project remove ID --confirm-remove-local-data (local policy/evidence/context only; sources untouched; not Forget or forensic erasure) | index PROJECT | query PROJECT TEXT | context prepare PROJECT QUERY (original on stdin) | context add/update PROJECT ID KIND (stdin) | context retire/show PROJECT ID | context list PROJECT"
     );
+    eprintln!(
+        "optional exact removal approval binding: --expected-root ROOT --expected-root-identity IDENTITY (both required together; not credentials)"
+    );
     std::process::ExitCode::from(2)
 }
 
@@ -68,6 +71,16 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
         ["project", "remove", id, "--confirm-remove-local-data"] => {
             Command::RemoveProject((*id).into())
         }
+        [
+            "project",
+            "remove",
+            id,
+            "--confirm-remove-local-data",
+            "--expected-root",
+            root,
+            "--expected-root-identity",
+            identity,
+        ] => Command::RemoveProjectBound((*id).into(), (*root).into(), (*identity).into()),
         ["project", "sources", id, files @ ..] => {
             Command::Sources((*id).into(), files.iter().map(|s| (*s).into()).collect())
         }
