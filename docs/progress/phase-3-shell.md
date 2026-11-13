@@ -1,5 +1,121 @@
 # Phase 3 native shell — independent implementation lane
 
+## Engineering revision — cancellation ownership and real-core integration
+
+This revision supersedes the initial implementation evidence below where noted.
+It remains the same isolated shell lane, based on
+`eb9a5626eaa618782ef51fb630fd3245376db0a7`; no coordinator commits were cherry-picked
+and no checkout, branch, delegate or worker lane was created.
+
+**Full tested implementation SHA:** `7eb339d9015b6c95a56a58746650f416a7aebddf`.
+This report update is a subsequent evidence-only commit. Changes remain limited
+to `apps/companion/**` and this progress record. No Rust/workspace/CLI/contract/CI
+files were changed, and no push, PR, watch, release or deployment was performed.
+Joffrey's original two findings were real issues; both are addressed below.
+Current verification is implementation tests plus local self-review, not a claim
+of an independent re-review or remote checks passing at this shell revision.
+
+### Review findings and changes
+
+- **HIGH — recycled PID during escalation:** removed Foundation `Process` from
+  production transport. `posix_spawn` uses explicit stdin/stdout/stderr dup2 file
+  actions, `POSIX_SPAWN_CLOEXEC_DEFAULT`, exact executable/cwd and minimal locale
+  environment. The single bounded I/O thread is the sole `waitpid(WNOHANG)`
+  reaper. It signals only while the child remains unreaped: TERM once, KILL at
+  most once after 200 ms. An exited unreaped child reserves its PID. Reap or
+  `ECHILD` immediately and permanently stops signals. No global handlers,
+  process-group kills, PID rediscovery or generalized supervisor were added.
+- **MEDIUM — persistent effects overtaken after cancel:** replacement starts now
+  capture and cancel prior owned tasks, then await **all** their teardown before
+  performing any replacement service call. Generation/cancellation/Quit are
+  checked again after the join. UI invalidation remains immediate. Explicit join
+  and Quit also include tasks whose visible `job` was already cleared by cancel.
+- **Integration limits:** adapter, model, UI and tests now enforce 4 KiB context
+  stdin, 256-byte query text and 64 project summaries. The shared UI/service kind
+  list is note/decision/constraint/correction/pitfall. Material input is rejected,
+  never truncated. Core remains the authority for actual source/storage policy.
+- **New vs existing store:** Connections explicitly distinguishes an existing
+  known initialized core store from an existing parent plus an unused new name.
+  Selection/configuration creates no state directory; the next explicit core
+  operation creates it with mode 0700. A new store's child cwd is its existing
+  parent. `realpath` resolves user-selected directories because Foundation can
+  shorten private temporary paths back through a symlink, which core correctly
+  rejects. New-name validation also rejects dangling symlinks. No global paths,
+  permissions or configuration were changed.
+- **Truthful status:** Build is labeled bounded local source-evidence work;
+  current core is lexical source-line indexing, not certified structural/semantic
+  understanding. The GUI remains unlaunched and uncertified.
+
+### Revision verification
+
+At the implementation SHA above:
+
+| Command / check | Result |
+| --- | --- |
+| `THREADMARK_CORE_TEST_BINARY=<explicit supplied binary> sh apps/companion/scripts/swift.sh test --disable-xctest --enable-swift-testing -Xswiftc -warnings-as-errors` | **27 tests / four suites passed**, including real core integration; repeated after implementation commit |
+| Same strict tests with no live binary configured, filtered to `LiveCoreTests` | Live test explicitly skipped with a reason; no PATH discovery or fake fallback |
+| Same filtered live test with an explicitly nonexistent binary | Deliberately failed with typed `unavailable`; rejection probe passed |
+| `sh apps/companion/scripts/swift.sh build --product ThreadmarkCompanion -Xswiftc -warnings-as-errors` | Passed; no launch |
+| `sh apps/companion/scripts/bundle.sh` | Release build/package passed; no install, launch or signing |
+| `plutil -lint apps/companion/dist/Threadmark.app/Contents/Info.plist` | Passed |
+| `python3 scripts/check.py` | Passed on unchanged Rust foundation plus shell documentation links |
+| `cargo deny --locked --offline check` | Passed; no network fetch |
+| `python3 scripts/secrets.py` after staging new files | Passed, including redacted tracked/history scan and rejection probe |
+| `git diff --cached --check` | Passed |
+
+The exact supplied Rust binary tested has SHA-256
+`929b7faa540a070ddb16f079f84c56db14a28791a02ff185aa8c8e9e6baa27d4`
+(unchanged across the final implementation test/build run). Its private absolute
+path is not baked into source or public evidence. The test-only environment
+parameter must be explicitly supplied; production never reads it. The parent
+owns that binary's source/CLI/CI integration, so no source SHA is inferred from a
+separately rebuilt executable.
+
+Regression evidence includes:
+
+- Deterministic lifecycle tests force exit between wait and escalation, verify a
+  single KILL maximum, and reject every signal after reap/`ECHILD`. Six owned
+  real fixture processes exit during the TERM/KILL grace boundary; they are
+  reaped and subsequent test-only `waitpid` confirms `ECHILD`. Another fixture
+  ignores TERM to exercise actual KILL and reap. No unrelated PID is signaled.
+- A controlled fake mutation ignores cancellation and commits only when released.
+  A replacement source policy and a replacement refresh both remain blocked
+  until that commit/teardown. Final fake persisted policy and displayed state are
+  checked, not only late UI suppression. The original held-index/project-switch
+  assertions remain, with the old job released before awaiting replacement ready.
+- Joining after cancel waits for outstanding work; Quit suppresses an already
+  queued refresh after prior mutation teardown. UTF-8 query/context boundaries,
+  project-list over-limit rejection and new-store selection/no-write behavior
+  are also tested.
+
+### Actually observed live-core adapter acceptance
+
+Only owned, generated synthetic roots/files/store under the approved temporary
+area were used and cleaned up. The real adapter and supplied core binary passed:
+
+1. Select a nonexistent store without creating it; first explicit project add
+   creates it with mode 0700; inspect registered exact file policy.
+2. Index, retrieve current source-backed evidence, edit the source, observe stale
+   status, and explicitly rebuild.
+3. Add a human note, update to a decision, update to a correction, inspect all
+   revisions, retire, and inspect retained history.
+4. Register/index a second project; verify source and human context isolation.
+5. Revoke all sources; verify empty stale retrieval. Reopen the known store with
+   a fresh adapter and verify projects and retired history persist.
+6. Select an empty existing directory; verify core rejects it rather than treating
+   it as an initialized private store.
+
+This adds real CLI/storage evidence for portions of P3-A1, P3-A3 and P3-A4 and
+adapter/model evidence for P3-A2/P3-A5. **It is not native UI acceptance.** No GUI,
+coding host, inference/provider, credentials, login startup, network, Docker,
+package installation or global configuration was used. No Refine UI was added.
+Native tray/window behavior, accessibility/focus, light/dark/reduced motion and
+operator walkthrough remain for separately authorized parent acceptance. Phase 1
+host/inference gates and full P3-A1–P3-A6 closure remain OPEN. The installed SDK /
+native-backend and older-OS caveats from the original evidence still apply.
+
+## Initial implementation evidence (historical baseline)
+
 ## Revision and ownership
 
 - Frozen base: `661bdb3e11118efe979cc7adf06c39db723bf133`.
