@@ -16,6 +16,8 @@
   "devDependencies": {
     "@types/emscripten": "1.40.0",
     "@types/json-schema": "7.0.15",
-    "typescript": "6.0.3"
+    "@types/node": "24.12.2",
+    "typescript": "6.0.3",
+    "undici-types": "7.16.0"
   }
 }

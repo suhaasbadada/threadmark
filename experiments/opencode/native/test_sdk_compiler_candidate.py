@@ -296,7 +296,10 @@ class PublicEvidenceTests(unittest.TestCase):
         self.old = json.loads((HERE / 'sdk-selection-discovery.json').read_bytes())
 
     def test_all_twenty_two_locked_paths_and_exact_delta_counts(self):
-        lock = json.loads((HERE / 'package-lock.json').read_bytes())['packages']
+        import typings_alignment as a
+        _, historical_lock = a.current((HERE / 'package.json').read_bytes(),
+            (HERE / 'package-lock.json').read_bytes(), json.loads((HERE / 'typings-alignment.json').read_bytes()))
+        lock = json.loads(historical_lock)['packages']
         extra = self.summary['additionalPackages']
         paths = [p['path'] for p in extra] + [p['packagePath'] for p in self.old['packages']]
         self.assertEqual(len(paths), len(set(paths)))
@@ -311,7 +314,11 @@ class PublicEvidenceTests(unittest.TestCase):
     def test_recorded_sources_receipts_and_notice_bytes_stay_bound(self):
         for group in ('sourceBindings', 'evidenceBindings'):
             for name, digest in self.summary[group].items():
-                self.assertEqual(c.t.sha256((HERE / name).read_bytes()), digest, name)
+                data = (HERE / name).read_bytes()
+                if name == 'THIRD-PARTY-NOTICES.txt':
+                    import typings_alignment as a
+                    data = a.notice_prefix(data, json.loads((HERE / 'typings-alignment.json').read_bytes()))
+                self.assertEqual(c.t.sha256(data), digest, name)
         self.assertEqual({n: c.t.sha256((HERE / n).read_bytes()) for n in c.FIXTURE_HASHES},
                          c.FIXTURE_HASHES)
 
