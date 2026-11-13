@@ -35,6 +35,7 @@ jobs:
       - name: Python offline contracts and fixture preparation
         run: |
           "$THREADMARK_PYTHON" -B experiments/extraction/test_harness.py
+          "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/extraction -p test_normalized.py -v
           "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/opencode/native -p 'test_*.py' -v
           "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/host-isolation -p 'test_*.py' -v
           "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/evaluation-corpus -v

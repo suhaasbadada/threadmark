@@ -1,0 +1,1518 @@
+{
+  "schema": "threadmark.scoped-static-experiment.v1",
+  "evidence": "actual pinned Graphify API; not mocked CI",
+  "limits": {
+    "seconds": 15,
+    "output_bytes": 262144,
+    "files": 16,
+    "input_bytes": 65536,
+    "nodes": 2000,
+    "edges": 4000,
+    "workers": 1
+  },
+  "results": [
+    {
+      "project": "orbit",
+      "case": "baseline",
+      "seconds": 0.8898,
+      "schema": "threadmark.scoped-static-experiment.v1",
+      "status": "accepted",
+      "graphify": "RETURNED",
+      "versions": {
+        "graphifyy": "0.9.101",
+        "tree-sitter": "0.25.2",
+        "tree-sitter-python": "0.25.0",
+        "tree-sitter-rust": "0.24.2"
+      },
+      "syntax": "Python ast.parse; Rust tree-sitter root.has_error=false",
+      "snapshot": {
+        "schema": "threadmark.scoped-static.v1",
+        "scope": {
+          "project": "orbit",
+          "worktree": "synthetic-worktree",
+          "revision": "synthetic-snapshot-1"
+        },
+        "coverage": "LIMITED_STATIC",
+        "limitations": [
+          "LIMITED_STATIC",
+          "No semantic closure, macro expansion or runtime proof",
+          "Supplied scope and IDs are not authentication, lineage or freshness"
+        ],
+        "manifest": {
+          "lib.rs": {
+            "sha256": "fe588be9d19020a7ab40f5f8b808d0eb962deb6371a8681c732e234769cdd5b8",
+            "lines": 5
+          },
+          "service.py": {
+            "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+            "lines": 13
+          }
+        },
+        "producer": {
+          "name": "graphifyy",
+          "version": "0.9.101",
+          "api": "graphify.extract.extract"
+        },
+        "nodes": [
+          {
+            "id": "0e159ff9493c31ebfc170f8f47bc956ed2a5a2e1f8294b9c99a5ab60f6b5fa1e",
+            "upstream_id": "service_submit",
+            "label": "submit()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 8,
+              "end": 8,
+              "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+              "excerpt": "def submit(value):"
+            }
+          },
+          {
+            "id": "16c04bcbda3a8a17f1750652271ddb4d28f7e82237e081672c702fefba46a25e",
+            "upstream_id": "service_rationale_1",
+            "label": "Synthetic project: retain records for seven days.",
+            "file_type": "rationale",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 1,
+              "end": 1,
+              "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+              "excerpt": "\"\"\"Synthetic project: retain records for seven days.\"\"\""
+            }
+          },
+          {
+            "id": "39bb37824897f5a78318915d7035930029a9756087245731846a55f4f60d17e1",
+            "upstream_id": "lib_normalize",
+            "label": "normalize()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 2,
+              "end": 2,
+              "sha256": "fe588be9d19020a7ab40f5f8b808d0eb962deb6371a8681c732e234769cdd5b8",
+              "excerpt": "pub fn normalize(value: &str) -> &str { value.trim() }"
+            }
+          },
+          {
+            "id": "464011d28c93663fff6ec46995e202da564f899e6cb00970faeb2ed90cf1a9d9",
+            "upstream_id": "service",
+            "label": "service.py",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 1,
+              "end": 1,
+              "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+              "excerpt": "\"\"\"Synthetic project: retain records for seven days.\"\"\""
+            }
+          },
+          {
+            "id": "77c3f9539587c0776774d26cb721475fc9fe84eed1fd4398b7d5cbd04bcddbbe",
+            "upstream_id": "lib_submit",
+            "label": "submit()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 3,
+              "end": 3,
+              "sha256": "fe588be9d19020a7ab40f5f8b808d0eb962deb6371a8681c732e234769cdd5b8",
+              "excerpt": "pub fn submit(value: &str) -> &str { normalize(value) }"
+            }
+          },
+          {
+            "id": "7a9736d4d2f8b8d28a2288e0adeeec18be5bfb8bc760de9f3d4e610040a5577c",
+            "upstream_id": "lib_macro_generated",
+            "label": "generated!",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 4,
+              "end": 4,
+              "sha256": "fe588be9d19020a7ab40f5f8b808d0eb962deb6371a8681c732e234769cdd5b8",
+              "excerpt": "macro_rules! generated { () => { pub fn hidden() {} }; }"
+            }
+          },
+          {
+            "id": "aeb8ed8bce6863db16ce87be802db90035e8e48ea17a1d0dfed341ac4d3e86e0",
+            "upstream_id": "lib",
+            "label": "lib.rs",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 1,
+              "end": 1,
+              "sha256": "fe588be9d19020a7ab40f5f8b808d0eb962deb6371a8681c732e234769cdd5b8",
+              "excerpt": "// Synthetic project: retain records for seven days."
+            }
+          },
+          {
+            "id": "e2d496e9458477c3361f082b41dbe9cdfb9d36679ce956c2456eeb9dae767369",
+            "upstream_id": "service_normalize",
+            "label": "normalize()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 4,
+              "end": 4,
+              "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+              "excerpt": "def normalize(value):"
+            }
+          },
+          {
+            "id": "ec6d20df3bb2ae551b685adbc8115a723c991e8b7bb0bf85b3457aa00978c48c",
+            "upstream_id": "service_dynamic",
+            "label": "dynamic()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 12,
+              "end": 12,
+              "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+              "excerpt": "def dynamic(callback, value):"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "source": "464011d28c93663fff6ec46995e202da564f899e6cb00970faeb2ed90cf1a9d9",
+            "target": "e2d496e9458477c3361f082b41dbe9cdfb9d36679ce956c2456eeb9dae767369",
+            "upstream_source": "service",
+            "upstream_target": "service_normalize",
+            "relation": "contains",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 4,
+              "end": 4,
+              "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+              "excerpt": "def normalize(value):"
+            },
+            "id": "3c736b0ce246e1de371e4ae89a65977e1762cdebafa24f2fbe623cf4db9721eb"
+          },
+          {
+            "source": "aeb8ed8bce6863db16ce87be802db90035e8e48ea17a1d0dfed341ac4d3e86e0",
+            "target": "7a9736d4d2f8b8d28a2288e0adeeec18be5bfb8bc760de9f3d4e610040a5577c",
+            "upstream_source": "lib",
+            "upstream_target": "lib_macro_generated",
+            "relation": "contains",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 4,
+              "end": 4,
+              "sha256": "fe588be9d19020a7ab40f5f8b808d0eb962deb6371a8681c732e234769cdd5b8",
+              "excerpt": "macro_rules! generated { () => { pub fn hidden() {} }; }"
+            },
+            "id": "46cee409a93184dcbe0932aec714e7fd3f0d81508364412081ad7a9be5b0493e"
+          },
+          {
+            "source": "464011d28c93663fff6ec46995e202da564f899e6cb00970faeb2ed90cf1a9d9",
+            "target": "0e159ff9493c31ebfc170f8f47bc956ed2a5a2e1f8294b9c99a5ab60f6b5fa1e",
+            "upstream_source": "service",
+            "upstream_target": "service_submit",
+            "relation": "contains",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 8,
+              "end": 8,
+              "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+              "excerpt": "def submit(value):"
+            },
+            "id": "6b9a7441d9146fc7f0b6a978232bc8a26ceb15259b9d8334adf0c549fec508ac"
+          },
+          {
+            "source": "aeb8ed8bce6863db16ce87be802db90035e8e48ea17a1d0dfed341ac4d3e86e0",
+            "target": "77c3f9539587c0776774d26cb721475fc9fe84eed1fd4398b7d5cbd04bcddbbe",
+            "upstream_source": "lib",
+            "upstream_target": "lib_submit",
+            "relation": "contains",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 3,
+              "end": 3,
+              "sha256": "fe588be9d19020a7ab40f5f8b808d0eb962deb6371a8681c732e234769cdd5b8",
+              "excerpt": "pub fn submit(value: &str) -> &str { normalize(value) }"
+            },
+            "id": "97b330b75b538d135db7a083cec2d55820250058ce2e54cd91d40aa0d85e512f"
+          },
+          {
+            "source": "77c3f9539587c0776774d26cb721475fc9fe84eed1fd4398b7d5cbd04bcddbbe",
+            "target": "39bb37824897f5a78318915d7035930029a9756087245731846a55f4f60d17e1",
+            "upstream_source": "lib_submit",
+            "upstream_target": "lib_normalize",
+            "relation": "calls",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 3,
+              "end": 3,
+              "sha256": "fe588be9d19020a7ab40f5f8b808d0eb962deb6371a8681c732e234769cdd5b8",
+              "excerpt": "pub fn submit(value: &str) -> &str { normalize(value) }"
+            },
+            "context": "call",
+            "id": "a2ff893a764d79cb749bff76c7a304b3dc95f15a30e6ae6ddce7a96543099258"
+          },
+          {
+            "source": "aeb8ed8bce6863db16ce87be802db90035e8e48ea17a1d0dfed341ac4d3e86e0",
+            "target": "39bb37824897f5a78318915d7035930029a9756087245731846a55f4f60d17e1",
+            "upstream_source": "lib",
+            "upstream_target": "lib_normalize",
+            "relation": "contains",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 2,
+              "end": 2,
+              "sha256": "fe588be9d19020a7ab40f5f8b808d0eb962deb6371a8681c732e234769cdd5b8",
+              "excerpt": "pub fn normalize(value: &str) -> &str { value.trim() }"
+            },
+            "id": "a3c06a74a5d2b7cb19c79f5faf1bdadd3a24f39fcef0006cc83732012394899f"
+          },
+          {
+            "source": "464011d28c93663fff6ec46995e202da564f899e6cb00970faeb2ed90cf1a9d9",
+            "target": "ec6d20df3bb2ae551b685adbc8115a723c991e8b7bb0bf85b3457aa00978c48c",
+            "upstream_source": "service",
+            "upstream_target": "service_dynamic",
+            "relation": "contains",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 12,
+              "end": 12,
+              "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+              "excerpt": "def dynamic(callback, value):"
+            },
+            "id": "f0cf95c62f3abf8f9abd6af27fe60d86878b57b9c4d185981d3b5893104cdf8e"
+          },
+          {
+            "source": "16c04bcbda3a8a17f1750652271ddb4d28f7e82237e081672c702fefba46a25e",
+            "target": "464011d28c93663fff6ec46995e202da564f899e6cb00970faeb2ed90cf1a9d9",
+            "upstream_source": "service_rationale_1",
+            "upstream_target": "service",
+            "relation": "rationale_for",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 1,
+              "end": 1,
+              "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+              "excerpt": "\"\"\"Synthetic project: retain records for seven days.\"\"\""
+            },
+            "id": "f2438f46199e947ea86cfeb3c3db16e68df4629395753c87258daf118a9d2064"
+          },
+          {
+            "source": "0e159ff9493c31ebfc170f8f47bc956ed2a5a2e1f8294b9c99a5ab60f6b5fa1e",
+            "target": "e2d496e9458477c3361f082b41dbe9cdfb9d36679ce956c2456eeb9dae767369",
+            "upstream_source": "service_submit",
+            "upstream_target": "service_normalize",
+            "relation": "calls",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 9,
+              "end": 9,
+              "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+              "excerpt": "    return normalize(value)"
+            },
+            "context": "call",
+            "id": "f4878abe1c5407a5ca201bafbfa0d78921ad59b34000f79df63481b5458dddef"
+          }
+        ]
+      },
+      "queries": {
+        "where_is_normalize": [
+          {
+            "id": "39bb37824897f5a78318915d7035930029a9756087245731846a55f4f60d17e1",
+            "upstream_id": "lib_normalize",
+            "label": "normalize()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 2,
+              "end": 2,
+              "sha256": "fe588be9d19020a7ab40f5f8b808d0eb962deb6371a8681c732e234769cdd5b8",
+              "excerpt": "pub fn normalize(value: &str) -> &str { value.trim() }"
+            }
+          },
+          {
+            "id": "e2d496e9458477c3361f082b41dbe9cdfb9d36679ce956c2456eeb9dae767369",
+            "upstream_id": "service_normalize",
+            "label": "normalize()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 4,
+              "end": 4,
+              "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+              "excerpt": "def normalize(value):"
+            }
+          }
+        ],
+        "what_directly_calls_normalize": [
+          {
+            "source": "77c3f9539587c0776774d26cb721475fc9fe84eed1fd4398b7d5cbd04bcddbbe",
+            "target": "39bb37824897f5a78318915d7035930029a9756087245731846a55f4f60d17e1",
+            "upstream_source": "lib_submit",
+            "upstream_target": "lib_normalize",
+            "relation": "calls",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 3,
+              "end": 3,
+              "sha256": "fe588be9d19020a7ab40f5f8b808d0eb962deb6371a8681c732e234769cdd5b8",
+              "excerpt": "pub fn submit(value: &str) -> &str { normalize(value) }"
+            },
+            "context": "call",
+            "id": "a2ff893a764d79cb749bff76c7a304b3dc95f15a30e6ae6ddce7a96543099258"
+          },
+          {
+            "source": "0e159ff9493c31ebfc170f8f47bc956ed2a5a2e1f8294b9c99a5ab60f6b5fa1e",
+            "target": "e2d496e9458477c3361f082b41dbe9cdfb9d36679ce956c2456eeb9dae767369",
+            "upstream_source": "service_submit",
+            "upstream_target": "service_normalize",
+            "relation": "calls",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 9,
+              "end": 9,
+              "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+              "excerpt": "    return normalize(value)"
+            },
+            "context": "call",
+            "id": "f4878abe1c5407a5ca201bafbfa0d78921ad59b34000f79df63481b5458dddef"
+          }
+        ]
+      }
+    },
+    {
+      "project": "orbit",
+      "case": "malformed",
+      "seconds": 0.5943,
+      "schema": "threadmark.scoped-static-experiment.v1",
+      "status": "rejected",
+      "graphify": "NOT_RUN",
+      "failure": "syntax",
+      "accepted_nodes": 0
+    },
+    {
+      "project": "orbit",
+      "case": "recovery",
+      "seconds": 0.7628,
+      "schema": "threadmark.scoped-static-experiment.v1",
+      "status": "accepted",
+      "graphify": "RETURNED",
+      "versions": {
+        "graphifyy": "0.9.101",
+        "tree-sitter": "0.25.2",
+        "tree-sitter-python": "0.25.0",
+        "tree-sitter-rust": "0.24.2"
+      },
+      "syntax": "Python ast.parse; Rust tree-sitter root.has_error=false",
+      "snapshot": {
+        "schema": "threadmark.scoped-static.v1",
+        "scope": {
+          "project": "orbit",
+          "worktree": "synthetic-worktree",
+          "revision": "synthetic-snapshot-1"
+        },
+        "coverage": "LIMITED_STATIC",
+        "limitations": [
+          "LIMITED_STATIC",
+          "No semantic closure, macro expansion or runtime proof",
+          "Supplied scope and IDs are not authentication, lineage or freshness"
+        ],
+        "manifest": {
+          "lib.rs": {
+            "sha256": "fe588be9d19020a7ab40f5f8b808d0eb962deb6371a8681c732e234769cdd5b8",
+            "lines": 5
+          },
+          "service.py": {
+            "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+            "lines": 13
+          }
+        },
+        "producer": {
+          "name": "graphifyy",
+          "version": "0.9.101",
+          "api": "graphify.extract.extract"
+        },
+        "nodes": [
+          {
+            "id": "0e159ff9493c31ebfc170f8f47bc956ed2a5a2e1f8294b9c99a5ab60f6b5fa1e",
+            "upstream_id": "service_submit",
+            "label": "submit()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 8,
+              "end": 8,
+              "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+              "excerpt": "def submit(value):"
+            }
+          },
+          {
+            "id": "16c04bcbda3a8a17f1750652271ddb4d28f7e82237e081672c702fefba46a25e",
+            "upstream_id": "service_rationale_1",
+            "label": "Synthetic project: retain records for seven days.",
+            "file_type": "rationale",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 1,
+              "end": 1,
+              "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+              "excerpt": "\"\"\"Synthetic project: retain records for seven days.\"\"\""
+            }
+          },
+          {
+            "id": "39bb37824897f5a78318915d7035930029a9756087245731846a55f4f60d17e1",
+            "upstream_id": "lib_normalize",
+            "label": "normalize()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 2,
+              "end": 2,
+              "sha256": "fe588be9d19020a7ab40f5f8b808d0eb962deb6371a8681c732e234769cdd5b8",
+              "excerpt": "pub fn normalize(value: &str) -> &str { value.trim() }"
+            }
+          },
+          {
+            "id": "464011d28c93663fff6ec46995e202da564f899e6cb00970faeb2ed90cf1a9d9",
+            "upstream_id": "service",
+            "label": "service.py",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 1,
+              "end": 1,
+              "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+              "excerpt": "\"\"\"Synthetic project: retain records for seven days.\"\"\""
+            }
+          },
+          {
+            "id": "77c3f9539587c0776774d26cb721475fc9fe84eed1fd4398b7d5cbd04bcddbbe",
+            "upstream_id": "lib_submit",
+            "label": "submit()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 3,
+              "end": 3,
+              "sha256": "fe588be9d19020a7ab40f5f8b808d0eb962deb6371a8681c732e234769cdd5b8",
+              "excerpt": "pub fn submit(value: &str) -> &str { normalize(value) }"
+            }
+          },
+          {
+            "id": "7a9736d4d2f8b8d28a2288e0adeeec18be5bfb8bc760de9f3d4e610040a5577c",
+            "upstream_id": "lib_macro_generated",
+            "label": "generated!",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 4,
+              "end": 4,
+              "sha256": "fe588be9d19020a7ab40f5f8b808d0eb962deb6371a8681c732e234769cdd5b8",
+              "excerpt": "macro_rules! generated { () => { pub fn hidden() {} }; }"
+            }
+          },
+          {
+            "id": "aeb8ed8bce6863db16ce87be802db90035e8e48ea17a1d0dfed341ac4d3e86e0",
+            "upstream_id": "lib",
+            "label": "lib.rs",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 1,
+              "end": 1,
+              "sha256": "fe588be9d19020a7ab40f5f8b808d0eb962deb6371a8681c732e234769cdd5b8",
+              "excerpt": "// Synthetic project: retain records for seven days."
+            }
+          },
+          {
+            "id": "e2d496e9458477c3361f082b41dbe9cdfb9d36679ce956c2456eeb9dae767369",
+            "upstream_id": "service_normalize",
+            "label": "normalize()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 4,
+              "end": 4,
+              "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+              "excerpt": "def normalize(value):"
+            }
+          },
+          {
+            "id": "ec6d20df3bb2ae551b685adbc8115a723c991e8b7bb0bf85b3457aa00978c48c",
+            "upstream_id": "service_dynamic",
+            "label": "dynamic()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 12,
+              "end": 12,
+              "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+              "excerpt": "def dynamic(callback, value):"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "source": "464011d28c93663fff6ec46995e202da564f899e6cb00970faeb2ed90cf1a9d9",
+            "target": "e2d496e9458477c3361f082b41dbe9cdfb9d36679ce956c2456eeb9dae767369",
+            "upstream_source": "service",
+            "upstream_target": "service_normalize",
+            "relation": "contains",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 4,
+              "end": 4,
+              "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+              "excerpt": "def normalize(value):"
+            },
+            "id": "3c736b0ce246e1de371e4ae89a65977e1762cdebafa24f2fbe623cf4db9721eb"
+          },
+          {
+            "source": "aeb8ed8bce6863db16ce87be802db90035e8e48ea17a1d0dfed341ac4d3e86e0",
+            "target": "7a9736d4d2f8b8d28a2288e0adeeec18be5bfb8bc760de9f3d4e610040a5577c",
+            "upstream_source": "lib",
+            "upstream_target": "lib_macro_generated",
+            "relation": "contains",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 4,
+              "end": 4,
+              "sha256": "fe588be9d19020a7ab40f5f8b808d0eb962deb6371a8681c732e234769cdd5b8",
+              "excerpt": "macro_rules! generated { () => { pub fn hidden() {} }; }"
+            },
+            "id": "46cee409a93184dcbe0932aec714e7fd3f0d81508364412081ad7a9be5b0493e"
+          },
+          {
+            "source": "464011d28c93663fff6ec46995e202da564f899e6cb00970faeb2ed90cf1a9d9",
+            "target": "0e159ff9493c31ebfc170f8f47bc956ed2a5a2e1f8294b9c99a5ab60f6b5fa1e",
+            "upstream_source": "service",
+            "upstream_target": "service_submit",
+            "relation": "contains",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 8,
+              "end": 8,
+              "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+              "excerpt": "def submit(value):"
+            },
+            "id": "6b9a7441d9146fc7f0b6a978232bc8a26ceb15259b9d8334adf0c549fec508ac"
+          },
+          {
+            "source": "aeb8ed8bce6863db16ce87be802db90035e8e48ea17a1d0dfed341ac4d3e86e0",
+            "target": "77c3f9539587c0776774d26cb721475fc9fe84eed1fd4398b7d5cbd04bcddbbe",
+            "upstream_source": "lib",
+            "upstream_target": "lib_submit",
+            "relation": "contains",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 3,
+              "end": 3,
+              "sha256": "fe588be9d19020a7ab40f5f8b808d0eb962deb6371a8681c732e234769cdd5b8",
+              "excerpt": "pub fn submit(value: &str) -> &str { normalize(value) }"
+            },
+            "id": "97b330b75b538d135db7a083cec2d55820250058ce2e54cd91d40aa0d85e512f"
+          },
+          {
+            "source": "77c3f9539587c0776774d26cb721475fc9fe84eed1fd4398b7d5cbd04bcddbbe",
+            "target": "39bb37824897f5a78318915d7035930029a9756087245731846a55f4f60d17e1",
+            "upstream_source": "lib_submit",
+            "upstream_target": "lib_normalize",
+            "relation": "calls",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 3,
+              "end": 3,
+              "sha256": "fe588be9d19020a7ab40f5f8b808d0eb962deb6371a8681c732e234769cdd5b8",
+              "excerpt": "pub fn submit(value: &str) -> &str { normalize(value) }"
+            },
+            "context": "call",
+            "id": "a2ff893a764d79cb749bff76c7a304b3dc95f15a30e6ae6ddce7a96543099258"
+          },
+          {
+            "source": "aeb8ed8bce6863db16ce87be802db90035e8e48ea17a1d0dfed341ac4d3e86e0",
+            "target": "39bb37824897f5a78318915d7035930029a9756087245731846a55f4f60d17e1",
+            "upstream_source": "lib",
+            "upstream_target": "lib_normalize",
+            "relation": "contains",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 2,
+              "end": 2,
+              "sha256": "fe588be9d19020a7ab40f5f8b808d0eb962deb6371a8681c732e234769cdd5b8",
+              "excerpt": "pub fn normalize(value: &str) -> &str { value.trim() }"
+            },
+            "id": "a3c06a74a5d2b7cb19c79f5faf1bdadd3a24f39fcef0006cc83732012394899f"
+          },
+          {
+            "source": "464011d28c93663fff6ec46995e202da564f899e6cb00970faeb2ed90cf1a9d9",
+            "target": "ec6d20df3bb2ae551b685adbc8115a723c991e8b7bb0bf85b3457aa00978c48c",
+            "upstream_source": "service",
+            "upstream_target": "service_dynamic",
+            "relation": "contains",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 12,
+              "end": 12,
+              "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+              "excerpt": "def dynamic(callback, value):"
+            },
+            "id": "f0cf95c62f3abf8f9abd6af27fe60d86878b57b9c4d185981d3b5893104cdf8e"
+          },
+          {
+            "source": "16c04bcbda3a8a17f1750652271ddb4d28f7e82237e081672c702fefba46a25e",
+            "target": "464011d28c93663fff6ec46995e202da564f899e6cb00970faeb2ed90cf1a9d9",
+            "upstream_source": "service_rationale_1",
+            "upstream_target": "service",
+            "relation": "rationale_for",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 1,
+              "end": 1,
+              "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+              "excerpt": "\"\"\"Synthetic project: retain records for seven days.\"\"\""
+            },
+            "id": "f2438f46199e947ea86cfeb3c3db16e68df4629395753c87258daf118a9d2064"
+          },
+          {
+            "source": "0e159ff9493c31ebfc170f8f47bc956ed2a5a2e1f8294b9c99a5ab60f6b5fa1e",
+            "target": "e2d496e9458477c3361f082b41dbe9cdfb9d36679ce956c2456eeb9dae767369",
+            "upstream_source": "service_submit",
+            "upstream_target": "service_normalize",
+            "relation": "calls",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 9,
+              "end": 9,
+              "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+              "excerpt": "    return normalize(value)"
+            },
+            "context": "call",
+            "id": "f4878abe1c5407a5ca201bafbfa0d78921ad59b34000f79df63481b5458dddef"
+          }
+        ]
+      },
+      "queries": {
+        "where_is_normalize": [
+          {
+            "id": "39bb37824897f5a78318915d7035930029a9756087245731846a55f4f60d17e1",
+            "upstream_id": "lib_normalize",
+            "label": "normalize()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 2,
+              "end": 2,
+              "sha256": "fe588be9d19020a7ab40f5f8b808d0eb962deb6371a8681c732e234769cdd5b8",
+              "excerpt": "pub fn normalize(value: &str) -> &str { value.trim() }"
+            }
+          },
+          {
+            "id": "e2d496e9458477c3361f082b41dbe9cdfb9d36679ce956c2456eeb9dae767369",
+            "upstream_id": "service_normalize",
+            "label": "normalize()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 4,
+              "end": 4,
+              "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+              "excerpt": "def normalize(value):"
+            }
+          }
+        ],
+        "what_directly_calls_normalize": [
+          {
+            "source": "77c3f9539587c0776774d26cb721475fc9fe84eed1fd4398b7d5cbd04bcddbbe",
+            "target": "39bb37824897f5a78318915d7035930029a9756087245731846a55f4f60d17e1",
+            "upstream_source": "lib_submit",
+            "upstream_target": "lib_normalize",
+            "relation": "calls",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 3,
+              "end": 3,
+              "sha256": "fe588be9d19020a7ab40f5f8b808d0eb962deb6371a8681c732e234769cdd5b8",
+              "excerpt": "pub fn submit(value: &str) -> &str { normalize(value) }"
+            },
+            "context": "call",
+            "id": "a2ff893a764d79cb749bff76c7a304b3dc95f15a30e6ae6ddce7a96543099258"
+          },
+          {
+            "source": "0e159ff9493c31ebfc170f8f47bc956ed2a5a2e1f8294b9c99a5ab60f6b5fa1e",
+            "target": "e2d496e9458477c3361f082b41dbe9cdfb9d36679ce956c2456eeb9dae767369",
+            "upstream_source": "service_submit",
+            "upstream_target": "service_normalize",
+            "relation": "calls",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 9,
+              "end": 9,
+              "sha256": "c1db3a9983cb04c2cbae132f9ed805ce2af5867c4ccc6bc70f476b89c81761c5",
+              "excerpt": "    return normalize(value)"
+            },
+            "context": "call",
+            "id": "f4878abe1c5407a5ca201bafbfa0d78921ad59b34000f79df63481b5458dddef"
+          }
+        ]
+      }
+    },
+    {
+      "project": "orbit-next",
+      "case": "baseline",
+      "seconds": 0.7659,
+      "schema": "threadmark.scoped-static-experiment.v1",
+      "status": "accepted",
+      "graphify": "RETURNED",
+      "versions": {
+        "graphifyy": "0.9.101",
+        "tree-sitter": "0.25.2",
+        "tree-sitter-python": "0.25.0",
+        "tree-sitter-rust": "0.24.2"
+      },
+      "syntax": "Python ast.parse; Rust tree-sitter root.has_error=false",
+      "snapshot": {
+        "schema": "threadmark.scoped-static.v1",
+        "scope": {
+          "project": "orbit-next",
+          "worktree": "synthetic-worktree",
+          "revision": "synthetic-snapshot-1"
+        },
+        "coverage": "LIMITED_STATIC",
+        "limitations": [
+          "LIMITED_STATIC",
+          "No semantic closure, macro expansion or runtime proof",
+          "Supplied scope and IDs are not authentication, lineage or freshness"
+        ],
+        "manifest": {
+          "lib.rs": {
+            "sha256": "39ec57cf805ed06d797eca8a931cdeaec3c5461c6da60d44f5ab0145225fd056",
+            "lines": 3
+          },
+          "service.py": {
+            "sha256": "26babacefa536e2183ece5e62a8b0f12de5d8a891228b43b820b68e1145663b5",
+            "lines": 9
+          }
+        },
+        "producer": {
+          "name": "graphifyy",
+          "version": "0.9.101",
+          "api": "graphify.extract.extract"
+        },
+        "nodes": [
+          {
+            "id": "1e312cbfda4ec8c31fe1a6c5b9fe2d16290508655cd5784abdb9fc9c2922639c",
+            "upstream_id": "service",
+            "label": "service.py",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 1,
+              "end": 1,
+              "sha256": "26babacefa536e2183ece5e62a8b0f12de5d8a891228b43b820b68e1145663b5",
+              "excerpt": "\"\"\"Synthetic different project: retain records for thirty days.\"\"\""
+            }
+          },
+          {
+            "id": "31221292653e43cfb48dbb1f3b10bfff29fb7f63956108ed1268aa3adff10079",
+            "upstream_id": "lib_normalize",
+            "label": "normalize()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 2,
+              "end": 2,
+              "sha256": "39ec57cf805ed06d797eca8a931cdeaec3c5461c6da60d44f5ab0145225fd056",
+              "excerpt": "pub fn normalize(value: &str) -> String { value.to_lowercase() }"
+            }
+          },
+          {
+            "id": "3b91895dd618e603d5e94580db801519a3b3499c017577fa6267904597900f90",
+            "upstream_id": "lib",
+            "label": "lib.rs",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 1,
+              "end": 1,
+              "sha256": "39ec57cf805ed06d797eca8a931cdeaec3c5461c6da60d44f5ab0145225fd056",
+              "excerpt": "// Synthetic different project: retain records for thirty days."
+            }
+          },
+          {
+            "id": "4951c7deb8a9244880739e3f645354d1a7789b046a326b96a9f7c8d9eeacbb07",
+            "upstream_id": "service_normalize",
+            "label": "normalize()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 4,
+              "end": 4,
+              "sha256": "26babacefa536e2183ece5e62a8b0f12de5d8a891228b43b820b68e1145663b5",
+              "excerpt": "def normalize(value):"
+            }
+          },
+          {
+            "id": "8e14f2489026fbfa29c5c6d73c73f399548dd66323e7b07aaffd5ede47cd159b",
+            "upstream_id": "service_rationale_1",
+            "label": "Synthetic different project: retain records for thirty days.",
+            "file_type": "rationale",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 1,
+              "end": 1,
+              "sha256": "26babacefa536e2183ece5e62a8b0f12de5d8a891228b43b820b68e1145663b5",
+              "excerpt": "\"\"\"Synthetic different project: retain records for thirty days.\"\"\""
+            }
+          },
+          {
+            "id": "a24cddf8c92dc47bd2d03875a5786465b953e75d6de92f2b2f286b378256679c",
+            "upstream_id": "lib_submit",
+            "label": "submit()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 3,
+              "end": 3,
+              "sha256": "39ec57cf805ed06d797eca8a931cdeaec3c5461c6da60d44f5ab0145225fd056",
+              "excerpt": "pub fn submit(value: &str) -> String { normalize(value) }"
+            }
+          },
+          {
+            "id": "f1f8307b57ca860364a436e9f55f94913b1b603f30cb18c0318a6a1dc10272b9",
+            "upstream_id": "service_submit",
+            "label": "submit()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 8,
+              "end": 8,
+              "sha256": "26babacefa536e2183ece5e62a8b0f12de5d8a891228b43b820b68e1145663b5",
+              "excerpt": "def submit(value):"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "source": "f1f8307b57ca860364a436e9f55f94913b1b603f30cb18c0318a6a1dc10272b9",
+            "target": "4951c7deb8a9244880739e3f645354d1a7789b046a326b96a9f7c8d9eeacbb07",
+            "upstream_source": "service_submit",
+            "upstream_target": "service_normalize",
+            "relation": "calls",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 9,
+              "end": 9,
+              "sha256": "26babacefa536e2183ece5e62a8b0f12de5d8a891228b43b820b68e1145663b5",
+              "excerpt": "    return normalize(value)"
+            },
+            "context": "call",
+            "id": "010643b16c5be01bd25b1055b6ef042bac8dc90b366ed09d2e4a69a5ca7b8ebf"
+          },
+          {
+            "source": "3b91895dd618e603d5e94580db801519a3b3499c017577fa6267904597900f90",
+            "target": "31221292653e43cfb48dbb1f3b10bfff29fb7f63956108ed1268aa3adff10079",
+            "upstream_source": "lib",
+            "upstream_target": "lib_normalize",
+            "relation": "contains",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 2,
+              "end": 2,
+              "sha256": "39ec57cf805ed06d797eca8a931cdeaec3c5461c6da60d44f5ab0145225fd056",
+              "excerpt": "pub fn normalize(value: &str) -> String { value.to_lowercase() }"
+            },
+            "id": "4e2ef5f7bf1100a909b25cb426da08e81f75802360c744a77008703e332c84ad"
+          },
+          {
+            "source": "1e312cbfda4ec8c31fe1a6c5b9fe2d16290508655cd5784abdb9fc9c2922639c",
+            "target": "4951c7deb8a9244880739e3f645354d1a7789b046a326b96a9f7c8d9eeacbb07",
+            "upstream_source": "service",
+            "upstream_target": "service_normalize",
+            "relation": "contains",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 4,
+              "end": 4,
+              "sha256": "26babacefa536e2183ece5e62a8b0f12de5d8a891228b43b820b68e1145663b5",
+              "excerpt": "def normalize(value):"
+            },
+            "id": "647eacb8b446a2e18de8fc356a3a4687737c766a67c154d37c873d7e26445859"
+          },
+          {
+            "source": "1e312cbfda4ec8c31fe1a6c5b9fe2d16290508655cd5784abdb9fc9c2922639c",
+            "target": "f1f8307b57ca860364a436e9f55f94913b1b603f30cb18c0318a6a1dc10272b9",
+            "upstream_source": "service",
+            "upstream_target": "service_submit",
+            "relation": "contains",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 8,
+              "end": 8,
+              "sha256": "26babacefa536e2183ece5e62a8b0f12de5d8a891228b43b820b68e1145663b5",
+              "excerpt": "def submit(value):"
+            },
+            "id": "65bc4541e6cc9e4f39cca961d3cd06bfad9434f6b4bdb27f6baaf25b92279096"
+          },
+          {
+            "source": "3b91895dd618e603d5e94580db801519a3b3499c017577fa6267904597900f90",
+            "target": "a24cddf8c92dc47bd2d03875a5786465b953e75d6de92f2b2f286b378256679c",
+            "upstream_source": "lib",
+            "upstream_target": "lib_submit",
+            "relation": "contains",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 3,
+              "end": 3,
+              "sha256": "39ec57cf805ed06d797eca8a931cdeaec3c5461c6da60d44f5ab0145225fd056",
+              "excerpt": "pub fn submit(value: &str) -> String { normalize(value) }"
+            },
+            "id": "89941dc7b2ea11fc157e1aa761c92b5246c42fed933bb5b75c8a86ed7dbe67cc"
+          },
+          {
+            "source": "8e14f2489026fbfa29c5c6d73c73f399548dd66323e7b07aaffd5ede47cd159b",
+            "target": "1e312cbfda4ec8c31fe1a6c5b9fe2d16290508655cd5784abdb9fc9c2922639c",
+            "upstream_source": "service_rationale_1",
+            "upstream_target": "service",
+            "relation": "rationale_for",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 1,
+              "end": 1,
+              "sha256": "26babacefa536e2183ece5e62a8b0f12de5d8a891228b43b820b68e1145663b5",
+              "excerpt": "\"\"\"Synthetic different project: retain records for thirty days.\"\"\""
+            },
+            "id": "d98207aca1fddd9516197262059d3da488490fc4b2e00e184626f73fb073ca49"
+          },
+          {
+            "source": "a24cddf8c92dc47bd2d03875a5786465b953e75d6de92f2b2f286b378256679c",
+            "target": "31221292653e43cfb48dbb1f3b10bfff29fb7f63956108ed1268aa3adff10079",
+            "upstream_source": "lib_submit",
+            "upstream_target": "lib_normalize",
+            "relation": "calls",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 3,
+              "end": 3,
+              "sha256": "39ec57cf805ed06d797eca8a931cdeaec3c5461c6da60d44f5ab0145225fd056",
+              "excerpt": "pub fn submit(value: &str) -> String { normalize(value) }"
+            },
+            "context": "call",
+            "id": "e27b2807557cb065868d6f92de7294d0ee06a4d1651961626d8c93691c47afc8"
+          }
+        ]
+      },
+      "queries": {
+        "where_is_normalize": [
+          {
+            "id": "31221292653e43cfb48dbb1f3b10bfff29fb7f63956108ed1268aa3adff10079",
+            "upstream_id": "lib_normalize",
+            "label": "normalize()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 2,
+              "end": 2,
+              "sha256": "39ec57cf805ed06d797eca8a931cdeaec3c5461c6da60d44f5ab0145225fd056",
+              "excerpt": "pub fn normalize(value: &str) -> String { value.to_lowercase() }"
+            }
+          },
+          {
+            "id": "4951c7deb8a9244880739e3f645354d1a7789b046a326b96a9f7c8d9eeacbb07",
+            "upstream_id": "service_normalize",
+            "label": "normalize()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 4,
+              "end": 4,
+              "sha256": "26babacefa536e2183ece5e62a8b0f12de5d8a891228b43b820b68e1145663b5",
+              "excerpt": "def normalize(value):"
+            }
+          }
+        ],
+        "what_directly_calls_normalize": [
+          {
+            "source": "f1f8307b57ca860364a436e9f55f94913b1b603f30cb18c0318a6a1dc10272b9",
+            "target": "4951c7deb8a9244880739e3f645354d1a7789b046a326b96a9f7c8d9eeacbb07",
+            "upstream_source": "service_submit",
+            "upstream_target": "service_normalize",
+            "relation": "calls",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 9,
+              "end": 9,
+              "sha256": "26babacefa536e2183ece5e62a8b0f12de5d8a891228b43b820b68e1145663b5",
+              "excerpt": "    return normalize(value)"
+            },
+            "context": "call",
+            "id": "010643b16c5be01bd25b1055b6ef042bac8dc90b366ed09d2e4a69a5ca7b8ebf"
+          },
+          {
+            "source": "a24cddf8c92dc47bd2d03875a5786465b953e75d6de92f2b2f286b378256679c",
+            "target": "31221292653e43cfb48dbb1f3b10bfff29fb7f63956108ed1268aa3adff10079",
+            "upstream_source": "lib_submit",
+            "upstream_target": "lib_normalize",
+            "relation": "calls",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 3,
+              "end": 3,
+              "sha256": "39ec57cf805ed06d797eca8a931cdeaec3c5461c6da60d44f5ab0145225fd056",
+              "excerpt": "pub fn submit(value: &str) -> String { normalize(value) }"
+            },
+            "context": "call",
+            "id": "e27b2807557cb065868d6f92de7294d0ee06a4d1651961626d8c93691c47afc8"
+          }
+        ]
+      }
+    },
+    {
+      "project": "orbit-next",
+      "case": "malformed",
+      "seconds": 0.5967,
+      "schema": "threadmark.scoped-static-experiment.v1",
+      "status": "rejected",
+      "graphify": "NOT_RUN",
+      "failure": "syntax",
+      "accepted_nodes": 0
+    },
+    {
+      "project": "orbit-next",
+      "case": "recovery",
+      "seconds": 0.757,
+      "schema": "threadmark.scoped-static-experiment.v1",
+      "status": "accepted",
+      "graphify": "RETURNED",
+      "versions": {
+        "graphifyy": "0.9.101",
+        "tree-sitter": "0.25.2",
+        "tree-sitter-python": "0.25.0",
+        "tree-sitter-rust": "0.24.2"
+      },
+      "syntax": "Python ast.parse; Rust tree-sitter root.has_error=false",
+      "snapshot": {
+        "schema": "threadmark.scoped-static.v1",
+        "scope": {
+          "project": "orbit-next",
+          "worktree": "synthetic-worktree",
+          "revision": "synthetic-snapshot-1"
+        },
+        "coverage": "LIMITED_STATIC",
+        "limitations": [
+          "LIMITED_STATIC",
+          "No semantic closure, macro expansion or runtime proof",
+          "Supplied scope and IDs are not authentication, lineage or freshness"
+        ],
+        "manifest": {
+          "lib.rs": {
+            "sha256": "39ec57cf805ed06d797eca8a931cdeaec3c5461c6da60d44f5ab0145225fd056",
+            "lines": 3
+          },
+          "service.py": {
+            "sha256": "26babacefa536e2183ece5e62a8b0f12de5d8a891228b43b820b68e1145663b5",
+            "lines": 9
+          }
+        },
+        "producer": {
+          "name": "graphifyy",
+          "version": "0.9.101",
+          "api": "graphify.extract.extract"
+        },
+        "nodes": [
+          {
+            "id": "1e312cbfda4ec8c31fe1a6c5b9fe2d16290508655cd5784abdb9fc9c2922639c",
+            "upstream_id": "service",
+            "label": "service.py",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 1,
+              "end": 1,
+              "sha256": "26babacefa536e2183ece5e62a8b0f12de5d8a891228b43b820b68e1145663b5",
+              "excerpt": "\"\"\"Synthetic different project: retain records for thirty days.\"\"\""
+            }
+          },
+          {
+            "id": "31221292653e43cfb48dbb1f3b10bfff29fb7f63956108ed1268aa3adff10079",
+            "upstream_id": "lib_normalize",
+            "label": "normalize()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 2,
+              "end": 2,
+              "sha256": "39ec57cf805ed06d797eca8a931cdeaec3c5461c6da60d44f5ab0145225fd056",
+              "excerpt": "pub fn normalize(value: &str) -> String { value.to_lowercase() }"
+            }
+          },
+          {
+            "id": "3b91895dd618e603d5e94580db801519a3b3499c017577fa6267904597900f90",
+            "upstream_id": "lib",
+            "label": "lib.rs",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 1,
+              "end": 1,
+              "sha256": "39ec57cf805ed06d797eca8a931cdeaec3c5461c6da60d44f5ab0145225fd056",
+              "excerpt": "// Synthetic different project: retain records for thirty days."
+            }
+          },
+          {
+            "id": "4951c7deb8a9244880739e3f645354d1a7789b046a326b96a9f7c8d9eeacbb07",
+            "upstream_id": "service_normalize",
+            "label": "normalize()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 4,
+              "end": 4,
+              "sha256": "26babacefa536e2183ece5e62a8b0f12de5d8a891228b43b820b68e1145663b5",
+              "excerpt": "def normalize(value):"
+            }
+          },
+          {
+            "id": "8e14f2489026fbfa29c5c6d73c73f399548dd66323e7b07aaffd5ede47cd159b",
+            "upstream_id": "service_rationale_1",
+            "label": "Synthetic different project: retain records for thirty days.",
+            "file_type": "rationale",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 1,
+              "end": 1,
+              "sha256": "26babacefa536e2183ece5e62a8b0f12de5d8a891228b43b820b68e1145663b5",
+              "excerpt": "\"\"\"Synthetic different project: retain records for thirty days.\"\"\""
+            }
+          },
+          {
+            "id": "a24cddf8c92dc47bd2d03875a5786465b953e75d6de92f2b2f286b378256679c",
+            "upstream_id": "lib_submit",
+            "label": "submit()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 3,
+              "end": 3,
+              "sha256": "39ec57cf805ed06d797eca8a931cdeaec3c5461c6da60d44f5ab0145225fd056",
+              "excerpt": "pub fn submit(value: &str) -> String { normalize(value) }"
+            }
+          },
+          {
+            "id": "f1f8307b57ca860364a436e9f55f94913b1b603f30cb18c0318a6a1dc10272b9",
+            "upstream_id": "service_submit",
+            "label": "submit()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 8,
+              "end": 8,
+              "sha256": "26babacefa536e2183ece5e62a8b0f12de5d8a891228b43b820b68e1145663b5",
+              "excerpt": "def submit(value):"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "source": "f1f8307b57ca860364a436e9f55f94913b1b603f30cb18c0318a6a1dc10272b9",
+            "target": "4951c7deb8a9244880739e3f645354d1a7789b046a326b96a9f7c8d9eeacbb07",
+            "upstream_source": "service_submit",
+            "upstream_target": "service_normalize",
+            "relation": "calls",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 9,
+              "end": 9,
+              "sha256": "26babacefa536e2183ece5e62a8b0f12de5d8a891228b43b820b68e1145663b5",
+              "excerpt": "    return normalize(value)"
+            },
+            "context": "call",
+            "id": "010643b16c5be01bd25b1055b6ef042bac8dc90b366ed09d2e4a69a5ca7b8ebf"
+          },
+          {
+            "source": "3b91895dd618e603d5e94580db801519a3b3499c017577fa6267904597900f90",
+            "target": "31221292653e43cfb48dbb1f3b10bfff29fb7f63956108ed1268aa3adff10079",
+            "upstream_source": "lib",
+            "upstream_target": "lib_normalize",
+            "relation": "contains",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 2,
+              "end": 2,
+              "sha256": "39ec57cf805ed06d797eca8a931cdeaec3c5461c6da60d44f5ab0145225fd056",
+              "excerpt": "pub fn normalize(value: &str) -> String { value.to_lowercase() }"
+            },
+            "id": "4e2ef5f7bf1100a909b25cb426da08e81f75802360c744a77008703e332c84ad"
+          },
+          {
+            "source": "1e312cbfda4ec8c31fe1a6c5b9fe2d16290508655cd5784abdb9fc9c2922639c",
+            "target": "4951c7deb8a9244880739e3f645354d1a7789b046a326b96a9f7c8d9eeacbb07",
+            "upstream_source": "service",
+            "upstream_target": "service_normalize",
+            "relation": "contains",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 4,
+              "end": 4,
+              "sha256": "26babacefa536e2183ece5e62a8b0f12de5d8a891228b43b820b68e1145663b5",
+              "excerpt": "def normalize(value):"
+            },
+            "id": "647eacb8b446a2e18de8fc356a3a4687737c766a67c154d37c873d7e26445859"
+          },
+          {
+            "source": "1e312cbfda4ec8c31fe1a6c5b9fe2d16290508655cd5784abdb9fc9c2922639c",
+            "target": "f1f8307b57ca860364a436e9f55f94913b1b603f30cb18c0318a6a1dc10272b9",
+            "upstream_source": "service",
+            "upstream_target": "service_submit",
+            "relation": "contains",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 8,
+              "end": 8,
+              "sha256": "26babacefa536e2183ece5e62a8b0f12de5d8a891228b43b820b68e1145663b5",
+              "excerpt": "def submit(value):"
+            },
+            "id": "65bc4541e6cc9e4f39cca961d3cd06bfad9434f6b4bdb27f6baaf25b92279096"
+          },
+          {
+            "source": "3b91895dd618e603d5e94580db801519a3b3499c017577fa6267904597900f90",
+            "target": "a24cddf8c92dc47bd2d03875a5786465b953e75d6de92f2b2f286b378256679c",
+            "upstream_source": "lib",
+            "upstream_target": "lib_submit",
+            "relation": "contains",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 3,
+              "end": 3,
+              "sha256": "39ec57cf805ed06d797eca8a931cdeaec3c5461c6da60d44f5ab0145225fd056",
+              "excerpt": "pub fn submit(value: &str) -> String { normalize(value) }"
+            },
+            "id": "89941dc7b2ea11fc157e1aa761c92b5246c42fed933bb5b75c8a86ed7dbe67cc"
+          },
+          {
+            "source": "8e14f2489026fbfa29c5c6d73c73f399548dd66323e7b07aaffd5ede47cd159b",
+            "target": "1e312cbfda4ec8c31fe1a6c5b9fe2d16290508655cd5784abdb9fc9c2922639c",
+            "upstream_source": "service_rationale_1",
+            "upstream_target": "service",
+            "relation": "rationale_for",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 1,
+              "end": 1,
+              "sha256": "26babacefa536e2183ece5e62a8b0f12de5d8a891228b43b820b68e1145663b5",
+              "excerpt": "\"\"\"Synthetic different project: retain records for thirty days.\"\"\""
+            },
+            "id": "d98207aca1fddd9516197262059d3da488490fc4b2e00e184626f73fb073ca49"
+          },
+          {
+            "source": "a24cddf8c92dc47bd2d03875a5786465b953e75d6de92f2b2f286b378256679c",
+            "target": "31221292653e43cfb48dbb1f3b10bfff29fb7f63956108ed1268aa3adff10079",
+            "upstream_source": "lib_submit",
+            "upstream_target": "lib_normalize",
+            "relation": "calls",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 3,
+              "end": 3,
+              "sha256": "39ec57cf805ed06d797eca8a931cdeaec3c5461c6da60d44f5ab0145225fd056",
+              "excerpt": "pub fn submit(value: &str) -> String { normalize(value) }"
+            },
+            "context": "call",
+            "id": "e27b2807557cb065868d6f92de7294d0ee06a4d1651961626d8c93691c47afc8"
+          }
+        ]
+      },
+      "queries": {
+        "where_is_normalize": [
+          {
+            "id": "31221292653e43cfb48dbb1f3b10bfff29fb7f63956108ed1268aa3adff10079",
+            "upstream_id": "lib_normalize",
+            "label": "normalize()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 2,
+              "end": 2,
+              "sha256": "39ec57cf805ed06d797eca8a931cdeaec3c5461c6da60d44f5ab0145225fd056",
+              "excerpt": "pub fn normalize(value: &str) -> String { value.to_lowercase() }"
+            }
+          },
+          {
+            "id": "4951c7deb8a9244880739e3f645354d1a7789b046a326b96a9f7c8d9eeacbb07",
+            "upstream_id": "service_normalize",
+            "label": "normalize()",
+            "file_type": "code",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 4,
+              "end": 4,
+              "sha256": "26babacefa536e2183ece5e62a8b0f12de5d8a891228b43b820b68e1145663b5",
+              "excerpt": "def normalize(value):"
+            }
+          }
+        ],
+        "what_directly_calls_normalize": [
+          {
+            "source": "f1f8307b57ca860364a436e9f55f94913b1b603f30cb18c0318a6a1dc10272b9",
+            "target": "4951c7deb8a9244880739e3f645354d1a7789b046a326b96a9f7c8d9eeacbb07",
+            "upstream_source": "service_submit",
+            "upstream_target": "service_normalize",
+            "relation": "calls",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "service.py",
+              "start": 9,
+              "end": 9,
+              "sha256": "26babacefa536e2183ece5e62a8b0f12de5d8a891228b43b820b68e1145663b5",
+              "excerpt": "    return normalize(value)"
+            },
+            "context": "call",
+            "id": "010643b16c5be01bd25b1055b6ef042bac8dc90b366ed09d2e4a69a5ca7b8ebf"
+          },
+          {
+            "source": "a24cddf8c92dc47bd2d03875a5786465b953e75d6de92f2b2f286b378256679c",
+            "target": "31221292653e43cfb48dbb1f3b10bfff29fb7f63956108ed1268aa3adff10079",
+            "upstream_source": "lib_submit",
+            "upstream_target": "lib_normalize",
+            "relation": "calls",
+            "confidence": "EXTRACTED",
+            "origin": "ast",
+            "anchor": {
+              "path": "lib.rs",
+              "start": 3,
+              "end": 3,
+              "sha256": "39ec57cf805ed06d797eca8a931cdeaec3c5461c6da60d44f5ab0145225fd056",
+              "excerpt": "pub fn submit(value: &str) -> String { normalize(value) }"
+            },
+            "context": "call",
+            "id": "e27b2807557cb065868d6f92de7294d0ee06a4d1651961626d8c93691c47afc8"
+          }
+        ]
+      }
+    }
+  ],
+  "checks": {
+    "cross_root_disjoint": true,
+    "fresh_recovery_equal": true,
+    "malformed_zero_nodes_graphify_not_run": true
+  },
+  "cleanup": "six owned source/cache/HOME trees removed; private diagnostics retained",
+  "limitations": [
+    "LIMITED_STATIC",
+    "No semantic closure, macro expansion or runtime proof",
+    "Supplied scope and IDs are not authentication, lineage or freshness"
+  ]
+}
