@@ -1975,3 +1975,154 @@ safety, shared-source drift checks, documentation links, staged tracked-file
 secret scan with synthetic rejection, and whitespace checks PASS. All nine
 owned/preserved files are staged; worktree/private evidence retained intact.
 Independent review and current-unit CI have NOT RUN.
+
+## SDK notice/selection PR tracking
+
+The later Joffrey review recorded above supersedes the pre-review handoff state:
+no substantive findings. All 576 offline tests, foundation, cached cargo-deny,
+secrets, docs and whitespace reran/passed on full published head
+`f64b67f517e8e4dd67545e24e89a485d4d4779fa` after merged-main integration.
+The two merge conflicts contained only our added progress and source-notice
+append versus an empty opposite side; resolution preserved exact reviewed bytes.
+PR #28: https://github.com/suhaasbadada/threadmark/pull/28. CI `43360678505`,
+integrated `43360678521`, offline OpenCode `43360678597` all target that head;
+initially seven jobs running. This local tracking append is not in the pushed
+head. No remote green, merge, SDK projection/execution or phase closure claimed.
+
+## PR #28 qualified merge
+
+Fresh inspection verified all seven exact-head jobs SUCCESS for
+`f64b67f517e8e4dd67545e24e89a485d4d4779fa` (CI `43360678505`, integrated
+`43360678521`, offline OpenCode `43360678597`), main target, CLEAN/MERGEABLE,
+no draft/comments/unresolved threads and no additional approval/protection/ruleset
+gate. Independent actual-artifact/notice review and inert prerequisite acceptance
+above were retained; no forge approval was invented. Under standing qualified
+merge authorization, PR #28 squash merged as
+`18a88d9c3a2a57b1e9e88a48d4025b97396ade89`; tree equals tested tree
+`76bcf4e5266c65ca2f7d19309dc889afc7060dd4`. PR watch stopped. Post-merge
+offline OpenCode `43360926593` passed; CI `43360926644` and integrated
+`43360926702` initially running on that exact merge SHA, not claimed green.
+No SDK projection/execution, runtime deployment or Phase 1 closure followed.
+Next gate remains authentic transitive/ambient/directive closure and a separately
+reviewed fixed SDK compiler configuration/candidate; standalone guard stays fixed.
+
+PR #28 post-merge CI `43360926644`, integrated `43360926702` and offline OpenCode
+`43360926593` subsequently all passed on exact merge
+`18a88d9c3a2a57b1e9e88a48d4025b97396ade89`.
+
+## Independent transitive SDK preparation review
+
+Joffrey reconstructed candidate
+`a5b57c65fad62a83e0e2a52d446ffc6eb68f630740aec030bbc53977467d4846`
+from 22 actual owned archives and its exact input plan: 1,464 declarations and
+1,512 potential reads. Metadata, nested identities, roles/notices, excluded
+sources, fixtures and retained artifact modes/ledger match. Authentic compiler
+112-file / 107-library binding revalidated without execution. Four retained
+successful provenance verifications, archive subjects/certificate identities,
+source package manifests/Git blobs and notice scope cross-checked. Reviewer did
+not rerun cryptographic verification. No substantive findings; 41 pure/read-only
+tests and staged whitespace passed independently. Existing notice/progress
+prefixes and shared measured implementations remain unchanged.
+
+All 265 reference directives were independently reviewed: 248 relative targets
+are inventoried, nine library references map to authentic compiler libraries,
+eight name Node types. `esnext.float16` correctly maps to es2025.float16; no missing
+library is inferred. All six suppression mentions are documentation examples,
+not active trailing-line directives. Fixture APIs/JSX exports match declarations;
+negative TS2345 remains UNOBSERVED. Standard-schema's `standard-schema-spec`
+custom-condition source target is absent but inactive under fixed configuration;
+it is not an established default-path failure. Optional references and
+`#runtime-import` still need entrypoint-specific review; potential read presence
+does not establish consumption. These qualifications do not authorize projection
+or execution. Total implementation verification: 542 Python + 80 Node = 622 PASS,
+plus foundation/cached cargo-deny/secrets/docs/whitespace PASS.
+
+## 2026-11-12 — bounded transitive type selection and inert SDK candidate
+
+TM-04/TM-05/TM-08/TM-10, P1-A2/P1-A5 remain **PARTIAL**. Same assigned branch
+and base HEAD `f64b67f517e8e4dd67545e24e89a485d4d4779fa`; uncommitted changes
+have no new tested commit, PR or exact-head CI. Prior PR #28 merge
+`18a88d9c3a2a57b1e9e88a48d4025b97396ade89` has the identical tested tree;
+the parent supplied post-merge CI `43360926644`, integrated `43360926702` and
+offline `43360926593` as all SUCCESS on that merge, not this new delta. No
+reset/stash/branch switch/new worktree/main integration or cleanup was needed.
+All 131,920 pre-unit progress bytes, including the parent's local tracking
+append, remain an unchanged prefix. All 21 legacy native implementation/fixture
+source files match HEAD byte-for-byte; shared-owner implementation is untouched.
+
+The new separate `sdk_compiler_candidate.py` prepares review data, not an SDK
+launcher or a TypeScript resolver. Fresh actual owned-archive hash/structure
+inspection expands nine direct/prerequisite packages to **22 packages and 1,464
+declarations**, with 1,512 individually hash-bound potential reads including two
+fixtures, 9 nested metadata files, 15 actual archive notices, and all 737 upstream
+implementation-type files excluded. Whole original metadata and notice bytes,
+lexical import/reference facts and declaration-file fixture API bindings remain
+private. Potential reads are not necessarily consumed; static facts do not prove
+semantic/module closure. Authentic standalone compiler inventory was rechecked
+against its owned archive: 112 files/107 default libraries, no compiler JS copied
+into SDK node_modules and no standalone execution authorization reused.
+
+Private exact input plan SHA-256:
+`1dc707d3d6fcac4949914698c5649a19cf48760409cb14fd1cb5d374fe4aa198`.
+Final inert candidate SHA-256:
+`a5b57c65fad62a83e0e2a52d446ffc6eb68f630740aec030bbc53977467d4846`.
+The private location is retained in the operator handoff, not public evidence.
+Only input-plan/candidate/ledger JSON were retained: fresh 0700 root, exclusive
+0400 regular single-link files, INCOMPLETE through full inventory/hash/mode/ledger
+validation. Earlier artifacts remain intact. **No package projection** exists:
+independent review is required and project_types cannot express this combined
+nested metadata/notice contract. No executable descriptor/run_guard was added.
+
+New authorized evidence operations were limited to exact-version public npm
+metadata/SLSA responses and immutable source manifests for protocol/schema/ai/util
+2.2.5: 12 bounded no-proxy/no-redirect HTTPS reads, plus four actual required-policy
+`gh attestation verify` measurements. All four verified owned archives exited 0
+with empty stderr, matching source `958f965d35ed44d32b018fd55b02a5357a7748fd`.
+The existing complete source tree/LICENSE/workflow were reused only after these
+commit bindings. Git blobs and actual source names/licenses map all four package
+paths; no closer notice or relevant source link/submodule was found. The same
+1,065 authentic MIT bytes were appended with explicit new four-package scope,
+preserving all 1,157,343 prior notice bytes. Separate transitive receipt SHA-256:
+`0b4ccb6fe35a623a5337f6c86429f4aca9e64cf6d9510f9c9bc910931b18795e`.
+The original fixed-three notice checker/receipt semantics are unchanged. Hash
+consistency and synthetic verification JSON cannot authenticate themselves.
+No new archive acquisition, npm/install, login, target SDK/runtime host/Node/
+TypeScript/compiler/sandbox execution, worker delegation, commit or push occurred.
+
+Fixed type-only positive fixture covers client/session, server plugin/app name,
+TUI session cost, theme RGB, OpenTUI RGBA, Solid accessor/JSX/render and web-tree-
+sitter Point/init, with non-any checks. Negative passes a string to authentic
+rgbToOklch's numeric red argument; expected TS2345 is **UNOBSERVED**, not success.
+New config/policy are typed intent only: strict/noEmit/Bundler, no library skips,
+types [], empty owned typeRoots, explicit authentic Emscripten/Node roots and
+official OpenTUI react-jsx binding. Existing preserve-only descriptor is untouched.
+Future literal read/metadata-ancestor/owned-cwd policy, 120 s/16 MiB/1,024 MiB
+old-space (not RSS)/2 s cleanup and private before/after evidence are not approvals.
+
+Concrete unresolved facts remain staged before any descriptor: optional bun,
+electron, vite, google-auth-library and #runtime-import conditions; standard-
+schema's custom source export ./src/index.ts is absent from the owned archive/
+selection and requires conditional relevance review, not a stub. All 265 upstream
+reference directives and six effect documentation suppression mentions are
+retained for review. Independent actual-byte selection/notice/directive/fixture/
+config review, exact SDK/Node/compiler/system/owner policy, separate primary
+execution authorization, measured containment/cleanup, official diagnostics and
+consumed-file review remain open. Runtime agent/eastasianwidth/three AWS notices,
+Node 24 versus OpenTUI >=26.4, native capture/review/admission and phase closure
+remain separately blocked; no types-only waiver is inferred.
+
+Final local verification: **542 Python + 80 offline Node tests PASS (622)**,
+including 239 native Python tests (46 added), Python 3.12 with ResourceWarning
+as error. Node ran only existing synthetic offline host/UX contracts, not the SDK
+or compiler. Foundation fmt/build/clippy/tests/docs/offline smoke and intentional
+failure gate PASS via `CARGO_NET_OFFLINE=true python3 scripts/check.py`; cached
+`cargo deny --locked --offline check` PASS. Actual archive before/after hashes,
+complete metadata/notices, final private modes/ledger and legacy source/progress
+preservation checks PASS. Independent review and current-unit remote CI have
+NOT RUN. Staged secret/whitespace handoff verification is recorded below.
+
+Final handoff: all twelve owned/preserved files staged, no commit/push/PR.
+Staged tracked-file secret scan and synthetic-secret rejection PASS; staged and
+unstaged whitespace checks and documentation links PASS. Worktree and all private
+evidence retained. Candidate source/fixture/receipt hashes and the original
+progress prefix were rechecked; no SDK package projection/execution is approved.

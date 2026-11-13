@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "kind": "transitive-type-selection-notice-evidence",
+  "purpose": "future independently reviewed type-only mapping",
+  "independentReview": "PENDING",
+  "sourceCommit": "958f965d35ed44d32b018fd55b02a5357a7748fd",
+  "verification": "Actual gh attestation verify for all four owned archives: exit 0, empty stderr. No weaker flags or retries. Raw results retained privately; this receipt is not self-authenticating.",
+  "scopeCaveat": "Only these four 2.2.5 type dependencies; not runtime closure, legal waiver, distribution approval or reproducible builds. Source workspace manifests need not byte-match release manifests.",
+  "verifierCommandTemplate": ["gh", "attestation", "verify", "<owned-archive>", "--bundle", "<provided-npm-SLSA-bundle>", "--repo", "anomalyco/opencode", "--digest-alg", "sha512", "--predicate-type", "https://slsa.dev/provenance/v1", "--signer-workflow", "anomalyco/opencode/.github/workflows/release.yml", "--source-digest", "958f965d35ed44d32b018fd55b02a5357a7748fd", "--source-ref", "refs/heads/dev", "--deny-self-hosted-runners", "--format", "json"],
+  "verifiedCertificatePolicy": {
+    "sourceRepositoryDigest": "958f965d35ed44d32b018fd55b02a5357a7748fd",
+    "buildSignerDigest": "958f965d35ed44d32b018fd55b02a5357a7748fd",
+    "sourceRepositoryURI": "https://github.com/anomalyco/opencode",
+    "sourceRepositoryRef": "refs/heads/dev",
+    "subjectAlternativeName": "https://github.com/anomalyco/opencode/.github/workflows/release.yml@refs/heads/dev",
+    "runnerEnvironment": "github-hosted",
+    "issuer": "https://token.actions.githubusercontent.com"
+  },
+  "sourceTree": {
+    "bytes": 2609724,
+    "sha256": "56dfc80e39ac8f080a5e771bf5e5fa829c4eac3e98fac615bd49881561c8fb52",
+    "truncated": false,
+    "noticePaths": ["LICENSE"],
+    "url": "https://api.github.com/repos/anomalyco/opencode/git/trees/958f965d35ed44d32b018fd55b02a5357a7748fd?recursive=1"
+  },
+  "sourceUrlTemplate": "https://raw.githubusercontent.com/anomalyco/opencode/958f965d35ed44d32b018fd55b02a5357a7748fd/<source-path>",
+  "sourceFiles": {
+    "LICENSE": {"bytes": 1065, "gitBlobSha1": "6439474beed8e0271df9862eff97ffd70ec2464c", "sha256": "625f0f619133f89bbbb2abe37369613dfa1885eba1e50d02170deb62bb42cb6b"},
+    ".github/workflows/release.yml": {"bytes": 31599, "gitBlobSha1": "3c0a05594e768fdb2862a870429e0aad1e8434fa", "sha256": "76c628cd24461eb03b2c8db488b9531fbc4c5f67fb89b53806e7b191b581177b"},
+    "packages/protocol/package.json": {"bytes": 1070, "gitBlobSha1": "0493a9e06d766008003856139541ea43b1fd13f7", "sha256": "0413f30a757b40e19abaa95bb592c966a0be33a2c27ba140445feaf9af4f2659"},
+    "packages/schema/package.json": {"bytes": 904, "gitBlobSha1": "8f4adbb00b96e27bcaadfe7245d5a6515a486ea1", "sha256": "c5a393c1eb1f232e34a20ad2e25678146394a12519fffbeebf85ce7b54df0d46"},
+    "packages/ai/package.json": {"bytes": 10260, "gitBlobSha1": "c9354d71b25e9b36102272b46b917c87e9922ec9", "sha256": "2dd1ebdccc0302cb4b6e2fe939262e9e23e0ab0e100a7f93d2241340f9a94dad"},
+    "packages/util/package.json": {"bytes": 2293, "gitBlobSha1": "a89d6816d2e9386a3abfc986d069459f5bc60a9e", "sha256": "62916c8dd75e542e9fc2a1cfb5cbcf5a302395a0d0db701c7bb9462008209cb3"}
+  },
+  "noticeBlock": {"bytes": 1065, "offset": 1157807, "prefixBytes": 1157343, "prefixSha256": "0ec13e6912726385b1fc817dd08886f277747b02b22a4d956a152c27418c092d", "sha256": "625f0f619133f89bbbb2abe37369613dfa1885eba1e50d02170deb62bb42cb6b"},
+  "packages": [
+    {
+      "name": "@opencode/protocol", "version": "2.2.5", "sourcePackagePath": "packages/protocol",
+      "archiveSha256": "f40c82c5ceeec25ef4b5e96e69b192bdb8afa6ce60ef21b4485c08223a80335a",
+      "integrity": "sha512-T3ET0kS1kj8sv7/d+c1T2he7TXoZ4Rki7zTqHuv8b0kWhg3Vk6o0t+T9KsEQdEat7PFksgH5haC2iSSdJOB7/w==",
+      "resolved": "https://registry.npmjs.org/@opencode/protocol/-/protocol-2.2.5.tgz",
+      "registryMetadataUrl": "https://registry.npmjs.org/%40opencode%2Fprotocol/2.2.5",
+      "attestationsUrl": "https://registry.npmjs.org/-/npm/v1/attestations/@opencode%2fprotocol@2.2.5",
+      "registryMetadata": {"bytes": 2640, "sha256": "2aebc79e771e36b0c03f1c91af2b0d6e231d04f6fda08d173e87fd7c9a0fe90b"},
+      "registryAttestations": {"bytes": 15153, "sha256": "20e57cfa7905d4ccce0db6926f286fe32ba688d85a32c3b2de1e77e38c7494da"},
+      "bundle": {"bytes": 11745, "sha256": "c14e54b5dde5b3bf355c5995abaafbfd29726c02bbb46c70f0fd015d1fa3eeb1"},
+      "verifiedOutput": {"bytes": 13898, "sha256": "044857429969739bb8ec44907968469725483aa6049ce0f814821801f40a43ad"},
+      "ghExitCode": 0, "stderrBytes": 0
+    },
+    {
+      "name": "@opencode/schema", "version": "2.2.5", "sourcePackagePath": "packages/schema",
+      "archiveSha256": "68b395496c3407ab4b478f6efe89f2bec631aba6b463398984fde82272a99758",
+      "integrity": "sha512-hlKk6cX28BwvOMOVG3Mtt4tEHxwY68Z6Gz5/cL32N8qfZexykCKsZai49Jms4/2gD8BzvVuBERnnlLDbdLstUA==",
+      "resolved": "https://registry.npmjs.org/@opencode/schema/-/schema-2.2.5.tgz",
+      "registryMetadataUrl": "https://registry.npmjs.org/%40opencode%2Fschema/2.2.5",
+      "attestationsUrl": "https://registry.npmjs.org/-/npm/v1/attestations/@opencode%2fschema@2.2.5",
+      "registryMetadata": {"bytes": 2478, "sha256": "8c719444b2be043caa1bff2cd93a0fd3a8da6b6d434b938fd672fe95296669ba"},
+      "registryAttestations": {"bytes": 15145, "sha256": "7edaa017f74044b9cca39d078b5ad58d4d5e08d8e9e7d3ad6303b7e7dd889261"},
+      "bundle": {"bytes": 11741, "sha256": "f0314bcc3e329f9934597ee14bc2abc00db1b29abc78410b747c5aae38875c63"},
+      "verifiedOutput": {"bytes": 13892, "sha256": "b1fa77c34b7a1ebe14985ec24d9deef9edafabff01a308ff63eb12a51aff43cb"},
+      "ghExitCode": 0, "stderrBytes": 0
+    },
+    {
+      "name": "@opencode/ai", "version": "2.2.5", "sourcePackagePath": "packages/ai",
+      "archiveSha256": "f4ff298e13f115951032e9614faa15c805d6a3955b4c4c6fc0f48aeb29b300b8",
+      "integrity": "sha512-TolUvNR615vpkc6FPf2np5PbAbO7k1gaVlrtZ5Wx5tN7Y8K2uSer0BZEiajJ2uBsF6RXJFfjjX1GZbcf85GtGQ==",
+      "resolved": "https://registry.npmjs.org/@opencode/ai/-/ai-2.2.5.tgz",
+      "registryMetadataUrl": "https://registry.npmjs.org/%40opencode%2Fai/2.2.5",
+      "attestationsUrl": "https://registry.npmjs.org/-/npm/v1/attestations/@opencode%2fai@2.2.5",
+      "registryMetadata": {"bytes": 18550, "sha256": "87186c3495de3227075e6e41aed5ca4075f76506a1411b1357eb6e85aed82072"},
+      "registryAttestations": {"bytes": 14889, "sha256": "7d30a4ead2eeeeafc4bda4bd5d7e2be8bf0ea6e7028706d486b92c427ccedb94"},
+      "bundle": {"bytes": 11437, "sha256": "16ded51469b4a6dd53e07c3a87b50fb0adef503a95c4f5a19b8dc4daee59d05c"},
+      "verifiedOutput": {"bytes": 13649, "sha256": "3cc0555f192a3d5b0cbc0b844f29ae35c02f520861677847935071717e753beb"},
+      "ghExitCode": 0, "stderrBytes": 0
+    },
+    {
+      "name": "@opencode/util", "version": "2.2.5", "sourcePackagePath": "packages/util",
+      "archiveSha256": "9f4a63d79b000e575b908ab67f733deececed12656d0a1f7ca8001ddd52f38fd",
+      "integrity": "sha512-RqbJ2EwxOs6oQMH1P4Yenkejit0oiAyxBTPXhzx4n6j4SOV0+Duz6lhftlJkAjTbq7Rw2b0Mzx4duOJUdw6s5A==",
+      "resolved": "https://registry.npmjs.org/@opencode/util/-/util-2.2.5.tgz",
+      "registryMetadataUrl": "https://registry.npmjs.org/%40opencode%2Futil/2.2.5",
+      "attestationsUrl": "https://registry.npmjs.org/-/npm/v1/attestations/@opencode%2futil@2.2.5",
+      "registryMetadata": {"bytes": 3595, "sha256": "28f5a67ae63cd5b1c27d2758fd4208c2786e88ad6a6c9e72d16eee37681c5954"},
+      "registryAttestations": {"bytes": 15093, "sha256": "1d65e705a6d62306161c60aa1d85c90385cd4a965d2d2c4143e3a54595bad168"},
+      "bundle": {"bytes": 11625, "sha256": "2b2444a272c04efb0ba3df5eadb8210c985b640788b9ba729c5594a644b5b83b"},
+      "verifiedOutput": {"bytes": 13800, "sha256": "8033f2026d424868c0e64dc5cb23972c315b82d0fdfeafe6d1afa009c77a63ef"},
+      "ghExitCode": 0, "stderrBytes": 0
+    }
+  ]
+}
