@@ -4,6 +4,18 @@ import Darwin
 
 let args = Array(CommandLine.arguments.dropFirst())
 let mode = args.count > 1 ? URL(fileURLWithPath: args[1]).lastPathComponent : "invalid"
+if mode == "exit-grace" {
+    // Test child only: exit during the parent's TERM-to-KILL grace interval.
+    var signals = sigset_t(); sigemptyset(&signals); sigaddset(&signals, SIGTERM)
+    sigprocmask(SIG_BLOCK, &signals, nil)
+    try Data(String(ProcessInfo.processInfo.processIdentifier).utf8).write(to: URL(fileURLWithPath: args[1]).appendingPathComponent("started"))
+    var received: Int32 = 0; sigwait(&signals, &received)
+    usleep(195_000); print("{}"); exit(0)
+}
+if mode == "too-many-projects" {
+    let projects: [[String: Any]] = (0..<65).map { ["id": "p\($0)", "root": "/synthetic", "sources": [], "snapshot": NSNull()] }
+    FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject: projects)); exit(0)
+}
 if mode == "hang" {
     signal(SIGTERM, SIG_IGN)
     try Data(String(ProcessInfo.processInfo.processIdentifier).utf8).write(to: URL(fileURLWithPath: args[1]).appendingPathComponent("started"))
@@ -13,6 +25,9 @@ if mode == "stdout" { FileHandle.standardOutput.write(Data(repeating: 65, count:
 if mode == "stderr" { FileHandle.standardError.write(Data(repeating: 65, count: 32_768)); exit(1) }
 if mode == "failure" { FileHandle.standardError.write(Data("synthetic-private-diagnostic".utf8)); exit(1) }
 if mode == "invalid" { print("not JSON"); exit(0) }
+if mode == "valid" && args.contains("context") {
+    _ = FileHandle.standardInput.readDataToEndOfFile(); print("{}"); exit(0)
+}
 if mode == "stdin" {
     let note = FileHandle.standardInput.readDataToEndOfFile()
     guard String(data: note, encoding: .utf8) == "synthetic note", !args.contains("synthetic note"),

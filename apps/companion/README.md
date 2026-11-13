@@ -12,7 +12,7 @@ From the repository root, using the installed Swift/SDK only:
 
 ```sh
 sh apps/companion/scripts/swift.sh build --product ThreadmarkCompanion
-sh apps/companion/scripts/swift.sh test --disable-xctest --enable-swift-testing
+sh apps/companion/scripts/swift.sh test --disable-xctest --enable-swift-testing -Xswiftc -warnings-as-errors
 sh apps/companion/scripts/bundle.sh
 plutil -lint apps/companion/dist/Threadmark.app/Contents/Info.plist
 ```
@@ -31,6 +31,14 @@ new same-named `State` macro has no installed plugin; a type alias explicitly
 selects SwiftUI's existing State property wrapper. A plain `swift test` on this
 host fails in SDK header lookup; use the wrapper.
 
+For explicit live-core adapter acceptance, set `THREADMARK_CORE_TEST_BINARY` to
+the absolute path of the coordinator-built `threadmark` executable, then run the
+same test command. This **test-only** option has no production discovery path.
+Unset means the live suite is visibly skipped; an explicitly invalid binary
+fails. It uses only new, owned synthetic roots/store under the temporary folder,
+tests project/index/query/currentness/context/isolation/revocation/reopen through
+the real adapter, and removes its data. It does not launch an app GUI or host.
+
 ## Product boundary
 
 - Launch creates a quiet status item, **not** a management window or core call.
@@ -41,12 +49,17 @@ host fails in SDK header lookup; use the wrapper.
   files/symlinks/size/readability. No recursive scan is performed by the shell.
 - Build has a textual stage, indeterminate progress (no invented percentage),
   cancel and bounded duration. Snapshot and core coverage remain inspectable.
-  A recorded snapshot is never itself labeled current or complete.
+  A recorded snapshot is never itself labeled current or complete. Current core
+  indexing is lexical source-line evidence, not AST/semantic understanding.
 - Human context add/edit/retire routes to core, with content only on stdin and
   inspectable revision history. The shell never implements a second database.
 - Source evidence is scoped to the selected registered project and its approved
   file list. Project/source-policy changes and cancel reject late UI results.
   A host-project mismatch stops rather than selecting another project's context.
+- A replacement operation cancels/invalidates UI immediately, then joins all prior
+  owned operations before calling the service. A canceled mutation cannot commit
+  after a replacement policy or refresh overtakes it. Join and Quit also include
+  outstanding work whose visible job was already canceled.
 - Pause/resume changes scheduling state only; there is no automatic scheduler,
   watcher or unsolicited core operation in this lane. Explicit Build is labeled
   manual and can run while automatic scheduling is paused.
@@ -65,9 +78,16 @@ host fails in SDK header lookup; use the wrapper.
 
 ## Transport integration
 
-The user selects an exact trusted executable and an existing private data
-directory. `Process` receives an argument array, an explicit working directory,
-and only `LANG`/`LC_ALL` in its environment. There is no shell, PATH discovery,
+The user selects an exact trusted executable, then deliberately chooses either
+an existing **known initialized core store** (not an empty directory), or an
+existing parent plus a new store name. Selection/configuration creates nothing;
+the next explicit core operation creates the new store with mode 0700. Store
+selection resolves the chosen parent/known store with POSIX `realpath` (Foundation
+can shorten private temporary paths back through a symlink). Core still validates
+store permissions/identity. For a new store, the child's working directory is its
+existing parent, not the absent store. `posix_spawn` receives an argument array,
+explicit cwd/file actions, `POSIX_SPAWN_CLOEXEC_DEFAULT`, and only `LANG`/`LC_ALL`
+in its environment. There is no shell, PATH discovery,
 HOME credential lookup or listener. Until configured, production visibly fails
 `unavailable`. Selecting a binary is not a version check or trust certification.
 
@@ -78,11 +98,15 @@ the model re-reads authoritative project/context state instead of guessing a
 mutation's response shape. Opaque `coverage`, `root_identity`, `authority` and
 snapshot values are preserved as JSON rather than assigned invented semantics.
 
-Bounds: 64 source paths; 16 KiB context stdin; 4 KiB query text; 1 MiB stdout
+Bounds: 64 projects; 64 source paths; 4 KiB context stdin; 256-byte query text; 1 MiB stdout
 (query: 8 KiB / eight results); 16 KiB stderr; 30 seconds wall time. Bounds reject,
 never truncate input. Both output streams are drained without blocking; stderr
-content is discarded. Timeout/cancel first terminates, then kills only the owned
-child after 200 ms if needed, and reaps it. Nonzero exit is a content-free typed
+content is discarded. A single bounded I/O thread is the child's **sole reaper**.
+It checks `waitpid(WNOHANG)`, sends TERM only while the identity is unreaped,
+then at most one KILL after 200 ms if needed. An exited unreaped child reserves
+its PID; once reaped or `ECHILD` occurs, all signals stop immediately. There is
+no Foundation Process auto-reaper/PID-reuse race, global signal handler, process
+group kill or generalized worker supervisor. Nonzero exit is a content-free typed
 failure; the shell does not parse or expose private CLI diagnostics. Refresh is
 required to inspect core state after uncertain mutation outcomes; UI cancellation
 does not claim that a previously committed core transaction was rolled back.
@@ -90,6 +114,8 @@ does not claim that a previously committed core transaction was rolled back.
 `CompanionTestProcess` is an explicitly selected synthetic fixture used only by
 tests. The application has no dependency on it. Fake tests do not establish a
 live Rust link, tray behavior or a background process.
+The separate opt-in live suite establishes only the real CLI adapter operations
+it actually exercises; native tray/window/accessibility acceptance remains open.
 
 ## Coordinator-owned native acceptance (not run here)
 

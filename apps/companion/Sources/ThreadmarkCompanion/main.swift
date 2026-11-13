@@ -135,7 +135,7 @@ struct ProjectsView: View {
                         Button("Apply source policy", action: model.applySources).disabled(!model.policyDirty || model.busy)
                         Button("Build project understanding", action: model.build).disabled(!model.canBuild).keyboardShortcut("b", modifiers: [.command, .shift])
                     }
-                    Text("Build is a bounded structural-only local operation (30 seconds). No inference or automatic scan. Unsupported/unreadable files are decided by core; inspect coverage.").font(.caption)
+                    Text("Build is a bounded local source-evidence operation (30 seconds; current core: lexical lines). No inference or automatic scan. Unsupported/unreadable files are decided by core; inspect coverage.").font(.caption)
                     if let report = model.indexReport {
                         Text("Snapshot \(report.snapshot.description) · \(report.files) files · \(report.anchors) anchors")
                         Text("Coverage: \(report.coverage.description)").textSelection(.enabled)
@@ -143,8 +143,9 @@ struct ProjectsView: View {
                     Divider()
                     HStack {
                         TextField("Search authorized source evidence", text: $query)
-                        Button("Search") { model.query(query) }.disabled(query.isEmpty || model.busy || model.policyDirty)
+                        Button("Search") { model.query(query) }.disabled(query.isEmpty || query.utf8.count > 256 || model.busy || model.policyDirty)
                     }
+                    Text("Search input is limited to 256 UTF-8 bytes; input is never truncated.").font(.caption)
                     if let result = model.evidence {
                         Text("\(result.currentness) · snapshot \(result.snapshot?.description ?? "none")")
                         Text("Coverage: \(result.coverage.description)")
@@ -232,13 +233,14 @@ struct ContextView: View {
                 Text(editing ? "Edit human context" : "Add human context").font(.headline)
                 TextField("Context ID", text: $id).disabled(editing)
                 Picker("Kind", selection: $kind) {
-                    ForEach(["note", "decision", "constraint", "pitfall"], id: \.self) { Text($0).tag($0) }
+                    ForEach(InputPolicy.contextKinds, id: \.self) { Text($0).tag($0) }
                 }
                 TextEditor(text: $text).frame(minHeight: 120).accessibilityLabel("Human context text")
+                Text("Human context is limited to 4 KiB of UTF-8 text; input is never truncated.").font(.caption)
                 HStack {
                     Button(editing ? "Save new revision" : "Add context") {
                         model.writeContext(id: id, kind: kind, text: text, update: editing)
-                    }.disabled(model.project == nil || model.busy || !InputPolicy.identifier(id) || text.isEmpty || text.utf8.count > 16_384)
+                    }.disabled(model.project == nil || model.busy || !InputPolicy.identifier(id) || text.isEmpty || text.utf8.count > 4096)
                     Button("New entry") { id = ""; text = ""; kind = "note"; editing = false }
                 }
                 Text("Forget is unavailable in client-v1. Retire does not delete retained history. No removal or persistence claim is made beyond the core response.").font(.caption)
@@ -251,15 +253,38 @@ struct ContextView: View {
 struct ConnectionsView: View {
     @ObservedObject var model: CompanionModel
     @ViewState<URL?> private var binary: URL?
-    @ViewState<URL?> private var dataDirectory: URL?
+    @ViewState<URL?> private var existingStore: URL?
+    @ViewState<URL?> private var parent: URL?
+    @ViewState<String> private var storeName = "Threadmark"
+    @ViewState<Bool> private var createNew = true
+    private var dataDirectory: URL? {
+        if createNew {
+            guard let parent else { return nil }
+            return try? StoreSelection.newDirectory(parent: parent, name: storeName)
+        }
+        guard let existingStore else { return nil }
+        return try? StoreSelection.existingDirectory(existingStore)
+    }
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        ScrollView { VStack(alignment: .leading, spacing: 14) {
             Text("Local core transport — client-v1 / bounded subprocess").font(.headline)
-            Text("Choose an exact trusted threadmark executable and an existing private data directory. Core owns authorization and storage. No shell, PATH lookup, inherited credential environment, or network listener. Binary version/test status: unverified until coordinator acceptance.")
+            Text("Choose an exact trusted threadmark executable and explicitly select a new or existing core store. Core owns authorization and storage. No shell, PATH lookup, inherited credential environment, or network listener. Binary version/test status: unverified until coordinator acceptance.")
             Button("Select exact threadmark executable…") { binary = choose(directory: false) }
             Text(binary?.path ?? "Executable not configured").textSelection(.enabled)
-            Button("Select private data directory…") { dataDirectory = choose(directory: true) }
-            Text(dataDirectory?.path ?? "Data directory not configured").textSelection(.enabled)
+            Picker("Core store", selection: $createNew) {
+                Text("New private store").tag(true)
+                Text("Existing known core store").tag(false)
+            }.pickerStyle(.segmented)
+            if createNew {
+                Button("Choose existing parent folder…") { parent = choose(directory: true) }
+                Text(parent?.path ?? "Parent folder not selected").textSelection(.enabled)
+                TextField("New store name (letters, digits, hyphen, underscore)", text: $storeName)
+                Text("The target must not exist. The shell creates nothing; your next explicit core operation creates the store with mode 0700.")
+            } else {
+                Button("Choose existing known private core store…") { existingStore = choose(directory: true) }
+                Text("Select a store already initialized by core, not an empty existing folder. Core validates its identity and permissions.")
+            }
+            Text(dataDirectory?.path ?? "No valid store selected — choose a new name or a known existing store").textSelection(.enabled)
             Button("Use selected local core") {
                 if let binary, let dataDirectory { model.configure(executable: binary, dataDirectory: dataDirectory) }
             }.disabled(binary == nil || dataDirectory == nil || model.busy)
@@ -270,7 +295,7 @@ struct ConnectionsView: View {
             Text("Coding-client adapters: unavailable / not certified").font(.headline)
             Text("No host is installed, modified, launched, or connected. No send operation exists. Version, trust test and uninstall: not applicable.")
             Spacer()
-        }.padding()
+        }.padding() }
     }
     private func choose(directory: Bool) -> URL? {
         let panel = NSOpenPanel(); panel.canChooseDirectories = directory; panel.canChooseFiles = !directory

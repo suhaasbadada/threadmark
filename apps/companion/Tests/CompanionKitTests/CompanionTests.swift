@@ -21,6 +21,17 @@ private actor ExplicitFakeCoreService: CoreService {
     var started = false
     var observer: CheckedContinuation<Void, Never>?
     var calls = 0
+    var holdSources = false
+    var sourceStarted = false
+    var sourceObserver: CheckedContinuation<Void, Never>?
+    var sourceRelease: CheckedContinuation<Void, Never>?
+    var sourceEvents: [String] = []
+    func holdNextSources() { holdSources = true }
+    func waitForSources() async {
+        if sourceStarted { return }
+        await withCheckedContinuation { sourceObserver = $0 }
+    }
+    func finishSources() { sourceRelease?.resume(); sourceRelease = nil }
     func failNext(_ error: ServiceError) { nextFailure = error }
     func setMismatch() { mismatch = true }
     func holdNextIndex() { holdIndex = true }
@@ -49,13 +60,21 @@ private actor ExplicitFakeCoreService: CoreService {
         switch operation {
         case .projects: return .projects(projects)
         case .project(let p):
+            sourceEvents.append("show")
             guard let project = projects.first(where: { $0.id == p }) else { throw ServiceError.invalid }
             return .project(mismatch ? projects[1] : project)
         case .addProject(let id, let root, let sources):
             projects.append(Project(id: id, root: root, sources: sources)); return .acknowledged
         case .setSources(let id, let sources):
+            sourceEvents.append("begin:" + sources.joined(separator: ","))
+            if holdSources {
+                holdSources = false; sourceStarted = true; sourceObserver?.resume(); sourceObserver = nil
+                // Ignore cancellation, then commit only after explicit release.
+                await withCheckedContinuation { sourceRelease = $0 }
+            }
             guard let i = projects.firstIndex(where: { $0.id == id }) else { throw ServiceError.invalid }
-            projects[i] = Project(id: id, root: projects[i].root, sources: sources); return .acknowledged
+            projects[i] = Project(id: id, root: projects[i].root, sources: sources)
+            sourceEvents.append("commit:" + sources.joined(separator: ",")); return .acknowledged
         case .index(let p):
             if holdIndex {
                 holdIndex = false; started = true; observer?.resume(); observer = nil
@@ -154,8 +173,9 @@ struct ModelTests {
         model.build(); await service.waitForIndex()
         let waiter = Task { await model.waitForOperation() }
         await Task.yield()
-        model.select("beta"); await model.waitForOperation()
-        try await service.finishIndex(); await waiter.value
+        model.select("beta")
+        #expect(model.project == nil && model.indexReport == nil)
+        try await service.finishIndex(); await waiter.value; await model.waitForOperation()
         #expect(model.selectedID == "beta" && model.indexReport == nil && model.project?.id == "beta")
         let (second, held) = await selected()
         await held.holdNextIndex(); second.build(); await held.waitForIndex()
@@ -198,6 +218,62 @@ struct ModelTests {
         #expect(model.policyDirty && !model.canBuild && model.evidence == nil)
         model.refreshSelected(); await model.waitForOperation()
         #expect(model.sourceDraft == ["a.rs"] && !model.policyDirty)
+    }
+    @Test(arguments: [false, true]) func replacementWaitsForCancellationIgnoringMutation(refresh: Bool) async {
+        let (model, service) = await selected()
+        await service.holdNextSources()
+        model.stageSources(["old.rs"]); model.applySources(); await service.waitForSources()
+        let before = await service.calls
+        if refresh { model.refreshSelected() }
+        else { model.stageSources(["new.rs"]); model.applySources() }
+        // Give an incorrectly unsequenced replacement ample opportunity to run.
+        for _ in 0..<32 { await Task.yield() }
+        #expect(await service.calls == before)
+        #expect(model.busy && model.indexReport == nil && model.evidence == nil)
+        await service.finishSources(); await model.waitForOperation()
+        #expect(model.project?.sources == (refresh ? ["old.rs"] : ["new.rs"]))
+        let persisted = await service.projects
+        #expect(persisted.first(where: { $0.id == "alpha" })?.sources == (refresh ? ["old.rs"] : ["new.rs"]))
+        #expect(!model.policyDirty && !model.busy)
+        let events = await service.sourceEvents
+        #expect(events.prefix(3) == ["show", "begin:old.rs", "commit:old.rs"])
+        if !refresh {
+            #expect(events == ["show", "begin:old.rs", "commit:old.rs", "show", "begin:new.rs", "commit:new.rs", "show"])
+        }
+    }
+    @Test func waitAfterCancelJoinsOutstandingMutation() async {
+        let (model, service) = await selected()
+        await service.holdNextSources()
+        model.stageSources(["old.rs"]); model.applySources(); await service.waitForSources()
+        model.cancel()
+        var joined = false
+        let waiter = Task { await model.waitForOperation(); joined = true }
+        for _ in 0..<8 { await Task.yield() }
+        #expect(!joined)
+        await service.finishSources(); await waiter.value
+        #expect(joined && model.project?.sources == ["a.rs"])
+    }
+    @Test func modelRejectsOverLimitInputWithoutServiceCalls() async {
+        let (model, service) = await selected()
+        let before = await service.calls
+        model.query(String(repeating: "é", count: 129))
+        #expect(model.lastError == .invalid)
+        model.writeContext(id: "memo", kind: "note", text: String(repeating: "a", count: 4097), update: false)
+        let after = await service.calls
+        #expect(model.lastError == .invalid && after == before)
+    }
+    @Test func quitSuppressesQueuedRefreshAfterMutationTeardown() async {
+        let (model, service) = await selected()
+        await service.holdNextSources()
+        model.stageSources(["old.rs"]); model.applySources(); await service.waitForSources()
+        model.refreshSelected()
+        let stopping = Task { await model.shutdown() }
+        for _ in 0..<16 { await Task.yield() }
+        await service.finishSources(); await stopping.value
+        #expect(model.quitting && model.project == nil && !model.busy)
+        // Only the canceled mutation's own follow-up read is allowed; the
+        // queued replacement refresh must never enter the service after Quit.
+        #expect(await service.sourceEvents == ["show", "begin:old.rs", "commit:old.rs", "show"])
     }
 }
 
@@ -248,6 +324,29 @@ struct AdapterTests {
             await #expect(throws: ServiceError.outputLimit) { try await adapter.perform(.query("alpha", "synthetic")) }
         }
     }
+    @Test func inputAndProjectCountMatchCoreBounds() async throws {
+        try await withAdapter("valid") { adapter in
+            _ = try await adapter.perform(.query("alpha", String(repeating: "a", count: 256)))
+            await #expect(throws: ServiceError.invalid) { try await adapter.perform(.query("alpha", String(repeating: "a", count: 257))) }
+            await #expect(throws: ServiceError.invalid) { try await adapter.perform(.query("alpha", String(repeating: "é", count: 129))) }
+            _ = try await adapter.perform(.writeContext("alpha", "memo", "correction", String(repeating: "a", count: 4096), update: false))
+        }
+        try await withAdapter("too-many-projects") { adapter in
+            await #expect(throws: ServiceError.invalid) { try await adapter.perform(.projects) }
+        }
+        #expect(InputPolicy.contextKinds == ["note", "decision", "constraint", "correction", "pitfall"])
+    }
+    @Test func newStoreSelectionDoesNotCreateState() async throws {
+        try await withAdapter("valid") { adapter in
+            let parent = adapter.dataDirectory!
+            let selected = try StoreSelection.newDirectory(parent: parent, name: "new-store")
+            #expect(!FileManager.default.fileExists(atPath: selected.path))
+            #expect(throws: ServiceError.invalid) { try StoreSelection.newDirectory(parent: parent, name: "../escape") }
+            #expect(throws: ServiceError.invalid) { try StoreSelection.newDirectory(parent: parent.deletingLastPathComponent(), name: "valid") }
+            try FileManager.default.createSymbolicLink(at: parent.appendingPathComponent("dangling"), withDestinationURL: parent.appendingPathComponent("absent"))
+            #expect(throws: ServiceError.invalid) { try StoreSelection.newDirectory(parent: parent, name: "dangling") }
+        }
+    }
     @Test func unavailableMalformedFailureAndMismatch() async throws {
         await #expect(throws: ServiceError.unavailable) { try await ProcessService().perform(.projects) }
         for (mode, expected) in [("invalid", ServiceError.invalid), ("failure", .failed), ("mismatch", .scopeMismatch)] {
@@ -272,7 +371,7 @@ struct AdapterTests {
         }
         try await withAdapter("valid") { adapter in
             await #expect(throws: ServiceError.invalid) {
-                try await adapter.perform(.writeContext("alpha", "memo", "note", String(repeating: "a", count: 16_385), update: false))
+                try await adapter.perform(.writeContext("alpha", "memo", "note", String(repeating: "a", count: 4097), update: false))
             }
         }
     }
@@ -292,9 +391,28 @@ struct AdapterTests {
             let start = ProcessInfo.processInfo.systemUptime
             await #expect(throws: ServiceError.canceled) { try await task.value }
             #expect(ProcessInfo.processInfo.systemUptime - start < 3)
-            #expect(Darwin.kill(pid, 0) == -1 && errno == ESRCH)
+            var status: Int32 = 0
+            #expect(Darwin.waitpid(pid, &status, WNOHANG) == -1 && errno == ECHILD)
         }
         try await withAdapter("valid") { adapter in _ = try await adapter.perform(.projects) }
+    }
+    @Test func actualChildExitDuringEscalationIsReaped() async throws {
+        for _ in 0..<6 {
+            try await withAdapter("exit-grace") { adapter in
+                let task = Task { try await adapter.perform(.projects) }
+                defer { task.cancel() }
+                let marker = adapter.dataDirectory!.appendingPathComponent("started")
+                for _ in 0..<200 {
+                    if FileManager.default.fileExists(atPath: marker.path) { break }
+                    try await Task.sleep(for: .milliseconds(10))
+                }
+                let pid = try #require(Int32(String(contentsOf: marker, encoding: .utf8)))
+                task.cancel()
+                await #expect(throws: ServiceError.canceled) { try await task.value }
+                var status: Int32 = 0
+                #expect(Darwin.waitpid(pid, &status, WNOHANG) == -1 && errno == ECHILD)
+            }
+        }
     }
     @Test func exactSourceAndIdentifierValidation() {
         for source in ["../secret", "/absolute", "a//b", "a/./b", "*.rs", "-option", "a\nprivate"] {

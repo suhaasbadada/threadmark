@@ -39,7 +39,7 @@ public final class CompanionModel: ObservableObject {
     }
     public func refreshProjects() {
         start { service in [try await service.perform(.projects)] } apply: { replies in
-            guard case .projects(let projects) = replies[0] else { throw ServiceError.invalid }
+            guard case .projects(let projects) = replies[0], projects.count <= 64 else { throw ServiceError.invalid }
             self.projects = projects
             if let id = self.selectedID, !projects.contains(where: { $0.id == id }) {
                 self.selectedID = nil; self.clearProject()
@@ -81,7 +81,7 @@ public final class CompanionModel: ObservableObject {
         } apply: { replies in
             guard case .project(let project) = replies[0], project.id == id,
                   project.root == root, Set(project.sources) == Set(sources),
-                  case .projects(let projects) = replies[1] else { throw ServiceError.scopeMismatch }
+                  case .projects(let projects) = replies[1], projects.count <= 64 else { throw ServiceError.scopeMismatch }
             self.projects = projects; self.selectedID = id; self.project = project
             self.sourceDraft = sources; self.policyDirty = false
             self.status = "Source policy registered — no scan performed"
@@ -110,7 +110,7 @@ public final class CompanionModel: ObservableObject {
     public func build() {
         guard canBuild, let id = selectedID else { fail(.invalid); return }
         clearResults()
-        start(status: "Updating — bounded structural Build; Cancel available") { service in
+        start(status: "Updating — bounded local source-evidence Build; Cancel available") { service in
             [try await service.perform(.index(id))]
         } apply: { replies in
             guard case .indexed(let report) = replies[0], report.project == id else { throw ServiceError.scopeMismatch }
@@ -119,6 +119,7 @@ public final class CompanionModel: ObservableObject {
         }
     }
     public func query(_ text: String) {
+        guard !text.isEmpty, text.utf8.count <= 256 else { fail(.invalid); return }
         guard let id = selectedID, project != nil, !policyDirty else { fail(.invalid); return }
         evidence = nil
         start { service in [try await service.perform(.query(id, text))] } apply: { replies in
@@ -139,7 +140,7 @@ public final class CompanionModel: ObservableObject {
     }
     public func writeContext(id contextID: String, kind: String, text: String, update: Bool) {
         guard let id = selectedID, project != nil, InputPolicy.identifier(contextID), !text.isEmpty,
-              text.utf8.count <= 16_384 else { fail(.invalid); return }
+              text.utf8.count <= 4096, InputPolicy.contextKinds.contains(kind) else { fail(.invalid); return }
         clearResults()
         mutateContext(.writeContext(id, contextID, kind, text, update: update), projectID: id, contextID: contextID)
     }
@@ -177,7 +178,10 @@ public final class CompanionModel: ObservableObject {
         for operation in pending { await operation.value }
     }
     /// Also useful to embed the model without observing its UI. Never starts work.
-    public func waitForOperation() async { await job?.value }
+    public func waitForOperation() async {
+        let pending = Array(ownedOperations.values)
+        for operation in pending { await operation.value }
+    }
     public func cancel() {
         generation &+= 1; job?.cancel(); job = nil
         if busy { status = "Canceled — refresh persisted state before continuing"; clearResults() }
@@ -198,12 +202,19 @@ public final class CompanionModel: ObservableObject {
                        apply: @escaping @MainActor ([Reply]) throws -> Void) {
         guard !quitting else { return }
         cancel(); let ticket = generation; let service = service
+        let prior = Array(ownedOperations.values)
+        for pending in prior { pending.cancel() }
         busy = true; lastError = nil; self.status = status
         job = Task { [weak self] in
             defer { self?.ownedOperations.removeValue(forKey: ticket) }
             do {
-                let replies = try await work(service)
+                // UI invalidation is immediate, but persistent effects must not
+                // be overtaken by replacement work, even if a service ignores
+                // cancellation. Join teardown before touching the service.
+                for pending in prior { await pending.value }
                 guard let self, self.generation == ticket, !Task.isCancelled, !self.quitting else { return }
+                let replies = try await work(service)
+                guard self.generation == ticket, !Task.isCancelled, !self.quitting else { return }
                 try apply(replies); self.busy = false; self.job = nil
             } catch {
                 guard let self, self.generation == ticket, !self.quitting else { return }

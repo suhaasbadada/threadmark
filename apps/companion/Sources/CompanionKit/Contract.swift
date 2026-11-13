@@ -1,4 +1,5 @@
 import Foundation
+import Darwin
 
 /// Opaque core-owned metadata; the shell does not infer freshness or authority from it.
 public enum JSONValue: Codable, Equatable, Sendable, CustomStringConvertible {
@@ -123,6 +124,7 @@ public protocol CoreService: Sendable {
 }
 
 public enum InputPolicy {
+    public static let contextKinds = ["note", "decision", "constraint", "correction", "pitfall"]
     public static func identifier(_ value: String) -> Bool {
         !value.isEmpty && !value.hasPrefix("-") && value.utf8.count <= 128 && value.utf8.allSatisfy {
             (65...90).contains($0) || (97...122).contains($0) || (48...57).contains($0) || $0 == 45 || $0 == 95
@@ -135,5 +137,27 @@ public enum InputPolicy {
             path.split(separator: "/", omittingEmptySubsequences: false).allSatisfy { !$0.isEmpty && $0 != "." && $0 != ".." } &&
             !path.contains("*") && !path.contains("?")
         }
+    }
+}
+
+public enum StoreSelection {
+    /// Foundation may shorten /private/var to its /var symlink even after
+    /// resolvingSymlinksInPath. Core rejects symlink ancestors; use realpath.
+    public static func existingDirectory(_ url: URL) throws -> URL {
+        var isDirectory: ObjCBool = false
+        guard url.isFileURL, url.path.hasPrefix("/"),
+              FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory), isDirectory.boolValue,
+              let resolved = realpath(url.path, nil) else { throw ServiceError.invalid }
+        defer { free(resolved) }
+        return URL(fileURLWithPath: String(cString: resolved), isDirectory: true)
+    }
+    /// Resolves explicit first-run intent without creating a directory or file.
+    /// Core creates/validates its own private store on the next explicit action.
+    public static func newDirectory(parent: URL, name: String) throws -> URL {
+        guard InputPolicy.identifier(name) else { throw ServiceError.invalid }
+        let target = try existingDirectory(parent).appendingPathComponent(name, isDirectory: true)
+        var metadata = stat()
+        guard lstat(target.path, &metadata) == -1, errno == ENOENT else { throw ServiceError.invalid }
+        return target
     }
 }

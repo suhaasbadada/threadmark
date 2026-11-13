@@ -5,7 +5,7 @@ public struct ProcessLimits: Sendable {
     public var seconds: Double = 30
     public var stdoutBytes: Int = 1_048_576
     public var stderrBytes: Int = 16_384
-    public var inputBytes: Int = 16_384
+    public var inputBytes: Int = 4096
     public init() {}
 }
 
@@ -14,6 +14,40 @@ private final class Cancellation: @unchecked Sendable {
     private var value = false
     func cancel() { lock.lock(); value = true; lock.unlock() }
     var canceled: Bool { lock.lock(); defer { lock.unlock() }; return value }
+}
+
+/// Owned only by the runner's I/O thread. No Foundation Process/dispatch reaper
+/// exists for this child. An exited but unreaped child reserves its PID, so an
+/// exit between waitpid(WNOHANG)==0 and kill cannot target a recycled identity.
+struct OwnedChild {
+    let pid: pid_t
+    private(set) var finished = false
+    private(set) var status: Int32?
+    private var terminatedAt: Double?
+    private var killed = false
+
+    mutating func step(now: Double, stopping: Bool,
+                       wait: (pid_t, UnsafeMutablePointer<Int32>?, Int32) -> pid_t = { Darwin.waitpid($0, $1, $2) },
+                       signal: (pid_t, Int32) -> Int32 = { Darwin.kill($0, $1) }) -> Bool {
+        guard !finished else { return true }
+        var value: Int32 = 0
+        let result = wait(pid, &value, WNOHANG)
+        if result == pid { status = value; finished = true; return true }
+        if result < 0 {
+            if errno == EINTR { return false }
+            // ECHILD (or another unexpected wait error) means no retained
+            // identity: stop ALL signaling, including a pending escalation.
+            finished = true; return true
+        }
+        guard result == 0 else { finished = true; return true }
+        if stopping {
+            if terminatedAt == nil { _ = signal(pid, SIGTERM); terminatedAt = now }
+            else if !killed, now - terminatedAt! >= 0.2 {
+                killed = true; _ = signal(pid, SIGKILL)
+            }
+        }
+        return false
+    }
 }
 
 /// No shell, PATH search, inherited environment, credentials, listener, or sample fallback.
@@ -29,12 +63,13 @@ public struct ProcessService: CoreService {
         guard let executable, let dataDirectory,
               executable.isFileURL, dataDirectory.isFileURL,
               executable.path.hasPrefix("/"), dataDirectory.path.hasPrefix("/"),
+              !executable.path.contains("\0"), !dataDirectory.path.contains("\0"),
               FileManager.default.isExecutableFile(atPath: executable.path) else { throw ServiceError.unavailable }
         let (arguments, input) = try command(operation)
         guard input.count <= limits.inputBytes, limits.seconds > 0,
               limits.seconds <= 300, limits.stdoutBytes > 0, limits.stdoutBytes <= 1_048_576,
               limits.stderrBytes > 0, limits.stderrBytes <= 16_384,
-              limits.inputBytes > 0, limits.inputBytes <= 16_384 else { throw ServiceError.invalid }
+              limits.inputBytes > 0, limits.inputBytes <= 4096 else { throw ServiceError.invalid }
         let cancellation = Cancellation()
         var operationLimits = limits
         if case .query = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
@@ -53,7 +88,7 @@ public struct ProcessService: CoreService {
             switch operation {
             case .projects:
                 let projects = try decoder.decode([Project].self, from: data)
-                guard projects.count <= 256, Set(projects.map(\.id)).count == projects.count,
+                guard projects.count <= 64, Set(projects.map(\.id)).count == projects.count,
                       projects.allSatisfy({ InputPolicy.identifier($0.id) && InputPolicy.sources($0.sources) }) else { throw ServiceError.invalid }
                 return .projects(projects)
             case .project(let id):
@@ -113,13 +148,13 @@ public struct ProcessService: CoreService {
         case .setSources(let p, let files): args = ["project", "sources", try id(p)] + (try sources(files))
         case .index(let p): args = ["index", try id(p)]
         case .query(let p, let text):
-            guard !text.isEmpty, text.utf8.count <= 4096, !text.contains("\0") else { throw ServiceError.invalid }
+            guard !text.isEmpty, text.utf8.count <= 256, !text.contains("\0") else { throw ServiceError.invalid }
             args = ["query", try id(p), text]
         case .contexts(let p): args = ["context", "list", try id(p)]
         case .context(let p, let c): args = ["context", "show", try id(p), try id(c)]
         case .retireContext(let p, let c): args = ["context", "retire", try id(p), try id(c)]
         case .writeContext(let p, let c, let kind, let text, let update):
-            guard ["note", "decision", "constraint", "pitfall"].contains(kind), !text.isEmpty else { throw ServiceError.invalid }
+            guard InputPolicy.contextKinds.contains(kind), !text.isEmpty else { throw ServiceError.invalid }
             args = ["context", update ? "update" : "add", try id(p), try id(c), kind]
             input = Data(text.utf8) // Never in argv or diagnostics.
         }
@@ -128,13 +163,7 @@ public struct ProcessService: CoreService {
 
     private static func run(executable: URL, directory: URL, arguments: [String], input: Data,
                             limits: ProcessLimits, cancellation: Cancellation) throws -> Data {
-        let process = Process()
-        process.executableURL = executable
-        process.arguments = arguments
-        process.environment = ["LANG": "en_US.UTF-8", "LC_ALL": "en_US.UTF-8"]
-        process.currentDirectoryURL = directory
         let out = Pipe(), err = Pipe(), stdin = Pipe()
-        process.standardOutput = out; process.standardError = err; process.standardInput = stdin
         defer {
             for handle in [out.fileHandleForReading, out.fileHandleForWriting, err.fileHandleForReading,
                            err.fileHandleForWriting, stdin.fileHandleForReading, stdin.fileHandleForWriting] { try? handle.close() }
@@ -149,11 +178,37 @@ public struct ProcessService: CoreService {
         // Suppress SIGPIPE for only this owned pipe, never change a global signal handler.
         guard fcntl(inputFD, F_SETNOSIGPIPE, 1) == 0 else { throw ServiceError.unavailable }
         guard !cancellation.canceled else { throw ServiceError.canceled }
-        do { try process.run() } catch { throw ServiceError.unavailable }
+        // Core, not the shell, creates a new store with mode 0700. Spawn in its
+        // existing parent until that first explicit core operation creates it.
+        let cwd = FileManager.default.fileExists(atPath: directory.path) ? directory : directory.deletingLastPathComponent()
+        var actions: posix_spawn_file_actions_t?
+        var attributes: posix_spawnattr_t?
+        guard posix_spawn_file_actions_init(&actions) == 0 else { throw ServiceError.unavailable }
+        defer { posix_spawn_file_actions_destroy(&actions) }
+        guard posix_spawnattr_init(&attributes) == 0 else { throw ServiceError.unavailable }
+        defer { posix_spawnattr_destroy(&attributes) }
+        guard posix_spawnattr_setflags(&attributes, Int16(POSIX_SPAWN_CLOEXEC_DEFAULT)) == 0,
+              posix_spawn_file_actions_adddup2(&actions, stdin.fileHandleForReading.fileDescriptor, STDIN_FILENO) == 0,
+              posix_spawn_file_actions_adddup2(&actions, out.fileHandleForWriting.fileDescriptor, STDOUT_FILENO) == 0,
+              posix_spawn_file_actions_adddup2(&actions, err.fileHandleForWriting.fileDescriptor, STDERR_FILENO) == 0,
+              posix_spawn_file_actions_addchdir_np(&actions, cwd.path) == 0 else { throw ServiceError.unavailable }
+        // strdup-backed vectors stay alive through spawn; no ambient environ.
+        let argv = ([executable.path] + arguments).map { $0.withCString { strdup($0) } } + [nil]
+        let environmentValues: [String] = ["LANG=en_US.UTF-8", "LC_ALL=en_US.UTF-8"]
+        let env = environmentValues.map { $0.withCString { strdup($0) } } + [nil]
+        defer { for pointer in argv + env { free(pointer) } }
+        guard argv.dropLast().allSatisfy({ $0 != nil }), env.dropLast().allSatisfy({ $0 != nil }) else { throw ServiceError.unavailable }
+        var pid: pid_t = 0
+        let spawned = argv.withUnsafeBufferPointer { args in
+            env.withUnsafeBufferPointer { environment in
+                posix_spawn(&pid, executable.path, &actions, &attributes, args.baseAddress!, environment.baseAddress!)
+            }
+        }
+        guard spawned == 0 else { throw ServiceError.unavailable }
+        var child = OwnedChild(pid: pid)
         try? out.fileHandleForWriting.close(); try? err.fileHandleForWriting.close(); try? stdin.fileHandleForReading.close()
         let deadline = ProcessInfo.processInfo.systemUptime + limits.seconds
         var failure: ServiceError?
-        var stoppedAt: Double?
         var output = Data(), stderrCount = 0, inputOffset = 0, inputClosed = false
         func drain(_ fd: Int32, stdout: Bool) {
             var buffer = [UInt8](repeating: 0, count: 4096)
@@ -185,17 +240,12 @@ public struct ProcessService: CoreService {
                     try? stdin.fileHandleForWriting.close(); inputClosed = true
                 }
             }
-            if !process.isRunning { break }
-            if failure != nil {
-                if stoppedAt == nil { process.terminate(); stoppedAt = now }
-                else if now - stoppedAt! >= 0.2 { _ = Darwin.kill(process.processIdentifier, SIGKILL) }
-            }
+            if child.step(now: now, stopping: failure != nil) { break }
             usleep(5_000)
         }
-        process.waitUntilExit()
         drain(stdoutFD, stdout: true); drain(stderrFD, stdout: false)
         if let failure { throw failure }
-        guard process.terminationStatus == 0 else { throw ServiceError.failed }
+        guard child.status == 0 else { throw ServiceError.failed }
         return output
     }
 }
