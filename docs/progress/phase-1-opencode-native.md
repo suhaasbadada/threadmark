@@ -136,6 +136,51 @@ unchanged existing notices and qualified closure limitations. No substantive
 findings; 175 native tests and whitespace passed independently. Final staged
 secrets and whitespace checks PASS. No compiler/SDK execution followed acquisition.
 
+Declaration prerequisite unit published as PR #27:
+https://github.com/suhaasbadada/threadmark/pull/27, exact pushed/tested-source head
+`693fa8a4d394da29e18788ea188b13d47785b6c0`. CI `43356241295`, integrated
+`43356241342` and offline OpenCode `43356241337` target that exact head; all seven
+jobs initially running. This local tracking append is not part of that head.
+No remote success or merge is claimed pending fresh exact-head verification.
+
+## PR #27 qualified merge
+
+Fresh inspection verified all seven exact-head jobs SUCCESS on
+`693fa8a4d394da29e18788ea188b13d47785b6c0` (CI `43356241295`, integrated
+`43356241342`, offline OpenCode `43356241337`), main target, CLEAN/MERGEABLE,
+no draft/comments/unresolved review threads, and no additional approval,
+protection or ruleset gate. Joffrey's independent actual-artifact review and
+prerequisite acceptance remain recorded above; no forge approval was invented.
+Under standing qualified-merge authorization PR #27 squash merged as
+`33bc8b010879d3bf0b846b154c736e4aa4c700b1`. Merge tree equals tested tree
+`0435d46a2eefd4e79c73eb0e8a0fd472a951366a`. PR watch stopped. Post-merge
+CI remains a separate gate until inspected; no runtime/binary deployment followed.
+
+Next agreed gate: explicit authentic SDK declaration selection and a separate
+fixed SDK compiler candidate. The successful standalone guard must remain fixed;
+adding missing archive bytes does not establish consumed SDK type closure.
+Resolve actual selected-root notice mappings and declaration needs without
+stubs/suppressions or automatic ambient types, then independently review the
+candidate before any SDK compiler execution. Runtime provenance/engine mismatch,
+native-host acceptance and Phase 1 remain open. Worktree and local evidence kept.
+
+All post-merge PR #27 workflows subsequently passed on exact merge
+`33bc8b010879d3bf0b846b154c736e4aa4c700b1`: CI `43356685088`, integrated
+`43356685052`, offline OpenCode `43356685092`.
+
+Final independent SDK-selection/notice review by Joffrey: no substantive findings;
+193 native tests passed, including 18 new selection/notice tests. Actual nine
+archives/pins, 338 declaration identities, excluded implementation sources,
+three retained registry verification outputs/certificate identities, complete
+source tree/blob/notice scope, appended MIT bytes and closed candidate gates were
+cross-checked. Cryptographic verification was performed by primary, not rerun by
+the reviewer; no such independent execution is claimed. Total unit verification
+is 496 Python + 80 Node = 576 offline tests PASS, plus foundation, cached cargo-deny,
+staged secrets, documentation and whitespace PASS. No SDK projection or compiler
+execution was approved by this review. Private candidate digest
+`81378958e9ea8590c3300adf497561a982c3a823dee4f706c14f3911bcdba74d`
+remains a planning identity, not operator authorization.
+
 Status: **BLOCKED at dependency license/closure gate, before installation**.
 TM-05/TM-08/TM-10; P1-A2 and P1-A5 remain **PARTIAL**, not newly satisfied.
 Phase 1 and the full agreed product scope remain OPEN. This is not another
@@ -1766,3 +1811,167 @@ secret scanning and synthetic-secret rejection, staged/unstaged whitespace and
 local documentation links passed. Eight files are staged, including the entire
 preserved primary progress append; no unstaged source changes remain. No new
 independent review, remote CI or execution authorization is claimed.
+
+## SDK declaration discovery — actual notice-binding stop, no projection
+
+Bob inspected this bounded unit at full tested base HEAD
+`693fa8a4d394da29e18788ea188b13d47785b6c0`, branch `t3/004628d1`, in the
+assigned native worktree. All preexisting progress text, including the primary's
+PR #27 append, is preserved byte-for-byte. PR #27's supplied merged main
+`33bc8b010879d3bf0b846b154c736e4aa4c700b1` has the same source tree; no branch
+switch, merge commit, reset, stash or second worktree was needed. The parent
+reports post-merge CI `43356685088`, integrated `43356685052` and offline
+`43356685092` SUCCESS; these were not fetched/reverified in this offline unit
+and are NOT evidence for this changed tree. No current-unit commit/CI/PR exists.
+
+Fresh inert inspection verified all nine already-owned archive compressed
+SHA-256s and locked SHA-512s before strict tar inspection, then rechecked their
+input hashes unchanged. Totals: **5,246,943 compressed / 28,210,688 expanded tar /
+27,671,448 declared bytes**, **338 declarations**, **11 unselected implementation
+type sources**, six packages with archive notices, three without. Complete
+package.json bytes, all nested metadata and original notice bytes remain
+unchanged in a retained private discovery candidate; public evidence contains
+only hashes/relative identities/counts. No node_modules projection was created.
+
+Private discovery candidate SHA-256:
+`2336017f6fc2f53ae111948fc1c6df9421871d12a12e636cce3c27859a279cd3`.
+Public `sdk-selection-discovery.json` SHA-256:
+`360cf3d25405032f7ca69896857957a78c35157e648c9a1967982619985b2be6`.
+Both are **blocked discovery data**, not operator approval or an executable
+compiler descriptor: hasBlockingRequirements=true, executionApproved=false,
+selectionApproved=false, materialized=false, compilerDescriptor=null.
+
+Concrete stop: authentic manifests identify @opencode/client, plugin and theme
+2.2.5 at packages/client, packages/plugin and packages/theme in anomalyco/opencode,
+but have no gitHead or archive notices. Client/plugin READMEs do not contain a
+full permission notice; theme has no README. Retained source evidence verifies
+the root MIT bytes at source commit
+`9bbb8ce18c80f099e0e448775f59d965ead40a21`; the previous parent release-mapping
+assertion is not an immutable package-specific published-archive/source binding.
+Those root-notice bytes are retained in source-notice-evidence.json, **not present
+in THIRD-PARTY-NOTICES.txt**. No legal mapping was invented or approved from the
+MIT identifier/repository directory. Required immutable package/source/notice-scope
+evidence is unavailable among the supplied artifacts. Per the stop condition,
+full projection and executable SDK candidate preparation were NOT completed.
+
+`SDK-SELECTION.md` records the best nonfabricated fixed design and six blocking
+requirements, not a new resolver/framework. Private positive/negative drafts use
+actual inspected client/server-plugin/TUI-plugin/theme/core/Solid JSX/web-tree
+surfaces, plus JSON Schema and explicit Emscripten global binding. No fixture
+stubs/any/casts/suppressions/library skips were introduced. Actual member
+signatures were read; neither draft was compiled. The proposed genuine TSX
+react-jsx/OpenTUI jsxImportSource binding is outside compiler_plan's preserve-only
+contract and still needs separate review. The real wrong-API-argument TS2345 is
+only an expectation, NOT observed. Authentic Emscripten must be an explicit file;
+types=[]/empty typeRoots cannot supply the global. Direct lexical inventory is
+not consumed graph closure; Solid's rxjs text is an example, not an import, and
+the inspected bun-ffi-structs declaration export chain does not import Bun types.
+Transitive selection/nested identities, Node/ws/reference closure and upstream
+directives remain unproved. Unknown newly consumed edges must block explicitly.
+
+Six new evidence-consistency tests verify closed gates, current lock identities,
+relative inventories/counts, package-specific notice gap, real prerequisite
+bindings, nested metadata and full surface retention. They are not official SDK
+resolution, archive-authentication, containment or compiler proof. Final local
+verification: **484 Python tests and 80 offline Node contracts PASS (564 total)**,
+including **181 native tests**, with Python 3.12 and ResourceWarning as error.
+Default-Python native tests also passed. Foundation fmt/build/clippy/tests/docs/
+offline smoke/intentional-failure gate passed via
+`CARGO_NET_OFFLINE=true python3 scripts/check.py`; cached
+`cargo deny --locked --offline check` passed. Private candidate complete/nested
+metadata and notice-byte/hash bindings, draft hashes/modes and source drift checks
+passed. The approved historical standalone candidate remains exactly
+`aea72b77d1cacbcd2daf30aa5b555f6b52b94e8e7c336d3970b8235702039caf`;
+compiler_plan/project_types/standalone/Node/C/shared owner implementations are
+unchanged. No new execution approval or guard measurement exists.
+
+No compiler, Node discovery probe, SDK, installed host, sandbox target, npm,
+download/acquisition, network, credentials, Docker, delegation, commit, push,
+publication or deployment occurred. The only Node execution was the existing
+80 synthetic offline host/UX contracts. No workflow or runtime helper changed.
+TM-04/TM-05/TM-08/TM-10 and P1-A2/P1-A5 remain **PARTIAL**. Full SDK/runtime,
+agent/eastasianwidth/AWS provenance, Node/OpenTUI engine compatibility, native
+capture/review/admission, product acceptance and Phase 1 remain open. Independent
+review of this unit has NOT RUN; parent retains next-scope/authorization ownership.
+
+Final handoff checks: all five owned/preserved files are staged; no unstaged
+changes remain. Entire pre-unit progress bytes were verified as an unchanged
+prefix. Staged tracked-file secret scanning/synthetic-secret rejection,
+staged/unstaged whitespace and local documentation links PASS. Worktree and
+private evidence retained; no commit/push or current-unit CI claim.
+
+## 2026-11-12 — same inert SDK unit: authenticated direct notice mapping
+
+This continuation supersedes only the preceding three-package missing-evidence
+stop, not its historical measurements or the remaining SDK gates. TM-04/TM-05/
+TM-08/TM-10 and P1-A2/P1-A5 remain PARTIAL. Tested base HEAD is
+`693fa8a4d394da29e18788ea188b13d47785b6c0`; these are uncommitted staged changes,
+so no tested commit containing this unit or exact-head remote CI exists.
+
+The primary performed actual cryptographic verification separately: all three
+`gh attestation verify` commands exited 0 with empty stderr. The retained npm
+SLSA v1 payload subjects exactly match owned archive SHA-512 pins. This
+continuation compared the provided bundle and verified statement/output; gh's
+protobuf serialization omits only the empty keyid/rfc3161Timestamps fields.
+No verification was re-run, weakened or replaced with custom crypto.
+
+New public `sdk-notice-provenance.json` records explicit registry-version,
+attestation, immutable source/tree URLs, bundle/output hashes, exact verification
+command restrictions and safe verified certificate identities. Authenticated
+build commit is **958f965d35ed44d32b018fd55b02a5357a7748fd**, not the earlier
+9bbb8ce notice-source assumption. The source tree is complete/untruncated;
+bounded data parsing and Git blob-ID comparison bind LICENSE, three source
+package manifests and release.yml. Notice scanning across ancestors and all
+three package subtrees found only root LICENSE; relevant symlinks/submodules
+were rejected. Source manifest names/license plus archive repository.directory
+support package-specific mapping. Workspace/build version transformation is
+not manifest-byte equality or reproducible-build proof.
+
+The original 1,155,887 notice bytes are preserved as a prefix. Appended attribution
+contains the exact unchanged 1,065-byte MIT notice, SHA-256
+`625f0f619133f89bbbb2abe37369613dfa1885eba1e50d02170deb62bb42cb6b`, scoped only
+to @opencode/client, @opencode/plugin and @opencode/theme 2.2.5. No transitive
+package notice, license waiver or distribution approval is inferred.
+Receipt SHA-256:
+`8045ca38b56644bed92347390e4a6d70a49ee989a2bc91d650744f000398377e`.
+New private inert planning candidate SHA-256:
+`81378958e9ea8590c3300adf497561a982c3a823dee4f706c14f3911bcdba74d`.
+The prior blocked candidate remains untouched. Complete original metadata,
+nested metadata and archive notices are retained; authentic source MIT bytes
+are separately bound for each notice-less package. No declaration/source files
+were projected, no full project_types manifest or executable descriptor exists.
+
+`sdk_notice_receipt.py` is a narrow pure consistency checker, NOT a cryptographic
+verifier or approval mechanism. Twelve new tests cover wrong archive, subject,
+source commit, package path, incomplete tree, nearer mixed-case/extended notice,
+source symlink, missing/changed raw source bytes, missing appended notice and
+opaque-digest self-approval attempts. Receipt consistency is not self-authentication;
+the actual gh measurement and independent review remain separate evidence gates.
+Existing six selection tests now reflect resolved evidence and closed approval.
+
+Local verification: **496 Python tests + 80 offline Node contracts PASS (576)**,
+including **193 native tests**, Python 3.12 with ResourceWarning as error.
+Foundation fmt/build/clippy/tests/docs/offline smoke and intentional-failure gate
+PASS via `CARGO_NET_OFFLINE=true python3 scripts/check.py`; cached
+`cargo deny --locked --offline check` PASS. No Node/compiler/SDK discovery or
+sandbox-target execution occurred; Node ran only existing synthetic offline
+host/UX contracts. No network/download/npm/delegation/commit/push/PR occurred in
+this continuation. Public evidence contains no private filesystem paths.
+
+Outstanding exact gates: Joffrey independent notice/selection review; full
+transitive declaration/nested-identity and upstream-directive closure; authentic
+Emscripten roots and Node/ws references; official OpenTUI JSX binding; exact real
+positive/negative fixture and config review; SDK-specific retained-owner/read/
+policy design and explicit authorization before any executable descriptor or
+projection. Future transitive packages may have separate missing notices.
+Runtime agent/eastasianwidth/AWS provenance, Node/OpenTUI engine compatibility,
+native capture/review/admission, functional acceptance and phase closure remain
+open. Shared compiler/Node/C/standalone implementation sources are unchanged.
+
+Handoff verification: private candidate complete/nested metadata and original
+notice bytes match the prior candidate; added source notice bytes/hash bindings
+PASS. Both preceding progress snapshots remain unchanged prefixes. Public path
+safety, shared-source drift checks, documentation links, staged tracked-file
+secret scan with synthetic rejection, and whitespace checks PASS. All nine
+owned/preserved files are staged; worktree/private evidence retained intact.
+Independent review and current-unit CI have NOT RUN.

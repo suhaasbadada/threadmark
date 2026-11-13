@@ -1,0 +1,267 @@
+{
+  "independentReview": "PENDING",
+  "kind": "measured-gh-provenance-notice-mapping",
+  "measurementOwner": "parent session: actual gh attestation verify, all three exit 0; this unit only parses retained output",
+  "noticeBlock": {
+    "bytes": 1065,
+    "offset": 1156278,
+    "prefixBytes": 1155886,
+    "prefixSha256": "75c459cbb1d2986acef0a701a03219bd0895f6ed3e4602a6e9a3827673f3b696",
+    "sha256": "625f0f619133f89bbbb2abe37369613dfa1885eba1e50d02170deb62bb42cb6b"
+  },
+  "packages": [
+    {
+      "archiveSha256": "636641fb5f319e273419c5fa38e95175b7cc35f5e09b0adc14100736a46c83e7",
+      "archiveSha512": "12362b146587511b086e3b6641d22c1923e661919aba5c6ac047d8c501f9b7df37f39d3c04222f0d7f5feff66c80d187617334a6e9c0dd6f214ede868f12046b",
+      "archiveUrl": "https://registry.npmjs.org/@opencode/client/-/client-2.2.5.tgz",
+      "attestationsUrl": "https://registry.npmjs.org/-/npm/v1/attestations/@opencode%2fclient@2.2.5",
+      "bundle": {
+        "bytes": 10983,
+        "sha256": "3dcd08b0f952d070ae43fbf8faad20b0130a2fba466176b56d34915acf2a7e50"
+      },
+      "certificate": {
+        "buildConfigDigest": "958f965d35ed44d32b018fd55b02a5357a7748fd",
+        "buildConfigURI": "https://github.com/anomalyco/opencode/.github/workflows/release.yml@refs/heads/dev",
+        "buildSignerDigest": "958f965d35ed44d32b018fd55b02a5357a7748fd",
+        "buildSignerURI": "https://github.com/anomalyco/opencode/.github/workflows/release.yml@refs/heads/dev",
+        "buildTrigger": "workflow_dispatch",
+        "certificateIssuer": "CN=sigstore-intermediate,O=sigstore.dev",
+        "githubWorkflowName": "release",
+        "githubWorkflowRef": "refs/heads/dev",
+        "githubWorkflowRepository": "anomalyco/opencode",
+        "githubWorkflowSHA": "958f965d35ed44d32b018fd55b02a5357a7748fd",
+        "githubWorkflowTrigger": "workflow_dispatch",
+        "issuer": "https://token.actions.githubusercontent.com",
+        "runInvocationURI": "https://github.com/anomalyco/opencode/actions/runs/41135857908/attempts/1",
+        "runnerEnvironment": "github-hosted",
+        "sourceRepositoryDigest": "958f965d35ed44d32b018fd55b02a5357a7748fd",
+        "sourceRepositoryIdentifier": "975734319",
+        "sourceRepositoryOwnerIdentifier": "66570915",
+        "sourceRepositoryOwnerURI": "https://github.com/anomalyco",
+        "sourceRepositoryRef": "refs/heads/dev",
+        "sourceRepositoryURI": "https://github.com/anomalyco/opencode",
+        "sourceRepositoryVisibilityAtSigning": "public",
+        "subjectAlternativeName": "https://github.com/anomalyco/opencode/.github/workflows/release.yml@refs/heads/dev"
+      },
+      "ghExitCode": 0,
+      "name": "@opencode/client",
+      "registryMetadataUrl": "https://registry.npmjs.org/%40opencode%2Fclient/2.2.5",
+      "retainedResponse": {
+        "bytes": 15145,
+        "sha256": "7d926b5ffe390d3cfe9cfba9881b98e74432d20c856a321881a7c209bb556df2"
+      },
+      "sourcePackagePath": "packages/client",
+      "stderrBytes": 0,
+      "subject": {
+        "digest": {
+          "sha512": "12362b146587511b086e3b6641d22c1923e661919aba5c6ac047d8c501f9b7df37f39d3c04222f0d7f5feff66c80d187617334a6e9c0dd6f214ede868f12046b"
+        },
+        "name": "pkg:npm/%40opencode/client@2.2.5"
+      },
+      "verifiedOutput": {
+        "bytes": 13849,
+        "sha256": "f0aa4406143d2565871092990a8535980e0e0f611c6ee03be118f06bb2668e11"
+      },
+      "verifiedTimestamps": [
+        {
+          "timestamp": "2026-10-30T13:11:06-10:00",
+          "type": "Tlog",
+          "uri": "https://rekor.sigstore.dev"
+        }
+      ],
+      "version": "2.2.5"
+    },
+    {
+      "archiveSha256": "0a7905691259b790a0962a02f62661fb9c464d2b8b5f5daa5390408e8789944f",
+      "archiveSha512": "0c7b660b9e5433935bb59c326b22f123fca04ccb779feeb15d860190e74dc6667eacb7086e98e6789bf24aa7711664f72bb3e4ff6a47b2ea1cc61aaebbab32b0",
+      "archiveUrl": "https://registry.npmjs.org/@opencode/plugin/-/plugin-2.2.5.tgz",
+      "attestationsUrl": "https://registry.npmjs.org/-/npm/v1/attestations/@opencode%2fplugin@2.2.5",
+      "bundle": {
+        "bytes": 10979,
+        "sha256": "a2ab4ae634041a296794d6ecfab413f7bdddb66c1af8aec5408c2f18c63b5266"
+      },
+      "certificate": {
+        "buildConfigDigest": "958f965d35ed44d32b018fd55b02a5357a7748fd",
+        "buildConfigURI": "https://github.com/anomalyco/opencode/.github/workflows/release.yml@refs/heads/dev",
+        "buildSignerDigest": "958f965d35ed44d32b018fd55b02a5357a7748fd",
+        "buildSignerURI": "https://github.com/anomalyco/opencode/.github/workflows/release.yml@refs/heads/dev",
+        "buildTrigger": "workflow_dispatch",
+        "certificateIssuer": "CN=sigstore-intermediate,O=sigstore.dev",
+        "githubWorkflowName": "release",
+        "githubWorkflowRef": "refs/heads/dev",
+        "githubWorkflowRepository": "anomalyco/opencode",
+        "githubWorkflowSHA": "958f965d35ed44d32b018fd55b02a5357a7748fd",
+        "githubWorkflowTrigger": "workflow_dispatch",
+        "issuer": "https://token.actions.githubusercontent.com",
+        "runInvocationURI": "https://github.com/anomalyco/opencode/actions/runs/41135857908/attempts/1",
+        "runnerEnvironment": "github-hosted",
+        "sourceRepositoryDigest": "958f965d35ed44d32b018fd55b02a5357a7748fd",
+        "sourceRepositoryIdentifier": "975734319",
+        "sourceRepositoryOwnerIdentifier": "66570915",
+        "sourceRepositoryOwnerURI": "https://github.com/anomalyco",
+        "sourceRepositoryRef": "refs/heads/dev",
+        "sourceRepositoryURI": "https://github.com/anomalyco/opencode",
+        "sourceRepositoryVisibilityAtSigning": "public",
+        "subjectAlternativeName": "https://github.com/anomalyco/opencode/.github/workflows/release.yml@refs/heads/dev"
+      },
+      "ghExitCode": 0,
+      "name": "@opencode/plugin",
+      "registryMetadataUrl": "https://registry.npmjs.org/%40opencode%2Fplugin/2.2.5",
+      "retainedResponse": {
+        "bytes": 14757,
+        "sha256": "a8c573be35238cfdb20bad9f820a1ccca978978749b064fa5e71ef288021db3e"
+      },
+      "sourcePackagePath": "packages/plugin",
+      "stderrBytes": 0,
+      "subject": {
+        "digest": {
+          "sha512": "0c7b660b9e5433935bb59c326b22f123fca04ccb779feeb15d860190e74dc6667eacb7086e98e6789bf24aa7711664f72bb3e4ff6a47b2ea1cc61aaebbab32b0"
+        },
+        "name": "pkg:npm/%40opencode/plugin@2.2.5"
+      },
+      "verifiedOutput": {
+        "bytes": 13845,
+        "sha256": "744f5c513957b5af6b7344db16c6fc64c34e0a6500cb7253cd75f8037e97dfc2"
+      },
+      "verifiedTimestamps": [
+        {
+          "timestamp": "2026-10-30T13:11:37-10:00",
+          "type": "Tlog",
+          "uri": "https://rekor.sigstore.dev"
+        }
+      ],
+      "version": "2.2.5"
+    },
+    {
+      "archiveSha256": "5143a68a5952a49664c1a62318a8916c61fceb90fec7511d61615bc881be7ed6",
+      "archiveSha512": "9945b960a0b12501e786b09ea6cc8ca04a9666b4058a91795ab466a2cf5607f89e8598942fa8b1e8e5e3526bf95b981cb4ace041df2d6158bbc7dd07e7f82b1d",
+      "archiveUrl": "https://registry.npmjs.org/@opencode/theme/-/theme-2.2.5.tgz",
+      "attestationsUrl": "https://registry.npmjs.org/-/npm/v1/attestations/@opencode%2ftheme@2.2.5",
+      "bundle": {
+        "bytes": 10791,
+        "sha256": "3794062d79f14bd70247f22e0c6111516a1f42a016a20a165856baa1ca3a69ee"
+      },
+      "certificate": {
+        "buildConfigDigest": "958f965d35ed44d32b018fd55b02a5357a7748fd",
+        "buildConfigURI": "https://github.com/anomalyco/opencode/.github/workflows/release.yml@refs/heads/dev",
+        "buildSignerDigest": "958f965d35ed44d32b018fd55b02a5357a7748fd",
+        "buildSignerURI": "https://github.com/anomalyco/opencode/.github/workflows/release.yml@refs/heads/dev",
+        "buildTrigger": "workflow_dispatch",
+        "certificateIssuer": "CN=sigstore-intermediate,O=sigstore.dev",
+        "githubWorkflowName": "release",
+        "githubWorkflowRef": "refs/heads/dev",
+        "githubWorkflowRepository": "anomalyco/opencode",
+        "githubWorkflowSHA": "958f965d35ed44d32b018fd55b02a5357a7748fd",
+        "githubWorkflowTrigger": "workflow_dispatch",
+        "issuer": "https://token.actions.githubusercontent.com",
+        "runInvocationURI": "https://github.com/anomalyco/opencode/actions/runs/41135857908/attempts/1",
+        "runnerEnvironment": "github-hosted",
+        "sourceRepositoryDigest": "958f965d35ed44d32b018fd55b02a5357a7748fd",
+        "sourceRepositoryIdentifier": "975734319",
+        "sourceRepositoryOwnerIdentifier": "66570915",
+        "sourceRepositoryOwnerURI": "https://github.com/anomalyco",
+        "sourceRepositoryRef": "refs/heads/dev",
+        "sourceRepositoryURI": "https://github.com/anomalyco/opencode",
+        "sourceRepositoryVisibilityAtSigning": "public",
+        "subjectAlternativeName": "https://github.com/anomalyco/opencode/.github/workflows/release.yml@refs/heads/dev"
+      },
+      "ghExitCode": 0,
+      "name": "@opencode/theme",
+      "registryMetadataUrl": "https://registry.npmjs.org/%40opencode%2Ftheme/2.2.5",
+      "retainedResponse": {
+        "bytes": 14949,
+        "sha256": "0c21281fdc289935adbdd4c091679856c02a36405346b342eec2d4f1edb35e73"
+      },
+      "sourcePackagePath": "packages/theme",
+      "stderrBytes": 0,
+      "subject": {
+        "digest": {
+          "sha512": "9945b960a0b12501e786b09ea6cc8ca04a9666b4058a91795ab466a2cf5607f89e8598942fa8b1e8e5e3526bf95b981cb4ace041df2d6158bbc7dd07e7f82b1d"
+        },
+        "name": "pkg:npm/%40opencode/theme@2.2.5"
+      },
+      "verifiedOutput": {
+        "bytes": 13656,
+        "sha256": "bf4cb6454ed10b703684f6a69bba5c64e2a06526d52e507f98bb2d24e523bf4e"
+      },
+      "verifiedTimestamps": [
+        {
+          "timestamp": "2026-10-30T13:12:39-10:00",
+          "type": "Tlog",
+          "uri": "https://rekor.sigstore.dev"
+        }
+      ],
+      "version": "2.2.5"
+    }
+  ],
+  "schema": 1,
+  "scope": "Only @opencode/client, @opencode/plugin, @opencode/theme 2.2.5; not transitive notices, runtime approval or reproducible builds. Hash receipts are review evidence, not cryptographic verification.",
+  "sourceCommit": "958f965d35ed44d32b018fd55b02a5357a7748fd",
+  "sourceFiles": {
+    ".github/workflows/release.yml": {
+      "bytes": 31599,
+      "gitBlobSha1": "3c0a05594e768fdb2862a870429e0aad1e8434fa",
+      "sha256": "76c628cd24461eb03b2c8db488b9531fbc4c5f67fb89b53806e7b191b581177b",
+      "url": "https://raw.githubusercontent.com/anomalyco/opencode/958f965d35ed44d32b018fd55b02a5357a7748fd/.github/workflows/release.yml"
+    },
+    "LICENSE": {
+      "bytes": 1065,
+      "gitBlobSha1": "6439474beed8e0271df9862eff97ffd70ec2464c",
+      "sha256": "625f0f619133f89bbbb2abe37369613dfa1885eba1e50d02170deb62bb42cb6b",
+      "url": "https://raw.githubusercontent.com/anomalyco/opencode/958f965d35ed44d32b018fd55b02a5357a7748fd/LICENSE"
+    },
+    "packages/client/package.json": {
+      "bytes": 1774,
+      "gitBlobSha1": "e8af55ef2a3bb298537ccdfa12018fff85b776d0",
+      "sha256": "be77746caada069d8e4c889cb0a0bc1b56d6bb20fc9e2d6e6c4f266894cc1509",
+      "url": "https://raw.githubusercontent.com/anomalyco/opencode/958f965d35ed44d32b018fd55b02a5357a7748fd/packages/client/package.json"
+    },
+    "packages/plugin/package.json": {
+      "bytes": 2665,
+      "gitBlobSha1": "56b29da17a627a0c7483fb37193c3194bf80d7eb",
+      "sha256": "4470318b233419857c0c3eed1f7fccf249654183a7eaf23cbe28a882c2e42820",
+      "url": "https://raw.githubusercontent.com/anomalyco/opencode/958f965d35ed44d32b018fd55b02a5357a7748fd/packages/plugin/package.json"
+    },
+    "packages/theme/package.json": {
+      "bytes": 912,
+      "gitBlobSha1": "30753a9c9ce003f2fa58fc32e91b1fab50f0ac58",
+      "sha256": "05113ccb42f821afd9cc08140813d161db57df449edd224f2f976f3b02eb667f",
+      "url": "https://raw.githubusercontent.com/anomalyco/opencode/958f965d35ed44d32b018fd55b02a5357a7748fd/packages/theme/package.json"
+    }
+  },
+  "sourceManifestCaveat": "Workspace source version may be 0.0.0; build provenance does not assert manifest byte equality or reproducible builds.",
+  "sourceTree": {
+    "bytes": 2609724,
+    "noticePaths": [
+      "LICENSE"
+    ],
+    "scan": "Case-insensitive LICENSE/LICENCE/NOTICE/COPYING/COPYRIGHT basenames including extensions; root/packages ancestors and complete client/plugin/theme subtrees; relevant symlinks/submodules rejected.",
+    "sha256": "56dfc80e39ac8f080a5e771bf5e5fa829c4eac3e98fac615bd49881561c8fb52",
+    "truncated": false,
+    "url": "https://api.github.com/repos/anomalyco/opencode/git/trees/958f965d35ed44d32b018fd55b02a5357a7748fd?recursive=1"
+  },
+  "verifiedBundleComparison": "gh omits empty keyid and rfc3161Timestamps fields; only those exact empty fields removed for comparison.",
+  "verifierCommandTemplate": [
+    "gh",
+    "attestation",
+    "verify",
+    "<owned-archive>",
+    "--bundle",
+    "<provided-npm-SLSA-bundle>",
+    "--repo",
+    "anomalyco/opencode",
+    "--digest-alg",
+    "sha512",
+    "--predicate-type",
+    "https://slsa.dev/provenance/v1",
+    "--signer-workflow",
+    "anomalyco/opencode/.github/workflows/release.yml",
+    "--source-digest",
+    "958f965d35ed44d32b018fd55b02a5357a7748fd",
+    "--source-ref",
+    "refs/heads/dev",
+    "--deny-self-hosted-runners",
+    "--format",
+    "json"
+  ]
+}
