@@ -1,5 +1,13 @@
 # OpenCode 2.2.5 native bridge — notice/provenance gate BLOCKED
 
+The [SDK selection planning](SDK-SELECTION.md) records inert inspection of nine
+owned archives (338 declarations). Parent-measured cryptographic verification now
+binds the three notice-less OpenCode archives to build commit
+`958f965d35ed44d32b018fd55b02a5357a7748fd`; package-specific source notice evidence
+and verbatim MIT bytes are retained. Independent review, transitive declaration
+closure and exact SDK design remain open: no projection or executable descriptor.
+No measured guard source or successful standalone candidate changed.
+
 The separate [fixed compiler-only candidate](COMPILER-CONTAINMENT.md) has now
 materialized authentic TypeScript 6.0.3 as inert private data with complete
 metadata/notices and default libraries. After independent exact-candidate review
@@ -14,7 +22,8 @@ It is deliberately outside all auto-loaded plugin directories.
 
 The parent requested a real server-command/RPC/TUI review bridge against public
 release v2.2.5 (source commit
-`9bbb8ce18c80f099e0e448775f59d965ead40a21`). The implementation must not begin by
+`9bbb8ce18c80f099e0e448775f59d965ead40a21`; historical requested source, not the
+subsequently authenticated npm build commit above). The implementation must not begin by
 installing an unreviewed dependency closure. The first gate failed; no ambient SDK
 stubs or mock called native were substituted.
 
