@@ -9,6 +9,9 @@
 /// Contract version. Incompatible changes must increment this value.
 pub const CONTRACT_VERSION: u32 = 1;
 
+/// Durable, explicitly scoped local knowledge store.
+pub mod knowledge;
+
 /// Non-content-bearing failures. Never include source text or supplied IDs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {

@@ -2,7 +2,7 @@
 
 [Documentation home](../README.md) · [Integrations](integrations.md) · [Phase specifications](spec/README.md)
 
-**Status:** proposed product architecture with a small offline Phase 0 core/daemon/CLI foundation. Only scope/worker metadata contracts and finite diagnostics are implemented. Storage, adapters, shell, inference, service transport, packaging and performance require validation. See the [foundation ADR](decisions/0001-foundation-boundaries.md).
+**Status:** the Rust core/daemon/CLI now implements manual project registration, private SQLite source evidence/user context, bounded lexical indexing and source-checked queries. A background service, shell integration, inference, certified adapters, packaging and representative performance remain unverified. See the [foundation/sequencing ADR](decisions/0001-foundation-boundaries.md) and [core evidence](progress/phase-2-core.md).
 
 ## Components
 
@@ -13,7 +13,7 @@
 - **Client adapters:** small native plugins/hooks or MCP transports where supported. TypeScript may be required by a host SDK.
 - **Extraction workers:** versioned, replaceable structural and semantic extraction.
 
-Start with three Rust crates—core, daemon, and CLI—rather than a distributed service per feature. Use SQLite transactions, WAL, FTS5, and adjacency tables. Do not add an external graph database, unsafe Rust, or custom allocator without a demonstrated requirement.
+Start with core, daemon, and CLI rather than a distributed service per feature. SQLite transactions are implemented with a rollback journal in the finite manual slice; WAL, FTS5 and adjacency tables remain the planned background/search evolution. Do not add an external graph database, unsafe Rust, or custom allocator without a demonstrated requirement.
 
 The shell does not become an independent executor or own a parallel conversation model. Window close and process quit have distinct lifecycle semantics. Phase [2](spec/phase-2-knowledge-core.md) specifies knowledge/job ownership, Phase [3](spec/phase-3-background-experience.md) specifies shell behavior, and Phase [4](spec/phase-4-refinement.md) specifies preparation/approval boundaries. Concrete schemas and protocols remain implementation deliverables, not claims that an API already exists.
 

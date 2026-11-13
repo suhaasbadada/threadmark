@@ -9,7 +9,7 @@ Threadmark is a planned local-first background companion that turns rough develo
 
 > Explain less. Carry context forward. Give every agent a better starting point.
 
-**Status: early foundation development.** The Rust workspace provides offline version/status diagnostics and synthetic scope/worker contract checks. There is no installable companion, persistent index, background service, inference provider or released integration yet. All product workflows below remain planned and require runtime validation.
+**Status: manual Rust knowledge core.** The CLI registers explicitly approved source files, persists lexical source evidence and human context in private SQLite, and returns bounded source-checked queries across restarts. There is no installable background companion, listener, inference provider or certified coding-host integration yet. Later workflows remain planned; [core evidence and limitations](docs/progress/phase-2-core.md) distinguish this slice from full phase acceptance.
 
 ## Try the foundation from source
 
@@ -30,6 +30,26 @@ Rustup uses the pinned toolchain automatically. `status` reports
 reading a project, contacting a provider, or sending a task. These are developer
 diagnostics, not a working product demo. See [development](docs/development.md)
 for security checks, fixtures and platform limits.
+
+## Use the manual knowledge core
+
+After building, select a new private store directory and an existing approved
+source root. Only the listed relative files are readable; there is no implicit
+repository scan. This example assumes a synthetic `main.rs` already exists:
+
+```sh
+target/debug/threadmark --data-dir "$FIXTURE/new-private-store" project add demo "$FIXTURE/source" main.rs
+target/debug/threadmark --data-dir "$FIXTURE/new-private-store" index demo
+target/debug/threadmark --data-dir "$FIXTURE/new-private-store" query demo resolve
+printf '%s\n' 'Synthetic decision: preserve the public API.' | target/debug/threadmark --data-dir "$FIXTURE/new-private-store" context add demo api decision
+target/debug/threadmark --data-dir "$FIXTURE/new-private-store" context show demo api
+```
+
+Use absolute canonical paths. Source policy changes invalidate indexed evidence;
+changed or unreadable files are not returned as current until explicitly reindexed.
+User context has separate provenance/history and survives reindexing. Indexing is
+manual lexical capture, not AST/semantic understanding or permission to execute.
+No model, network endpoint or host credentials are used.
 
 ## The problem
 
@@ -66,7 +86,7 @@ flowchart TB
   Host["Existing coding hosts — own chat, permissions and execution"]
   Adapter["Planned: certified host adapters"]
   Daemon["Implemented: finite offline daemon checks\nPlanned: authorized local service and bounded jobs"]
-  Core["Implemented: Rust scope / worker contracts\nPlanned: mem-z SQLite evidence and retrieval"]
+   Core["Implemented: scoped SQLite lexical evidence / user context\nPlanned: graph, automatic maintenance and full lifecycle"]
   Worker["Planned: replaceable Graphify extraction"]
   Inference["Planned, optional: explicitly authorized inference"]
   Shell["Planned: occasional tray / management / review shell\nNot chat, editor, dashboard or agent launcher"]
