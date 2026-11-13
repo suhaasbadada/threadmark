@@ -48,6 +48,214 @@ impl Drop for Fixture {
 fn token() -> AtomicBool {
     AtomicBool::new(false)
 }
+
+// P2-A1/A3/A5, P3-A3/A4: local removal is isolated, atomic and never Forget.
+fn project_rows(store: &Store, id: &str) -> Vec<i64> {
+    [
+        "SELECT count(*) FROM projects WHERE id=?1",
+        "SELECT count(*) FROM evidence WHERE project=?1",
+        "SELECT count(*) FROM context WHERE project=?1",
+    ]
+    .iter()
+    .map(|sql| store.db.query_row(sql, [id], |r| r.get(0)).unwrap())
+    .collect()
+}
+
+fn removal_fixture() -> (Fixture, Store) {
+    let f = Fixture::new();
+    let mut s = f.registered();
+    index(&mut s);
+    s.write_context("a", "note", "note", "synthetic first note", false)
+        .unwrap();
+    s.write_context("a", "note", "decision", "synthetic revised note", true)
+        .unwrap();
+    s.retire_context("a", "note").unwrap();
+    (f, s)
+}
+
+#[test]
+fn project_removal_survives_reopen_without_touching_sources_or_other_projects() {
+    let (f, mut s) = removal_fixture();
+    let other = Fixture::new();
+    s.add_project("b", &other.source(), vec!["code.rs".into()])
+        .unwrap();
+    s.index("b", &mut LexicalLines, &token()).unwrap();
+    s.write_context("b", "note", "note", "synthetic other note", false)
+        .unwrap();
+    let source = std::fs::read(f.source().join("code.rs")).unwrap();
+    let other_source = std::fs::read(other.source().join("code.rs")).unwrap();
+    let other_project = serde_json::to_value(s.project("b").unwrap()).unwrap();
+    let other_query = s.query("b", "blue", &token()).unwrap();
+    let other_context = s.context("b", "note").unwrap();
+    let receipt = s.remove_project("a", &token()).unwrap();
+    assert_eq!(receipt["project"], "a");
+    assert_eq!(receipt["removed"], true);
+    let encoded = serde_json::to_string(&receipt).unwrap();
+    assert!(encoded.len() < 1024);
+    assert!(!encoded.contains(f.0.to_str().unwrap()));
+    assert!(!encoded.contains("synthetic first note"));
+    assert_eq!(project_rows(&s, "a"), [0, 0, 0]);
+    drop(s);
+    let mut s = f.store();
+    assert_eq!(project_rows(&s, "a"), [0, 0, 0]);
+    assert!(s.project("a").is_err());
+    assert!(s.query("a", "blue", &token()).is_err());
+    assert!(s.contexts("a").is_err());
+    assert!(s.context("a", "note").is_err());
+    assert!(s.index("a", &mut LexicalLines, &token()).is_err());
+    assert_eq!(
+        serde_json::to_value(s.project("b").unwrap()).unwrap(),
+        other_project
+    );
+    assert_eq!(s.query("b", "blue", &token()).unwrap(), other_query);
+    assert_eq!(s.context("b", "note").unwrap(), other_context);
+    assert_eq!(std::fs::read(f.source().join("code.rs")).unwrap(), source);
+    assert_eq!(
+        std::fs::read(other.source().join("code.rs")).unwrap(),
+        other_source
+    );
+    // Re-registration is new explicit authorization, not restoration of old edits.
+    s.add_project("a", &f.source(), vec!["code.rs".into()])
+        .unwrap();
+    assert_eq!(project_rows(&s, "a"), [1, 0, 0]);
+    assert_eq!(matches(&s, "blue"), 0);
+    assert!(s.context("a", "note").is_err());
+    index(&mut s);
+    assert_eq!(matches(&s, "blue"), 1);
+    assert_eq!(project_rows(&s, "a"), [1, 2, 0]);
+}
+
+#[test]
+fn project_removal_unknown_invalid_canceled_and_sql_abort_preserve_all_rows() {
+    let (f, mut s) = removal_fixture();
+    let snapshot = serde_json::to_value(s.project("a").unwrap()).unwrap();
+    let query = s.query("a", "blue", &token()).unwrap();
+    let history = s.context("a", "note").unwrap();
+    for id in ["unknown", "", "../a", "a' OR 1=1 --"] {
+        assert!(s.remove_project(id, &token()).is_err());
+        assert_eq!(project_rows(&s, "a"), [1, 2, 3]);
+    }
+    assert_eq!(
+        s.remove_project("a", &AtomicBool::new(true)),
+        Err(Error::Canceled)
+    );
+    for stop in [
+        RemovalStage::EvidenceRemoved,
+        RemovalStage::ContextRemoved,
+        RemovalStage::ReadyToCommit,
+    ] {
+        let cancel = token();
+        assert_eq!(
+            s.remove_project_with_progress("a", &cancel, |stage| {
+                if stage == stop {
+                    cancel.store(true, Ordering::SeqCst);
+                }
+            }),
+            Err(Error::Canceled)
+        );
+        assert_eq!(project_rows(&s, "a"), [1, 2, 3]);
+    }
+    // Abort after both child tables were deleted, proving transaction rollback.
+    s.db.execute_batch("CREATE TRIGGER synthetic_remove_fail BEFORE DELETE ON projects BEGIN SELECT RAISE(ABORT,'synthetic'); END;").unwrap();
+    assert!(s.remove_project("a", &token()).is_err());
+    assert_eq!(project_rows(&s, "a"), [1, 2, 3]);
+    s.db.execute_batch("DROP TRIGGER synthetic_remove_fail")
+        .unwrap();
+    let store_root = f.0.join("private-store");
+    std::fs::set_permissions(&store_root, std::fs::Permissions::from_mode(0o755)).unwrap();
+    assert!(s.remove_project("a", &token()).is_err());
+    std::fs::set_permissions(&store_root, std::fs::Permissions::from_mode(0o700)).unwrap();
+    drop(s);
+    let mut s = f.store();
+    assert_eq!(project_rows(&s, "a"), [1, 2, 3]);
+    assert_eq!(
+        serde_json::to_value(s.project("a").unwrap()).unwrap(),
+        snapshot
+    );
+    assert_eq!(s.query("a", "blue", &token()).unwrap(), query);
+    assert_eq!(s.context("a", "note").unwrap(), history);
+    s.remove_project("a", &token()).unwrap();
+}
+
+#[test]
+fn held_index_cannot_resurrect_removed_or_different_root_reregistered_project() {
+    for replace in [false, true] {
+        let (f, mut worker) = removal_fixture();
+        let replacement = Fixture::new(); // Deliberately identical allowlist and content.
+        let mut owner = f.store();
+        let mut removed = false;
+        let result = worker.index_with_progress("a", &mut LexicalLines, &token(), |stage| {
+            if stage == IndexStage::Read {
+                owner.remove_project("a", &token()).unwrap();
+                if replace {
+                    owner
+                        .add_project("a", &replacement.source(), vec!["code.rs".into()])
+                        .unwrap();
+                }
+                removed = true;
+            }
+        });
+        assert!(removed && result.is_err());
+        drop(worker);
+        drop(owner);
+        let mut reopened = f.store();
+        assert_eq!(project_rows(&reopened, "a"), [i64::from(replace), 0, 0]);
+        if replace {
+            assert_eq!(
+                reopened.project("a").unwrap().root,
+                replacement.source().to_str().unwrap()
+            );
+            index(&mut reopened); // Only a new explicitly requested worker may publish.
+            assert_eq!(matches(&reopened, "blue"), 1);
+        }
+    }
+}
+#[test]
+fn pending_mutations_cannot_target_a_different_root_reusing_the_project_id() {
+    for action in ["write", "sources", "retire", "remove"] {
+        let (f, mut worker) = removal_fixture();
+        // Deterministically split the same production preflight/transaction
+        // boundary. A second connection replaces the ID before BEGIN.
+        let captured = worker.project("a").unwrap();
+        let replacement = Fixture::new();
+        let mut owner = f.store();
+        owner.remove_project("a", &token()).unwrap();
+        owner
+            .add_project("a", &replacement.source(), vec!["code.rs".into()])
+            .unwrap();
+        index(&mut owner);
+        owner
+            .write_context("a", "note", "note", "synthetic replacement note", false)
+            .unwrap();
+        let before_project = serde_json::to_value(owner.project("a").unwrap()).unwrap();
+        let before_history = owner.context("a", "note").unwrap();
+        let before_query = owner.query("a", "blue", &token()).unwrap();
+        let result = match action {
+            "write" => worker.write_context_for_policy(
+                &captured,
+                "pending",
+                "note",
+                "synthetic old-root draft",
+                false,
+            ),
+            "sources" => worker.set_sources_for_policy(&captured, vec![]),
+            "retire" => worker.retire_context_for_policy(&captured, "note"),
+            "remove" => worker
+                .remove_project_for_policy(&captured, &token(), |_| {})
+                .map(|_| ()),
+            _ => unreachable!(),
+        };
+        assert_eq!(result, Err(Error::ScopeMismatch), "{action}");
+        assert_eq!(
+            serde_json::to_value(owner.project("a").unwrap()).unwrap(),
+            before_project
+        );
+        assert_eq!(owner.context("a", "note").unwrap(), before_history);
+        assert_eq!(owner.query("a", "blue", &token()).unwrap(), before_query);
+        assert!(owner.context("a", "pending").is_err());
+    }
+}
+
 fn index(store: &mut Store) {
     store.index("a", &mut LexicalLines, &token()).unwrap();
 }

@@ -182,6 +182,17 @@ pub enum IndexStage {
     /// Replacement is staged but not committed; cancellation rolls it back.
     ReadyToCommit,
 }
+
+/// Finite local-removal stages; cancellation before commit restores every row.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RemovalStage {
+    /// All project source evidence has been staged for deletion.
+    EvidenceRemoved,
+    /// Every human context revision has been staged for deletion.
+    ContextRemoved,
+    /// Project policy deletion is staged, but nothing has committed.
+    ReadyToCommit,
+}
 impl SourceExtractor for LexicalLines {
     fn producer(&self) -> &str {
         "lexical-lines-v1"
@@ -470,6 +481,56 @@ impl Store {
         Ok(())
     }
 
+    /// Remove only this project's local policy, evidence and all human revisions.
+    /// This is not Forget/suppression or forensic erasure: SQLite free pages,
+    /// sidecars, backups and exports may retain historical bytes. Sources are untouched.
+    /// Re-registration explicitly authorizes rebuilding, never restores human history.
+    pub fn remove_project(&mut self, id: &str, cancel: &AtomicBool) -> Result<Value> {
+        self.remove_project_with_progress(id, cancel, |_| {})
+    }
+
+    /// Observe synchronous deletion stages, including a final cancellation boundary.
+    pub fn remove_project_with_progress(
+        &mut self,
+        id: &str,
+        cancel: &AtomicBool,
+        mut progress: impl FnMut(RemovalStage),
+    ) -> Result<Value> {
+        canceled(cancel)?;
+        let project = self.project(id)?;
+        self.remove_project_for_policy(&project, cancel, &mut progress)
+    }
+
+    fn remove_project_for_policy(
+        &mut self,
+        project: &Project,
+        cancel: &AtomicBool,
+        mut progress: impl FnMut(RemovalStage),
+    ) -> Result<Value> {
+        let id = project.id.as_str();
+        let tx = self
+            .db
+            .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)
+            .map_err(unavailable)?;
+        Self::require_project_root(&tx, project)?;
+        canceled(cancel)?;
+        tx.execute("DELETE FROM evidence WHERE project=?1", [id])
+            .map_err(unavailable)?;
+        progress(RemovalStage::EvidenceRemoved);
+        canceled(cancel)?;
+        tx.execute("DELETE FROM context WHERE project=?1", [id])
+            .map_err(unavailable)?;
+        progress(RemovalStage::ContextRemoved);
+        canceled(cancel)?;
+        tx.execute("DELETE FROM projects WHERE id=?1", [id])
+            .map_err(unavailable)?;
+        progress(RemovalStage::ReadyToCommit);
+        canceled(cancel)?;
+        tx.commit().map_err(unavailable)?;
+        Ok(json!({"project": id, "removed": true, "retention_limits":
+            "Local removal only, not Forget/suppression or forensic erasure. SQLite free pages, sidecars, backups and exports may retain historical bytes. Source files are untouched; explicit re-registration and reindexing can import source evidence again, not old human history."}))
+    }
+
     /// Inspect policy without reading any source file.
     pub fn project(&self, id: &str) -> Result<Project> {
         self.healthy()?;
@@ -523,9 +584,31 @@ impl Store {
     /// Replace consent atomically and immediately remove all active source evidence.
     /// Human context is independent and is never deleted by source policy changes.
     pub fn set_sources(&mut self, id: &str, paths: Vec<String>) -> Result<()> {
-        self.project(id)?;
+        let project = self.project(id)?;
+        self.set_sources_for_policy(&project, paths)
+    }
+
+    // A local ID can be explicitly reused after removal. Pending operations must
+    // never mutate a replacement root that happened to receive the same ID.
+    fn require_project_root(tx: &rusqlite::Transaction<'_>, project: &Project) -> Result<()> {
+        let (root, root_identity): (String, String) = tx
+            .query_row(
+                "SELECT root,root_identity FROM projects WHERE id=?1",
+                [&project.id],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .map_err(unavailable)?;
+        if root != project.root || root_identity != project.root_identity {
+            return Err(Error::ScopeMismatch);
+        }
+        Ok(())
+    }
+
+    fn set_sources_for_policy(&mut self, project: &Project, paths: Vec<String>) -> Result<()> {
+        let id = project.id.as_str();
         validate_paths(&paths)?;
         let tx = self.db.transaction().map_err(unavailable)?;
+        Self::require_project_root(&tx, project)?;
         tx.execute("DELETE FROM evidence WHERE project=?1", [id])
             .map_err(unavailable)?;
         tx.execute(
@@ -676,14 +759,23 @@ impl Store {
         let encoded = serde_json::to_string(&manifest).map_err(unavailable)?;
         let snapshot = sha256(encoded.as_bytes());
         self.healthy()?;
-        let tx = self.db.transaction().map_err(unavailable)?;
-        // Protect against a second local process revoking consent during extraction.
-        let policy: String = tx
-            .query_row("SELECT sources FROM projects WHERE id=?1", [id], |r| {
-                r.get(0)
-            })
+        let tx = self
+            .db
+            .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)
             .map_err(unavailable)?;
-        if serde_json::from_str::<Vec<String>>(&policy).map_err(unavailable)? != p.sources {
+        // Serialize publication with removal and recheck the exact captured approval.
+        // Same-ID re-registration at a different root must not admit an old worker.
+        let (root, root_identity, policy): (String, String, String) = tx
+            .query_row(
+                "SELECT root,root_identity,sources FROM projects WHERE id=?1",
+                [id],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+            )
+            .map_err(unavailable)?;
+        if root != p.root
+            || root_identity != p.root_identity
+            || serde_json::from_str::<Vec<String>>(&policy).map_err(unavailable)? != p.sources
+        {
             return Err(Error::ScopeMismatch);
         }
         tx.execute("DELETE FROM evidence WHERE project=?1", [id])
@@ -813,12 +905,25 @@ impl Store {
         text: &str,
         update: bool,
     ) -> Result<()> {
-        self.project(project)?;
+        let project = self.project(project)?;
+        self.write_context_for_policy(&project, id, kind, text, update)
+    }
+
+    fn write_context_for_policy(
+        &mut self,
+        project: &Project,
+        id: &str,
+        kind: &str,
+        text: &str,
+        update: bool,
+    ) -> Result<()> {
         identity(id)?;
         if !context_kind(kind) || text.is_empty() || text.len() > 4096 || text.contains('\0') {
             return Err(invalid());
         }
         let tx = self.db.transaction().map_err(unavailable)?;
+        Self::require_project_root(&tx, project)?;
+        let project = project.id.as_str();
         let revision: Option<i64> = tx
             .query_row(
                 "SELECT max(revision) FROM context WHERE project=?1 AND id=?2",
@@ -849,9 +954,15 @@ impl Store {
 
     /// Retire a human note by appending a revision, never deleting source files.
     pub fn retire_context(&mut self, project: &str, id: &str) -> Result<()> {
-        self.project(project)?;
+        let project = self.project(project)?;
+        self.retire_context_for_policy(&project, id)
+    }
+
+    fn retire_context_for_policy(&mut self, project: &Project, id: &str) -> Result<()> {
         identity(id)?;
         let tx = self.db.transaction().map_err(unavailable)?;
+        Self::require_project_root(&tx, project)?;
+        let project = project.id.as_str();
         let (revision,kind,text): (i64,String,String) = tx.query_row("SELECT revision,kind,text FROM context WHERE project=?1 AND id=?2 ORDER BY revision DESC LIMIT 1", params![project,id], |r| Ok((r.get(0)?,r.get(1)?,r.get(2)?))).map_err(unavailable)?;
         let count: i64 = tx
             .query_row(

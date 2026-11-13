@@ -36,3 +36,16 @@ Native GUI launch, keyboard/assistive-technology runtime, external provider cons
 host delivery and controlled refinement-quality evaluation remain unrun/open.
 Paused coding-host launches stay paused. Existing unrelated progress appends were
 preserved and excluded. No deployment or product inference was performed.
+
+## Publication outcome
+
+PR [#41](https://github.com/suhaasbadada/threadmark/pull/41) passed all five
+checks on `a6a870322b82bff86285a1274c1b39d67dbb7f38`: CI
+[43510553796](https://github.com/suhaasbadada/threadmark/actions/runs/43510553796)
+and integrated [43510553986](https://github.com/suhaasbadada/threadmark/actions/runs/43510553986).
+Fresh exact-head/main/discussion/rules verification found no blocker. It merged
+at `2026-11-13T21:28:29Z` as `6ae0dd82d674358ff124a8221d9f87d0fec04a00`;
+the PR watch was removed. Post-merge CI
+[43511007549](https://github.com/suhaasbadada/threadmark/actions/runs/43511007549)
+and integrated [43511007548](https://github.com/suhaasbadada/threadmark/actions/runs/43511007548)
+both passed on that exact merge. GUI, provider and host gates remain separate.
