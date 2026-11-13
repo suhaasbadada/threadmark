@@ -98,9 +98,10 @@ The scope is divided into [Phases 0–9](docs/roadmap.md):
 8. Hardening and public beta
 9. Stable release and sustainable operation
 
-Phases are acceptance gates, not release dates. Foundation engineering evidence
-has passed review for the recorded revision; merge/publication and Phases 1–9 remain open. See the
-[progress record](docs/progress/phase-0.md).
+Phases are acceptance gates, not release dates. The offline foundation is merged;
+Phase 1 remains open and no later phase is closed. See the
+[current feasibility evidence and blockers](docs/progress/phase-1-feasibility-ledger.md)
+and [foundation record](docs/progress/phase-0.md).
 
 ## Documentation
 
