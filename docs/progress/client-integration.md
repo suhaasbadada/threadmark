@@ -42,3 +42,20 @@ Local strict Swift tests passed all 27 tests/four suites against the real core,
 including sole-reaper and cancellation-ordering regressions. Release bundle build
 passed. The CI toolchain itself remains a remote verification gate; a new run on
 the repaired head is required, not inferred from the local result.
+
+### Concurrent fixture isolation repair
+
+CI [43508134006](https://github.com/suhaasbadada/threadmark/actions/runs/43508134006)
+on `43ebd0d` failed earlier in Rust tests, job
+[132171038798](https://github.com/suhaasbadada/threadmark/actions/runs/43508134006/job/132171038798).
+`knowledge.rs:18` reported `AlreadyExists` creating a fixture directory. Both CLI
+tests run in one process and timestamp-only names can coincide at the clock's
+actual resolution. This run did not reach the Swift compilation gate.
+
+Fixture names now also include a process-local atomic sequence. A regression
+creates 16 concurrent fixtures with a deliberately identical timestamp, keeps
+all roots alive, and verifies distinct directories and source files. Creation
+still fails rather than reusing an existing directory; cleanup remains confined
+to each successfully created fixture. No runtime source policy changed.
+The complete local Rust check pipeline passed, including all three CLI knowledge
+tests. This failure was diagnosed and repaired, not retried or waived.

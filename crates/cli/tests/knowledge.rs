@@ -3,17 +3,25 @@ use serde_json::Value;
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Command, Output, Stdio};
+use std::sync::atomic::{AtomicU64, Ordering};
+
+static NEXT_FIXTURE: AtomicU64 = AtomicU64::new(0);
 
 struct Fixture(PathBuf);
 impl Fixture {
     fn new() -> Self {
-        let path = std::env::temp_dir().canonicalize().unwrap().join(format!(
-            "threadmark-cli-{}-{}",
-            std::process::id(),
+        Self::with_timestamp(
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
-                .as_nanos()
+                .as_nanos(),
+        )
+    }
+    fn with_timestamp(timestamp: u128) -> Self {
+        let path = std::env::temp_dir().canonicalize().unwrap().join(format!(
+            "threadmark-cli-{}-{timestamp}-{}",
+            std::process::id(),
+            NEXT_FIXTURE.fetch_add(1, Ordering::Relaxed)
         ));
         std::fs::create_dir(&path).unwrap();
         std::fs::create_dir(path.join("source")).unwrap();
@@ -48,6 +56,28 @@ impl Drop for Fixture {
     fn drop(&mut self) {
         std::fs::remove_dir_all(&self.0).unwrap();
     }
+}
+
+#[test]
+fn parallel_fixtures_with_identical_timestamps_have_distinct_owned_roots() {
+    let barrier = std::sync::Arc::new(std::sync::Barrier::new(16));
+    let workers: Vec<_> = (0..16)
+        .map(|_| {
+            let barrier = barrier.clone();
+            std::thread::spawn(move || {
+                barrier.wait();
+                Fixture::with_timestamp(0)
+            })
+        })
+        .collect();
+    let fixtures: Vec<_> = workers.into_iter().map(|w| w.join().unwrap()).collect();
+    let roots: std::collections::HashSet<_> = fixtures.iter().map(|f| &f.0).collect();
+    assert_eq!(roots.len(), 16);
+    assert!(
+        fixtures
+            .iter()
+            .all(|f| f.0.join("source/main.rs").is_file())
+    );
 }
 
 #[test]
