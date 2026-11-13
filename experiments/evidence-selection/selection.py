@@ -19,6 +19,34 @@ def canonical(value):
                       ensure_ascii=False, allow_nan=False).encode("utf-8")
 
 
+def _choose(groups):
+    """Best rank per coordinate, alternate unique declaration/call lines."""
+    ordered = []
+    for group in groups:
+        seen = set()
+        unique = []
+        for _, path, line in sorted(group):
+            coordinate = (path.decode("utf-8"), line)
+            if coordinate not in seen:
+                seen.add(coordinate)
+                unique.append(coordinate)
+        ordered.append(iter(unique))
+    selected, seen = [], set()
+    active = [True, True]
+    while len(selected) < 8 and any(active):
+        for category in range(2):
+            if len(selected) == 8:
+                break
+            for coordinate in ordered[category]:
+                if coordinate not in seen:
+                    seen.add(coordinate)
+                    selected.append(coordinate)
+                    break
+            else:
+                active[category] = False
+    return selected
+
+
 def select(sources, task):
     """Return canonical envelope bytes or reject whole. No oracle/plugin inputs.
 
@@ -48,30 +76,7 @@ def select(sources, task):
                     coordinate = (record.path, record.line)
                     groups[category].append((targets[target], record.path.encode("utf-8"), record.line))
                     facts.setdefault(coordinate, set()).add(CATEGORIES[category])
-        # Deduplicate within each group at its best rank, then alternate unique lines.
-        ordered = []
-        for group in groups:
-            seen = set()
-            unique = []
-            for _, path, line in sorted(group):
-                coordinate = (path.decode("utf-8"), line)
-                if coordinate not in seen:
-                    seen.add(coordinate)
-                    unique.append(coordinate)
-            ordered.append(iter(unique))
-        selected, seen = [], set()
-        active = [True, True]
-        while len(selected) < 8 and any(active):
-            for category in range(2):
-                if len(selected) == 8:
-                    break
-                for coordinate in ordered[category]:
-                    if coordinate not in seen:
-                        seen.add(coordinate)
-                        selected.append(coordinate)
-                        break
-                else:
-                    active[category] = False
+        selected = _choose(groups)
         # Same LF/one-trailing-CR normalization already validated by extract().
         lines = {path: tuple(line.removesuffix("\r") for line in data.decode("utf-8").split("\n"))
                  for path, data in sources}
