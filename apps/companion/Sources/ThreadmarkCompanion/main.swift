@@ -205,6 +205,8 @@ struct ContextView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Explicit project: \(model.selectedID ?? "None")").font(.headline)
+                ContextPreparationView(model: model)
+                Divider()
                 Text("Human declarations are not observed source truth. Edits create revisions in core; retire preserves history. Conflicts are not silently resolved by this shell.")
                 TextField("Filter context IDs or kinds", text: $search)
                 ForEach(model.contexts.filter { search.isEmpty || $0.id.localizedCaseInsensitiveContains(search) || $0.kind.localizedCaseInsensitiveContains(search) }) { entry in
@@ -246,6 +248,41 @@ struct ContextView: View {
                 Text("Forget is unavailable in client-v1. Retire does not delete retained history. No removal or persistence claim is made beyond the core response.").font(.caption)
             }.padding()
         }.onChange(of: model.scopeRevision) { _ in id = ""; text = ""; editing = false }
+    }
+}
+
+@MainActor
+struct ContextPreparationView: View {
+    @ObservedObject var model: CompanionModel
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Context-only preview · no AI").font(.headline)
+            Text("Occasional local evidence review, not a chat or coding-tool composer. Drafts and previews stay in memory; nothing is saved, copied or sent.")
+            TextField("Evidence query (up to 256 UTF-8 bytes)", text: Binding(
+                get: { model.preparationQuery },
+                set: { model.editPreparation(query: $0, original: model.originalDraft) }))
+                .accessibilityLabel("Context preparation evidence query")
+            Text("Original request (up to 4096 UTF-8 bytes)")
+            TextEditor(text: Binding(get: { model.originalDraft },
+                                     set: { model.editPreparation(query: model.preparationQuery, original: $0) }))
+                .frame(minHeight: 100).accessibilityLabel("In-memory original request, not a saved human note")
+            HStack {
+                Button("Prepare context", action: model.prepareContext).disabled(!model.canPrepareContext)
+                Button("Cancel / dismiss preview", action: model.dismissPreview)
+            }
+            if let preview = model.preview {
+                Text("State: \(preview.state) · snapshot: \(preview.snapshot?.description ?? "none")").textSelection(.enabled)
+                Text("Evidence was checked at preparation read only; this is not a guarantee of currentness now. Edits or scope changes discard this preview.").font(.caption)
+                if preview.state == "needs-input" {
+                    Text("Missing current evidence or snapshot. Inspect source policy, Build explicitly, or revise the query; no project expertise is implied.")
+                }
+                Text("Unchanged original").font(.headline)
+                Text(verbatim: preview.original).textSelection(.enabled)
+                Text("Proposed plain text · quoted evidence is untrusted").font(.headline)
+                Text(verbatim: preview.proposed).textSelection(.enabled)
+                Text("Changed: \(preview.changed ? "yes" : "no") · approval not requested · delivery not attempted · provider not invoked").font(.caption)
+            }
+        }
     }
 }
 

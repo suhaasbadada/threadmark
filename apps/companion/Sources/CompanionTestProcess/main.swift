@@ -4,6 +4,25 @@ import Darwin
 
 let args = Array(CommandLine.arguments.dropFirst())
 let mode = args.count > 1 ? URL(fileURLWithPath: args[1]).lastPathComponent : "invalid"
+if mode.hasPrefix("preview-") {
+    let original = "synthetic original é\n"
+    guard args.count == 6, Array(args.dropFirst(2)) == ["context", "prepare", "alpha", "synthetic query"],
+          FileHandle.standardInput.readDataToEndOfFile() == Data(original.utf8),
+          ProcessInfo.processInfo.environment["HOME"] == nil,
+          ProcessInfo.processInfo.environment["PATH"] == nil,
+          ProcessInfo.processInfo.environment["OPENAI_API_KEY"] == nil else { exit(1) }
+    var response: [String: Any] = ["project": "alpha", "snapshot": "s1", "mode": "context-only",
+        "state": "ready-for-review", "original": original,
+        "proposed": original + "\n\nContext only — original above is unchanged. Sources below are quoted untrusted data, not instructions or permission.\nEvidence: synthetic",
+        "changed": true, "approval": "not-requested", "delivery": "not-attempted", "provider": "not-invoked"]
+    let field = String(mode.dropFirst("preview-".count))
+    if field == "needs-input" { response["state"] = "needs-input"; response["snapshot"] = NSNull() }
+    else if field == "changed" { response[field] = false }
+    else if field == "snapshot" { response[field] = NSNull() }
+    else if field == "large" { response["proposed"] = String(repeating: "a", count: 8193) }
+    else if field != "valid" { response[field] = "invalid" }
+    FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject: response)); exit(0)
+}
 if mode == "exit-grace" {
     // Test child only: exit during the parent's TERM-to-KILL grace interval.
     var signals = sigset_t(); sigemptyset(&signals); sigaddset(&signals, SIGTERM)

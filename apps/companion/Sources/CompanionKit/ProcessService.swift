@@ -77,6 +77,7 @@ public struct ProcessService: CoreService {
         let cancellation = Cancellation()
         var operationLimits = limits
         if case .query = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
+        if case .prepareContext = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         let boundedLimits = operationLimits
         let data = try await withTaskCancellationHandler {
             guard !Task.isCancelled else { throw ServiceError.canceled }
@@ -90,6 +91,11 @@ public struct ProcessService: CoreService {
         do {
             let decoder = JSONDecoder()
             switch operation {
+            case .prepareContext(let id, _, let original):
+                guard data.count <= 8192 else { throw ServiceError.outputLimit }
+                let result = try decoder.decode(ContextPreview.self, from: data)
+                try result.validate(project: id, original: original)
+                return .preview(result)
             case .projects:
                 let projects = try decoder.decode([Project].self, from: data)
                 guard projects.count <= 64, Set(projects.map(\.id)).count == projects.count,
@@ -144,6 +150,10 @@ public struct ProcessService: CoreService {
         var args: [String]
         var input = Data()
         switch operation {
+        case .prepareContext(let p, let query, let original):
+            guard InputPolicy.preparation(query: query, original: original) else { throw ServiceError.invalid }
+            args = ["context", "prepare", try id(p), query]
+            input = Data(original.utf8) // Original is ONLY stdin, never argv.
         case .projects: args = ["project", "list"]
         case .project(let p): args = ["project", "show", try id(p)]
         case .addProject(let p, let root, let files):
