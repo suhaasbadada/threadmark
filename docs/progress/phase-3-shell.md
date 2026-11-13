@@ -1,5 +1,28 @@
 # Phase 3 native shell — independent implementation lane
 
+## Coordinator integration verification
+
+The original and repaired lane commits were integrated with the real Rust core
+and provider-neutral preparation workspace. Joffrey independently re-reviewed
+the repaired sole-reaper and serialized-operation implementation with **no
+remaining substantive findings**. He reran all 27 Swift tests against the actual
+primary Rust binary; source ownership, limits, new-store behavior, cancellation
+and documentation boundaries were clear. Both prior findings are closed, not
+waived.
+
+Primary verification on the integrated tree also passed all 27 strict Swift
+tests, including the real-core synthetic store lifecycle, full Rust
+`scripts/check.py`, dependency policy, release bundle build and plist validation.
+The macOS CI job now supplies the exact freshly built core binary, runs the Swift
+suite, builds the app bundle and validates its plist. It does not launch a GUI or
+install/publish a binary. Existing build-backend deprecation and Testing-framework
+deployment-target warnings remain disclosed; source warnings are denied.
+
+Native GUI launch, assistive technology, window/tray interaction and full Phase 3
+acceptance remain unobserved. This is a compiled native shell with a tested real
+core transport, not certified background/runtime behavior. Phase 1 live coding-host
+and provider gates remain open. Exact publication SHA/CI follows separately.
+
 ## Engineering revision — cancellation ownership and real-core integration
 
 This revision supersedes the initial implementation evidence below where noted.

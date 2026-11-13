@@ -9,7 +9,8 @@
 - **Rust core:** project identity, knowledge records, retrieval, freshness, and execution-brief logic.
 - **Local daemon:** authorized API, bounded jobs, transports, and adapter coordination.
 - **CLI:** automation and diagnostics over the same core contracts.
-- **Companion shell:** a menu-bar presence and occasional management window for onboarding, context editing, connections, and privacy, plus temporary review/handoff panels. Native host UI is preferred for routine refinement. Tauri is the initial candidate, subject to accessibility and packaging tests. No replacement coding UI is planned.
+- **Companion shell:** a macOS SwiftUI/AppKit menu-bar and occasional management window now builds against the local core adapter, without a webview or third-party UI package. Runtime/accessibility acceptance remains open; temporary review/handoff surfaces and certified native host review remain subsequent integration work. Tauri was an initial candidate, not a required boundary. No replacement coding UI is planned.
+- **Preparation engine:** a provider-neutral Rust library binds original intent, selected current evidence, configuration/consent, cancellation and review. Its Context mode is integrated through daemon/CLI; no concrete provider or host-delivery capability is shipped.
 - **Client adapters:** small native plugins/hooks or MCP transports where supported. TypeScript may be required by a host SDK.
 - **Extraction workers:** versioned, replaceable structural and semantic extraction.
 

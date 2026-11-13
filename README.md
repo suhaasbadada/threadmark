@@ -55,6 +55,13 @@ No model, network endpoint or host credentials are used.
 the provider-neutral preparation engine. Stale/missing evidence is needs-input;
 approval and delivery are not attempted. It is Context mode, not AI refinement.
 
+The [native macOS management shell](apps/companion/README.md) builds from source
+and adapts the same core CLI; its tests exercise an actual private synthetic store.
+It has projects/context/status management and a quiet menu-bar surface, not a
+chat or agent launcher. GUI launch, accessibility and native-runtime acceptance
+remain unverified. The [provider-neutral engine](docs/progress/phase-4-refinement.md)
+supports preparation/review contracts without a live provider or host delivery.
+
 ## The problem
 
 Switching coding agents often means repeating architecture, decisions, constraints, and previous corrections. A vague request can send an agent toward the wrong implementation even when the necessary knowledge already exists somewhere in the project.
