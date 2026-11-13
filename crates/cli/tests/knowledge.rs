@@ -7,6 +7,244 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 static NEXT_FIXTURE: AtomicU64 = AtomicU64::new(0);
 
+const EXPORT: [&str; 4] = ["project", "export", "a", "--confirm-export-local-content"];
+
+#[test]
+fn export_requires_exact_confirmation_existing_recognized_store_and_project() {
+    let f = Fixture::new();
+    for args in [
+        vec!["project", "export", "a"],
+        vec!["project", "export", "a", "--confirm"],
+        vec![
+            "project",
+            "export",
+            "a",
+            "--confirm-export-local-content",
+            "extra",
+        ],
+        vec![
+            "project",
+            "export",
+            "bad/id",
+            "--confirm-export-local-content",
+        ],
+        EXPORT.to_vec(),
+    ] {
+        let out = f.run(&args, None);
+        assert!(!out.status.success() && out.stdout.is_empty());
+        assert!(!f.0.join("store").exists());
+        assert!(
+            !String::from_utf8(out.stderr)
+                .unwrap()
+                .contains(f.0.to_str().unwrap())
+        );
+    }
+    std::fs::create_dir(f.0.join("store")).unwrap();
+    assert!(!f.run(&EXPORT, None).status.success());
+    assert!(!f.0.join("store/knowledge.sqlite").exists());
+    // A foreign file is not adopted or modified.
+    std::fs::write(
+        f.0.join("store/knowledge.sqlite"),
+        b"synthetic unknown database",
+    )
+    .unwrap();
+    let before = std::fs::read(f.0.join("store/knowledge.sqlite")).unwrap();
+    let out = f.run(&EXPORT, None);
+    assert!(!out.status.success() && out.stdout.is_empty());
+    assert_eq!(
+        std::fs::read(f.0.join("store/knowledge.sqlite")).unwrap(),
+        before
+    );
+}
+
+#[test]
+fn export_real_process_full_evidence_history_isolation_stale_revocation_and_reopen() {
+    let f = Fixture::new();
+    let other = Fixture::new();
+    let source = (0..12)
+        .map(|n| format!("synthetic blue {n}\n"))
+        .collect::<String>();
+    std::fs::write(f.0.join("source/main.rs"), &source).unwrap();
+    for (id, fixture) in [("a", &f), ("b", &other)] {
+        f.ok(
+            &[
+                "project",
+                "add",
+                id,
+                fixture.0.join("source").to_str().unwrap(),
+                "main.rs",
+            ],
+            None,
+        );
+        f.ok(&["index", id], None);
+    }
+    for (id, text) in [
+        ("a", "synthetic chosen note"),
+        ("b", "synthetic foreign note"),
+    ] {
+        f.ok(
+            &["context", "add", id, "memo", "note"],
+            Some(text.as_bytes()),
+        );
+    }
+    f.ok(
+        &["context", "update", "a", "memo", "decision"],
+        Some(b"synthetic revised note\n"),
+    );
+    f.ok(&["context", "retire", "a", "memo"], None);
+    let original = "synthetic request never stored";
+    f.ok(
+        &["context", "prepare", "a", "blue"],
+        Some(original.as_bytes()),
+    );
+    let project = f.ok(&["project", "show", "a"], None);
+    let history = f.ok(&["context", "show", "a", "memo"], None);
+    let other_before = f.ok(&["query", "b", "blue"], None);
+    let db_before = std::fs::read(f.0.join("store/knowledge.sqlite")).unwrap();
+    let archive = f.ok(&EXPORT, None);
+    assert_eq!(archive["format"], "threadmark-project-export");
+    assert_eq!(archive["version"], 1);
+    assert_eq!(archive["project"]["id"], "a");
+    assert_eq!(
+        archive["project"]["root_identity"],
+        project["root_identity"]
+    );
+    assert_eq!(archive["snapshot"], project["snapshot"]);
+    assert_eq!(archive["currentness"], "current-at-read");
+    assert_eq!(archive["evidence"].as_array().unwrap().len(), 12);
+    for (n, row) in archive["evidence"].as_array().unwrap().iter().enumerate() {
+        assert_eq!(row["line"], n + 1);
+        assert_eq!(row["project"], "a");
+        assert_eq!(row["path"], "main.rs");
+        assert_eq!(row["producer"], "lexical-lines-v1");
+        assert_eq!(row["source_hash"].as_str().unwrap().len(), 64);
+    }
+    assert_eq!(archive["human_history"].as_array().unwrap().len(), 3);
+    for (n, row) in archive["human_history"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .enumerate()
+    {
+        assert_eq!(row["revision"], n + 1);
+        assert_eq!(row["text"], history["history"][n]["text"]);
+        assert_eq!(row["retired"], n == 2);
+        assert_eq!(row["producer"], "human-authored");
+        assert_eq!(
+            row["authority"],
+            "context-not-authorization-or-observed-truth"
+        );
+    }
+    assert_eq!(f.ok(&EXPORT, None), archive);
+    assert_eq!(
+        std::fs::read(f.0.join("store/knowledge.sqlite")).unwrap(),
+        db_before
+    );
+    assert_eq!(f.ok(&["project", "show", "a"], None), project);
+    assert_eq!(f.ok(&["context", "show", "a", "memo"], None), history);
+    assert_eq!(f.ok(&["query", "b", "blue"], None), other_before);
+    let encoded = serde_json::to_string(&archive).unwrap();
+    for excluded in [
+        f.0.to_str().unwrap(),
+        other.0.to_str().unwrap(),
+        "synthetic foreign note",
+        original,
+        "knowledge.sqlite",
+    ] {
+        assert!(!encoded.contains(excluded));
+    }
+    assert_eq!(archive.as_object().unwrap().len(), 8);
+    assert_eq!(archive["project"].as_object().unwrap().len(), 3);
+    let out = f.run(
+        &[
+            "project",
+            "export",
+            "unregistered",
+            "--confirm-export-local-content",
+        ],
+        None,
+    );
+    assert!(!out.status.success() && out.stdout.is_empty());
+    assert_eq!(
+        std::fs::read(f.0.join("store/knowledge.sqlite")).unwrap(),
+        db_before
+    );
+    assert_eq!(
+        std::fs::read_to_string(f.0.join("source/main.rs")).unwrap(),
+        source
+    );
+    std::fs::write(f.0.join("source/main.rs"), "synthetic changed\n").unwrap();
+    let stale = f.ok(&EXPORT, None);
+    assert_eq!(stale["currentness"], "stale-or-unindexed");
+    assert_eq!(stale["evidence"], serde_json::json!([]));
+    assert_eq!(stale["human_history"], archive["human_history"]);
+    f.ok(&["project", "sources", "a"], None);
+    let revoked = f.ok(&EXPORT, None);
+    assert_eq!(revoked["project"]["sources"], serde_json::json!([]));
+    assert!(revoked["snapshot"].is_null());
+    assert_eq!(revoked["evidence"], serde_json::json!([]));
+    assert_eq!(revoked["human_history"], archive["human_history"]);
+    f.ok(&["index", "a"], None);
+    let empty = f.ok(&EXPORT, None);
+    assert_eq!(empty["currentness"], "current-at-read");
+    assert_eq!(empty["evidence"], serde_json::json!([]));
+}
+
+#[test]
+fn export_process_escaped_whole_envelope_overflow_has_no_stdout_or_mutation() {
+    let f = Fixture::new();
+    f.ok(
+        &[
+            "project",
+            "add",
+            "a",
+            f.0.join("source").to_str().unwrap(),
+            "main.rs",
+        ],
+        None,
+    );
+    // Raw history fits 1 MiB; JSON escaping plus provenance crosses the bound.
+    let text = "\t".repeat(4096);
+    for n in 0..120 {
+        f.ok(
+            &["context", "add", "a", &format!("n{n:03}"), "note"],
+            Some(text.as_bytes()),
+        );
+    }
+    let within = f.run(&EXPORT, None);
+    assert!(within.status.success() && within.stdout.len() <= 1_048_576);
+    assert!(within.stdout.ends_with(b"\n"));
+    for n in 120..130 {
+        f.ok(
+            &["context", "add", "a", &format!("n{n:03}"), "note"],
+            Some(text.as_bytes()),
+        );
+    }
+    let db_before = std::fs::read(f.0.join("store/knowledge.sqlite")).unwrap();
+    let source_before = std::fs::read(f.0.join("source/main.rs")).unwrap();
+    let overflow = f.run(&EXPORT, None);
+    assert!(!overflow.status.success() && overflow.stdout.is_empty());
+    assert_eq!(
+        overflow.stderr,
+        b"local knowledge operation failed; no content published\n"
+    );
+    assert_eq!(
+        std::fs::read(f.0.join("store/knowledge.sqlite")).unwrap(),
+        db_before
+    );
+    assert_eq!(
+        std::fs::read(f.0.join("source/main.rs")).unwrap(),
+        source_before
+    );
+    assert_eq!(
+        f.ok(&["context", "list", "a"], None)["contexts"]
+            .as_array()
+            .unwrap()
+            .len(),
+        130
+    );
+}
+
 #[test]
 fn bound_removal_validates_before_store_creation_and_rejects_replacement() {
     let f = Fixture::new();

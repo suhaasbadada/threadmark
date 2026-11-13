@@ -20,6 +20,7 @@ const FLAGS: OFlags = OFlags::RDONLY
     .union(OFlags::NOFOLLOW)
     .union(OFlags::CLOEXEC);
 
+mod export;
 #[cfg(test)]
 mod tests;
 
@@ -57,6 +58,10 @@ pub fn validate_removal_binding(id: &str, root: &str, root_identity: &str) -> Re
 
 fn identity(id: &str) -> Result<()> {
     Scope::new(id, "local", "snapshot").map(|_| ())
+}
+/// Validate an export selector before opening storage. IDs are not credentials.
+pub fn validate_export_project(id: &str) -> Result<()> {
+    identity(id)
 }
 fn context_kind(kind: &str) -> bool {
     matches!(
@@ -208,6 +213,15 @@ pub enum RemovalStage {
     /// Project policy deletion is staged, but nothing has committed.
     ReadyToCommit,
 }
+
+/// Synchronous export boundaries; observers cannot grant source authority.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExportStage {
+    /// One database snapshot and the initial authorized source state were read.
+    Read,
+    /// All rows are validated and bounded; final authorization checks follow.
+    ReadyToPublish,
+}
 impl SourceExtractor for LexicalLines {
     fn producer(&self) -> &str {
         "lexical-lines-v1"
@@ -261,15 +275,28 @@ impl Store {
     /// Open an explicit store directory. New directories are 0700 and database 0600.
     /// Existing stores must already be private, owned, regular, and schema-compatible.
     pub fn open(path: &Path) -> Result<Self> {
+        Self::open_with_creation(path, true)
+    }
+
+    /// Open only a recognized existing private store, never create a directory or DB.
+    pub fn open_existing(path: &Path) -> Result<Self> {
+        Self::open_with_creation(path, false)
+    }
+
+    fn open_with_creation(path: &Path, allow_creation: bool) -> Result<Self> {
         if !path.is_absolute() {
             return Err(Error::ScopeMismatch);
         }
         let parent = store_directory(path.parent().ok_or(Error::ScopeMismatch)?)?;
         let name = path.file_name().ok_or(Error::ScopeMismatch)?;
-        let created = match mkdirat(&parent, name, Mode::from_raw_mode(0o700)) {
-            Ok(()) => true,
-            Err(rustix::io::Errno::EXIST) => false,
-            Err(e) => return Err(unavailable(e)),
+        let created = if !allow_creation {
+            false
+        } else {
+            match mkdirat(&parent, name, Mode::from_raw_mode(0o700)) {
+                Ok(()) => true,
+                Err(rustix::io::Errno::EXIST) => false,
+                Err(e) => return Err(unavailable(e)),
+            }
         };
         let dir = store_directory(path)?;
         let m = dir.metadata().map_err(unavailable)?;

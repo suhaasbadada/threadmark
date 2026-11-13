@@ -3,6 +3,7 @@ use super::*;
 use std::fs::OpenOptions;
 use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt, PermissionsExt, symlink};
 use std::sync::atomic::AtomicU64;
+mod export_tests;
 
 struct Fixture(PathBuf);
 impl Fixture {
