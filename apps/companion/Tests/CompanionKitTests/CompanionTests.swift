@@ -16,7 +16,7 @@ private func preview(_ id: String, _ original: String, state: String = "ready-fo
 /// Deliberately test-only; never compiled into the application or adapter.
 private actor ExplicitFakeCoreService: CoreService {
     var projects = [
-        Project(id: "alpha", root: "/synthetic/alpha", sources: ["a.rs"]),
+        Project(id: "alpha", root: "/synthetic/alpha", sources: ["a.rs"], rootIdentity: .string("r1")),
         Project(id: "beta", root: "/synthetic/beta", sources: ["b.rs"]),
     ]
     var revisions: [String: [ContextRevision]] = [:]
@@ -24,6 +24,16 @@ private actor ExplicitFakeCoreService: CoreService {
     var mismatch = false
     var holdIndex = false
     var holdPreview = false
+    var holdRemoval = false
+    var removalCalls = 0
+    var removalMode = "valid"
+    func setRemovalMode(_ value: String) { removalMode = value }
+    func holdNextRemoval() { holdRemoval = true }
+    func finishRemoval() {
+        projects.removeAll { $0.id == "alpha" }
+        pending?.resume(returning: .removed(RemovedProject(project: "alpha", removed: true, retention_limits: RemovedProject.retentionLimits)))
+        pending = nil
+    }
     var previewState = "ready-for-review"
     func holdNextPreview() { holdPreview = true }
     func needsInput() { previewState = "needs-input" }
@@ -69,6 +79,20 @@ private actor ExplicitFakeCoreService: CoreService {
         calls += 1
         if let error = nextFailure { nextFailure = nil; throw error }
         switch operation {
+        case .removeProject(let id, let root, let identity):
+            removalCalls += 1
+            guard projects.contains(where: { $0.id == id && $0.root == root && $0.root_identity == .string(identity) }) else { throw ServiceError.scopeMismatch }
+            if holdRemoval {
+                holdRemoval = false; started = true; observer?.resume(); observer = nil
+                return try await withCheckedThrowingContinuation { pending = $0 }
+            }
+            if removalMode == "ack" { return .acknowledged }
+            if removalMode == "wrong" { return .removed(RemovedProject(project: "beta", removed: true, retention_limits: RemovedProject.retentionLimits)) }
+            if removalMode == "false" { return .removed(RemovedProject(project: id, removed: false, retention_limits: RemovedProject.retentionLimits)) }
+            if removalMode == "stale-list" { return .removed(RemovedProject(project: id, removed: true, retention_limits: RemovedProject.retentionLimits)) }
+            projects.removeAll { $0.id == id }
+            if removalMode == "list-failure" { nextFailure = .failed }
+            return .removed(RemovedProject(project: id, removed: true, retention_limits: RemovedProject.retentionLimits))
         case .prepareContext(let p, _, let original):
             if holdPreview {
                 holdPreview = false; started = true; observer?.resume(); observer = nil
@@ -120,6 +144,77 @@ private actor ExplicitFakeCoreService: CoreService {
 
 @Suite("Explicit fake-service model acceptance") @MainActor
 struct ModelTests {
+    @Test(arguments: ["ack", "wrong", "false", "stale-list", "list-failure"])
+    func removalRequiresTypedReceiptAndFreshList(mode: String) async throws {
+        let (model, service) = await selected()
+        await service.setRemovalMode(mode)
+        model.requestRemoval(); model.confirmRemoval(try #require(model.pendingRemoval))
+        await model.waitForOperation()
+        #expect(model.lastError == .removalUncertain && model.status.contains("Refresh"))
+        #expect(model.selectedID == nil && model.project == nil && model.projects.isEmpty)
+        #expect(await service.removalCalls == 1)
+    }
+    @Test func removalUnavailableWithoutLoadedIdentity() async {
+        let (model, service) = await selected()
+        model.select("beta"); await model.waitForOperation()
+        let before = await service.calls
+        #expect(!model.canRemoveProject)
+        model.requestRemoval()
+        #expect(model.pendingRemoval == nil)
+        #expect(await service.calls == before)
+    }
+    @Test func removalPromptCancelHasNoCoreOrDraftEffects() async throws {
+        let (model, service) = await selected()
+        model.editPreparation(query: "synthetic", original: "synthetic original")
+        let calls = await service.calls
+        let project = model.project
+        model.requestRemoval()
+        #expect(model.pendingRemoval?.project == project)
+        model.cancelRemoval()
+        #expect(model.pendingRemoval == nil && model.project == project)
+        #expect(model.originalDraft == "synthetic original")
+        #expect(await service.calls == calls)
+    }
+    @Test func removalConfirmIsBoundSingleUseAndRefreshesWithoutSelection() async throws {
+        let (model, service) = await selected()
+        model.editPreparation(query: "synthetic", original: "synthetic original")
+        model.requestRemoval()
+        let confirmation = try #require(model.pendingRemoval)
+        model.confirmRemoval(confirmation)
+        #expect(model.selectedID == nil && model.project == nil && model.originalDraft.isEmpty)
+        model.confirmRemoval(confirmation)
+        await model.waitForOperation()
+        #expect(await service.removalCalls == 1)
+        #expect(model.projects.map(\.id) == ["beta"] && model.selectedID == nil)
+        #expect(model.status.contains("removed"))
+    }
+    @Test(arguments: ["project", "source", "config", "cancel", "refresh"])
+    func staleRemovalPromptCannotLaunch(change: String) async throws {
+        let (model, service) = await selected()
+        model.requestRemoval()
+        let confirmation = try #require(model.pendingRemoval)
+        switch change {
+        case "project": model.select("beta")
+        case "source": model.stageSources([])
+        case "config": model.configure(executable: URL(fileURLWithPath: "/synthetic"), dataDirectory: URL(fileURLWithPath: "/synthetic/store"))
+        case "refresh": model.refreshProjects()
+        default: model.cancel()
+        }
+        model.confirmRemoval(confirmation); await model.waitForOperation()
+        #expect(await service.removalCalls == 0 && model.pendingRemoval == nil)
+    }
+    @Test(arguments: ["cancel", "project"])
+    func canceledRemovalLateReceiptNeverSelectsAnotherProject(change: String) async throws {
+        let (model, service) = await selected()
+        await service.holdNextRemoval()
+        model.requestRemoval(); model.confirmRemoval(try #require(model.pendingRemoval))
+        await service.waitForIndex()
+        if change == "project" { model.select("beta") } else { model.cancel() }
+        await service.finishRemoval(); await model.waitForOperation()
+        #expect(model.selectedID == (change == "project" ? "beta" : nil))
+        #expect(!model.status.contains("Local project removed"))
+        #expect(await service.removalCalls == 1)
+    }
     private func selected() async -> (CompanionModel, ExplicitFakeCoreService) {
         let service = ExplicitFakeCoreService()
         let model = CompanionModel(service: service, configured: true)
@@ -357,6 +452,26 @@ struct ModelTests {
 
 @Suite("Owned synthetic subprocess adapter")
 struct AdapterTests {
+    @Test func boundRemovalExactArgumentsAndTypedReceipt() async throws {
+        try await withAdapter("removal-valid") { adapter in
+            guard case .removed(let receipt) = try await adapter.perform(.removeProject("alpha", "/synthetic/alpha", "r1")) else { throw ServiceError.invalid }
+            try receipt.validate(project: "alpha")
+        }
+    }
+    @Test(arguments: ["ack", "wrong", "false", "limits", "large", "content"])
+    func removalRejectsInvalidReceipts(mode: String) async throws {
+        try await withAdapter("removal-" + mode) { adapter in
+            let expected: ServiceError = mode == "wrong" ? .scopeMismatch : (mode == "large" ? .outputLimit : .invalid)
+            await #expect(throws: expected) { try await adapter.perform(.removeProject("alpha", "/synthetic/alpha", "r1")) }
+        }
+    }
+    @Test func removalRejectsInvalidBoundsBeforeSpawn() async throws {
+        try await withAdapter("removal-valid") { adapter in
+            for (root, identity) in [("", "r1"), ("relative", "r1"), ("/synthetic", ""), ("/synthetic\0", "r1"), ("/synthetic", "r\0"), ("/" + String(repeating: "x", count: 4096), "r1"), ("/synthetic", String(repeating: "x", count: 129))] {
+                await #expect(throws: ServiceError.invalid) { try await adapter.perform(.removeProject("alpha", root, identity)) }
+            }
+        }
+    }
     @discardableResult private func withAdapter<T: Sendable>(_ mode: String, limits: ProcessLimits = .init(),
                                          body: (ProcessService) async throws -> T) async throws -> T {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("threadmark-shell-test-" + UUID().uuidString)

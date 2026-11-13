@@ -2,8 +2,8 @@
 
 Independent Phase 3 shell for TM-01–TM-03, TM-07 and TM-10, adapting the frozen
 [client-v1 contract](../../docs/contracts/client-v1.md). SwiftUI management views
-and an AppKit `NSStatusItem`; no webview, third-party package or Rust workspace
-change. Core remains responsible for storage, indexing, authorization, source
+and an AppKit `NSStatusItem`; no webview or third-party package.
+Core remains responsible for storage, indexing, authorization, source
 identity/currentness, human revision history and transactional cancellation.
 
 ## Build and test (no launch)
@@ -41,6 +41,18 @@ the real adapter, and removes its data. It does not launch an app GUI or host.
 
 ## Product boundary
 
+- Projects offers **Remove local project…** only after loading a root identity.
+  An immutable, cancel-default confirmation displays the exact ID/root/identity
+  and loss of all local notes, history, evidence and policy. Confirmation runs
+  `project remove ID --confirm-remove-local-data --expected-root ROOT --expected-root-identity IDENTITY`
+  through the actual core, with exact stale-approval binding (not authentication).
+  Project/source/configuration changes invalidate the prompt. Confirm clears
+  drafts/evidence/selection immediately; success requires a validated, content-free
+  receipt (1 KiB maximum) and a fresh project list, never selecting another project.
+  Source files are untouched. This is not Forget/suppression or forensic erasure;
+  SQLite free pages, sidecars, backups and exports may retain bytes. Re-registration
+  may import source evidence, not old notes. Cancellation/failure can have an
+  uncertain persisted outcome: Refresh before retrying; no rollback is promised.
 - Context includes explicit **Prepare context** for the selected project: a bounded
   query plus an editable in-memory original (not a persisted human note). Actual
   `context prepare` output shows the unchanged original and quoted untrusted
@@ -105,7 +117,7 @@ HOME credential lookup or listener. Until configured, production visibly fails
 
 `CoreService.perform(Operation)` exposes exactly the contract's operations.
 Command mapping follows the coordinator-provided CLI. Project list is a JSON
-array; project show is a summary object. Mutation output must be valid JSON;
+array; project show is a summary object. Most mutation output must be valid JSON;
 the model re-reads authoritative project/context state instead of guessing a
 mutation's response shape. Opaque `coverage`, `root_identity`, `authority` and
 snapshot values are preserved as JSON rather than assigned invented semantics.
@@ -146,6 +158,6 @@ After separate authorization and core CLI integration:
    Check light/dark, reduced motion, focus order, text labels and screen reader.
 
 Phase 1 live host/inference gates stay OPEN. Full P3-A1–P3-A6 acceptance remains
-open pending these observed journeys. Forget, conflict resolution, cleanup/export,
+open pending these observed journeys. Forget, conflict resolution, export,
 login startup, automatic scheduling, host certification and inference are visibly
 unavailable or outside client-v1, not simulated by the shell.

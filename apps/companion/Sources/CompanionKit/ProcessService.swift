@@ -78,6 +78,7 @@ public struct ProcessService: CoreService {
         var operationLimits = limits
         if case .query = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .prepareContext = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
+        if case .removeProject = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 1024) }
         let boundedLimits = operationLimits
         let data = try await withTaskCancellationHandler {
             guard !Task.isCancelled else { throw ServiceError.canceled }
@@ -91,6 +92,13 @@ public struct ProcessService: CoreService {
         do {
             let decoder = JSONDecoder()
             switch operation {
+            case .removeProject(let id, _, _):
+                guard data.count <= 1024 else { throw ServiceError.outputLimit }
+                guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      Set(object.keys) == ["project", "removed", "retention_limits"] else { throw ServiceError.invalid }
+                let result = try decoder.decode(RemovedProject.self, from: data)
+                try result.validate(project: id)
+                return .removed(result)
             case .prepareContext(let id, _, let original):
                 guard data.count <= 8192 else { throw ServiceError.outputLimit }
                 let result = try decoder.decode(ContextPreview.self, from: data)
@@ -150,6 +158,9 @@ public struct ProcessService: CoreService {
         var args: [String]
         var input = Data()
         switch operation {
+        case .removeProject(let p, let root, let identity):
+            guard InputPolicy.removal(root: root, identity: identity) else { throw ServiceError.invalid }
+            args = ["project", "remove", try id(p), "--confirm-remove-local-data", "--expected-root", root, "--expected-root-identity", identity]
         case .prepareContext(let p, let query, let original):
             guard InputPolicy.preparation(query: query, original: original) else { throw ServiceError.invalid }
             args = ["context", "prepare", try id(p), query]

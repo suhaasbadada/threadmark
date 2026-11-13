@@ -4,6 +4,7 @@ import Combine
 @MainActor
 public final class CompanionModel: ObservableObject {
     @Published public private(set) var projects: [Project] = []
+    @Published public private(set) var pendingRemoval: RemovalConfirmation?
     @Published public private(set) var selectedID: String?
     @Published public private(set) var project: Project?
     @Published public private(set) var contexts: [ContextEntry] = []
@@ -51,6 +52,41 @@ public final class CompanionModel: ObservableObject {
                 self.clearProject(); self.selectedID = id
             }
             self.status = "Projects refreshed — select a project to verify policy"
+        }
+    }
+    public var canRemoveProject: Bool {
+        guard configured, !busy, !quitting, let project, project.id == selectedID,
+              case .string(let identity) = project.root_identity else { return false }
+        return InputPolicy.identifier(project.id) && InputPolicy.removal(root: project.root, identity: identity)
+    }
+    /// Opening/canceling this immutable approval performs no core operation.
+    public func requestRemoval() {
+        guard canRemoveProject, let project else { return }
+        pendingRemoval = RemovalConfirmation(id: UUID(), project: project, generation: generation, scopeRevision: scopeRevision)
+    }
+    public func cancelRemoval() { pendingRemoval = nil }
+    public func confirmRemoval(_ confirmation: RemovalConfirmation) {
+        guard pendingRemoval == confirmation, confirmation.generation == generation,
+              confirmation.scopeRevision == scopeRevision, canRemoveProject,
+              project == confirmation.project, case .string(let identity) = confirmation.project.root_identity else {
+            pendingRemoval = nil; return
+        }
+        let target = confirmation.project
+        invalidate(clearProject: true); selectedID = nil; projects = []
+        start(status: "Removing local project data — cancellation may require Refresh") { service in
+            do {
+                let reply = try await service.perform(.removeProject(target.id, target.root, identity))
+                guard case .removed(let receipt) = reply else { throw ServiceError.invalid }
+                try receipt.validate(project: target.id)
+                try Task.checkCancellation()
+                return [reply, try await service.perform(.projects)]
+            } catch { throw ServiceError.removalUncertain }
+        } apply: { replies in
+            guard case .removed(let receipt) = replies[0], case .projects(let projects) = replies[1],
+                  projects.count <= 64, !projects.contains(where: { $0.id == target.id }) else { throw ServiceError.removalUncertain }
+            try receipt.validate(project: target.id)
+            self.projects = projects
+            self.status = "Local project removed — sources untouched; not Forget or forensic erasure"
         }
     }
     public func select(_ id: String?) {
@@ -210,6 +246,7 @@ public final class CompanionModel: ObservableObject {
         for operation in pending { await operation.value }
     }
     public func cancel() {
+        pendingRemoval = nil
         preview = nil
         generation &+= 1; job?.cancel(); job = nil
         if busy { status = "Canceled — refresh persisted state before continuing"; clearResults() }

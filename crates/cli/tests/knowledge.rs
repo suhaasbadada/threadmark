@@ -7,6 +7,102 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 static NEXT_FIXTURE: AtomicU64 = AtomicU64::new(0);
 
+#[test]
+fn bound_removal_validates_before_store_creation_and_rejects_replacement() {
+    let f = Fixture::new();
+    for (id, root, identity) in [
+        ("bad/id", "/synthetic", "r1"),
+        ("a", "", "r1"),
+        ("a", "/synthetic", ""),
+        ("a", "/synthetic", &"x".repeat(129)),
+    ] {
+        assert!(
+            !f.run(
+                &[
+                    "project",
+                    "remove",
+                    id,
+                    "--confirm-remove-local-data",
+                    "--expected-root",
+                    root,
+                    "--expected-root-identity",
+                    identity
+                ],
+                None
+            )
+            .status
+            .success()
+        );
+        assert!(!f.0.join("store").exists());
+    }
+    let root = f.0.join("source");
+    f.ok(
+        &["project", "add", "a", root.to_str().unwrap(), "main.rs"],
+        None,
+    );
+    let old = f.ok(&["project", "show", "a"], None);
+    f.ok(
+        &["project", "remove", "a", "--confirm-remove-local-data"],
+        None,
+    );
+    let replacement = f.0.join("replacement");
+    std::fs::create_dir(&replacement).unwrap();
+    std::fs::write(replacement.join("main.rs"), "fn replacement_blue() {}\n").unwrap();
+    f.ok(
+        &[
+            "project",
+            "add",
+            "a",
+            replacement.to_str().unwrap(),
+            "main.rs",
+        ],
+        None,
+    );
+    f.ok(&["index", "a"], None);
+    f.ok(
+        &["context", "add", "a", "memo", "note"],
+        Some(b"synthetic replacement note"),
+    );
+    let before = f.ok(&["query", "a", "blue"], None);
+    let history = f.ok(&["context", "show", "a", "memo"], None);
+    assert!(
+        !f.run(
+            &[
+                "project",
+                "remove",
+                "a",
+                "--confirm-remove-local-data",
+                "--expected-root",
+                old["root"].as_str().unwrap(),
+                "--expected-root-identity",
+                old["root_identity"].as_str().unwrap()
+            ],
+            None
+        )
+        .status
+        .success()
+    );
+    assert_eq!(f.ok(&["query", "a", "blue"], None), before);
+    assert_eq!(f.ok(&["context", "show", "a", "memo"], None), history);
+    let current = f.ok(&["project", "show", "a"], None);
+    let receipt = f.ok(
+        &[
+            "project",
+            "remove",
+            "a",
+            "--confirm-remove-local-data",
+            "--expected-root",
+            current["root"].as_str().unwrap(),
+            "--expected-root-identity",
+            current["root_identity"].as_str().unwrap(),
+        ],
+        None,
+    );
+    assert_eq!(receipt["removed"], true);
+    assert_eq!(f.ok(&["project", "list"], None), serde_json::json!([]));
+    assert!(replacement.join("main.rs").is_file());
+}
+
 struct Fixture(PathBuf);
 impl Fixture {
     fn new() -> Self {

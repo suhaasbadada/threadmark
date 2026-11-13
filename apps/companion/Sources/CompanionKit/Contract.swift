@@ -37,9 +37,25 @@ public struct Project: Codable, Equatable, Identifiable, Sendable {
     public let root_identity: JSONValue?
     public let sources: [String]
     public let snapshot: JSONValue?
-    public init(id: String, root: String, sources: [String], snapshot: JSONValue? = nil) {
-        self.id = id; self.root = root; self.sources = sources; self.snapshot = snapshot; root_identity = nil
+    public init(id: String, root: String, sources: [String], snapshot: JSONValue? = nil, rootIdentity: JSONValue? = nil) {
+        self.id = id; self.root = root; self.sources = sources; self.snapshot = snapshot; root_identity = rootIdentity
     }
+}
+public struct RemovedProject: Codable, Sendable {
+    public let project: String
+    public let removed: Bool
+    public let retention_limits: String
+    public static let retentionLimits = "Local removal only, not Forget/suppression or forensic erasure. SQLite free pages, sidecars, backups and exports may retain historical bytes. Source files are untouched; explicit re-registration and reindexing can import source evidence again, not old human history."
+    public func validate(project id: String) throws {
+        guard project == id else { throw ServiceError.scopeMismatch }
+        guard removed, retention_limits == Self.retentionLimits else { throw ServiceError.invalid }
+    }
+}
+public struct RemovalConfirmation: Identifiable, Equatable, Sendable {
+    public let id: UUID
+    public let project: Project
+    let generation: UInt64
+    let scopeRevision: UInt64
 }
 public struct IndexReport: Codable, Sendable {
     public let project: String
@@ -125,7 +141,7 @@ public struct ContextPreview: Codable, Equatable, Sendable {
 }
 
 public enum ServiceError: String, Error, Sendable, LocalizedError {
-    case invalid, unavailable, canceled, scopeMismatch, stale, timedOut, outputLimit, failed
+    case invalid, unavailable, canceled, scopeMismatch, stale, timedOut, outputLimit, failed, removalUncertain
     public var errorDescription: String? {
         switch self {
         case .invalid: "Invalid input or core response. Review the selected configuration."
@@ -136,17 +152,20 @@ public enum ServiceError: String, Error, Sendable, LocalizedError {
         case .timedOut: "Core operation exceeded its time limit. Refresh before retrying."
         case .outputLimit: "Core response exceeded the output limit."
         case .failed: "Core operation failed. Check permissions and refresh to recover."
+        case .removalUncertain: "Removal outcome not confirmed. Refresh projects before trusting persisted state or retrying."
         }
     }
 }
 
 public enum Operation: Sendable {
+    case removeProject(String, String, String)
     case projects, project(String), addProject(String, String, [String]), setSources(String, [String])
     case index(String), query(String, String), contexts(String), context(String, String)
     case prepareContext(String, String, String)
     case writeContext(String, String, String, String, update: Bool), retireContext(String, String)
 }
 public enum Reply: Sendable {
+    case removed(RemovedProject)
     case projects([Project]), project(Project), indexed(IndexReport), query(QueryReport)
     case contexts(ContextList), context(ContextHistory), acknowledged
     case preview(ContextPreview)
@@ -157,6 +176,10 @@ public protocol CoreService: Sendable {
 }
 
 public enum InputPolicy {
+    public static func removal(root: String, identity: String) -> Bool {
+        root.hasPrefix("/") && root.utf8.count <= 4096 && !root.contains("\0") &&
+        !identity.isEmpty && identity.utf8.count <= 128 && !identity.contains("\0")
+    }
     public static func preparation(query: String, original: String) -> Bool {
         !query.isEmpty && query.utf8.count <= 256 && !query.contains("\0") &&
         !original.isEmpty && original.utf8.count <= 4096 && !original.contains("\0")

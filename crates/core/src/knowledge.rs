@@ -40,6 +40,21 @@ fn sha256(bytes: &[u8]) -> String {
     }
     out
 }
+/// Validate caller-bound removal without opening or creating a store.
+pub fn validate_removal_binding(id: &str, root: &str, root_identity: &str) -> Result<()> {
+    identity(id)?;
+    if !root.starts_with('/')
+        || root.len() > 4096
+        || root.contains('\0')
+        || root_identity.is_empty()
+        || root_identity.len() > 128
+        || root_identity.contains('\0')
+    {
+        return Err(invalid());
+    }
+    Ok(())
+}
+
 fn identity(id: &str) -> Result<()> {
     Scope::new(id, "local", "snapshot").map(|_| ())
 }
@@ -487,6 +502,24 @@ impl Store {
     /// Re-registration explicitly authorizes rebuilding, never restores human history.
     pub fn remove_project(&mut self, id: &str, cancel: &AtomicBool) -> Result<Value> {
         self.remove_project_with_progress(id, cancel, |_| {})
+    }
+
+    /// Bind a caller's explicit approval to exactly the displayed registered root.
+    /// This is a stale-approval guard, not authentication or new source authority.
+    pub fn remove_project_bound(
+        &mut self,
+        id: &str,
+        root: &str,
+        root_identity: &str,
+        cancel: &AtomicBool,
+    ) -> Result<Value> {
+        validate_removal_binding(id, root, root_identity)?;
+        canceled(cancel)?;
+        let project = self.project(id)?;
+        if project.root != root || project.root_identity != root_identity {
+            return Err(Error::ScopeMismatch);
+        }
+        self.remove_project_for_policy(&project, cancel, |_| {})
     }
 
     /// Observe synchronous deletion stages, including a final cancellation boundary.
