@@ -116,6 +116,13 @@ private actor ExplicitFakeCoreService: CoreService {
             guard let i = projects.firstIndex(where: { $0.id == id }) else { throw ServiceError.invalid }
             projects[i] = Project(id: id, root: projects[i].root, sources: sources)
             sourceEvents.append("commit:" + sources.joined(separator: ",")); return .acknowledged
+        case .indexBound(let p, let root, let identity, let files):
+            guard projects.contains(where: { $0.id == p && $0.root == root && $0.root_identity == .string(identity) && $0.sources == files }) else { throw ServiceError.scopeMismatch }
+            if holdIndex {
+                holdIndex = false; started = true; observer?.resume(); observer = nil
+                return try await withCheckedThrowingContinuation { pending = $0 }
+            }
+            return .indexed(try report(p))
         case .index(let p):
             if holdIndex {
                 holdIndex = false; started = true; observer?.resume(); observer = nil
@@ -215,11 +222,154 @@ struct ModelTests {
         #expect(!model.status.contains("Local project removed"))
         #expect(await service.removalCalls == 1)
     }
-    private func selected() async -> (CompanionModel, ExplicitFakeCoreService) {
+    private func selected(driver: any RefreshDriver = TimerRefreshDriver()) async -> (CompanionModel, ExplicitFakeCoreService) {
         let service = ExplicitFakeCoreService()
-        let model = CompanionModel(service: service, configured: true)
+        let model = CompanionModel(service: service, configured: true, refreshDriver: driver)
         model.select("alpha"); await model.waitForOperation()
         return (model, service)
+    }
+    @Test func timedRefreshRequiresExplicitExactConsentAndOwnsDriver() async throws {
+        let driver = ManualRefreshDriver()
+        let (model, service) = await selected(driver: driver)
+        let calls = await service.calls
+        #expect(model.automaticRefreshConsent == nil && !driver.active)
+        model.togglePause(); driver.fire(); await model.waitForOperation()
+        #expect(await service.calls == calls && !driver.active)
+        let consent = try #require(model.automaticRefreshProposal)
+        for wrong in [
+            AutomaticRefreshConsent(projectID: "beta", root: consent.root, rootIdentity: consent.rootIdentity, sources: consent.sources, scopeRevision: consent.scopeRevision),
+            AutomaticRefreshConsent(projectID: consent.projectID, root: "/synthetic/other", rootIdentity: consent.rootIdentity, sources: consent.sources, scopeRevision: consent.scopeRevision),
+            AutomaticRefreshConsent(projectID: consent.projectID, root: consent.root, rootIdentity: "other", sources: consent.sources, scopeRevision: consent.scopeRevision),
+            AutomaticRefreshConsent(projectID: consent.projectID, root: consent.root, rootIdentity: consent.rootIdentity, sources: ["other.rs"], scopeRevision: consent.scopeRevision)
+        ] {
+            model.enableAutomaticRefresh(wrong)
+            #expect(!driver.active && model.automaticRefreshConsent == nil)
+        }
+        model.enableAutomaticRefresh(consent)
+        #expect(driver.active && driver.interval == 60 && CompanionModel.automaticRefreshInterval >= 60)
+        #expect(await service.calls == calls) // Enabling does not immediately read.
+        model.editPreparation(query: "synthetic", original: "Synthetic original retained")
+        model.prepareContext(); await model.waitForOperation()
+        #expect(model.preview != nil)
+        model.showManagement(); model.closeManagement()
+        #expect(driver.active && !model.managementVisible)
+        driver.fire(); await model.waitForOperation()
+        #expect(model.indexReport?.project == "alpha" && model.preview == nil)
+        #expect(model.originalDraft == "Synthetic original retained" && model.preparationQuery == "synthetic")
+        model.togglePause(); #expect(!driver.active)
+        let after = await service.calls
+        driver.fire(); await model.waitForOperation(); #expect(await service.calls == after)
+        model.togglePause(); #expect(driver.active && driver.starts == 2)
+        model.quit(); #expect(!driver.active && model.automaticRefreshConsent == nil)
+        driver.fire(); await model.waitForOperation(); #expect(await service.calls == after)
+    }
+    @Test func productionFoundationTimerIsOwnedAndInvalidatedSynchronously() async throws {
+        let driver = TimerRefreshDriver()
+        let (model, _) = await selected(driver: driver)
+        #expect(driver.timer == nil)
+        let consent = try #require(model.automaticRefreshProposal)
+        model.enableAutomaticRefresh(consent)
+        let first = try #require(driver.timer)
+        #expect(first.isValid && first.timeInterval >= 60)
+        first.fire(); await model.waitForOperation() // Real Timer closure, no time delay.
+        #expect(model.indexReport?.project == "alpha")
+        model.enableAutomaticRefresh(consent)
+        #expect(!first.isValid && driver.timer?.isValid == true)
+        let second = try #require(driver.timer)
+        model.togglePause(); #expect(!second.isValid && driver.timer == nil)
+        model.togglePause(); let third = try #require(driver.timer)
+        model.stageSources([]); #expect(!third.isValid && driver.timer == nil)
+        await model.shutdown()
+    }
+    @Test func timedTicksSkipManualWorkWithoutInvalidatingPreviewOrQueuing() async throws {
+        let driver = ManualRefreshDriver()
+        let (model, service) = await selected(driver: driver)
+        model.enableAutomaticRefresh(try #require(model.automaticRefreshProposal))
+        model.editPreparation(query: "synthetic", original: "Synthetic original")
+        await service.holdNextPreview()
+        model.prepareContext(); await service.waitForIndex()
+        let before = await service.calls
+        for _ in 0..<10 { driver.fire() }
+        #expect(await service.calls == before && model.busy)
+        await service.finishPreview("Synthetic original"); await model.waitForOperation()
+        #expect(model.preview != nil && model.originalDraft == "Synthetic original")
+        #expect(await service.calls == before && !model.busy) // No queued follow-up.
+        model.disableAutomaticRefresh()
+    }
+    @Test(arguments: ["pause", "disable", "sources", "selection", "configuration", "refresh", "remove", "quit"])
+    func automaticCancellationRejectsLateSuccess(change: String) async throws {
+        let driver = ManualRefreshDriver()
+        let (model, service) = await selected(driver: driver)
+        model.enableAutomaticRefresh(try #require(model.automaticRefreshProposal))
+        await service.holdNextIndex(); driver.fire(); await service.waitForIndex()
+        let before = await service.calls
+        for _ in 0..<10 { driver.fire() }
+        #expect(await service.calls == before)
+        switch change {
+        case "pause": model.togglePause()
+        case "disable": model.disableAutomaticRefresh()
+        case "sources": model.stageSources([])
+        case "selection": model.select("beta")
+        case "configuration": model.configure(executable: URL(fileURLWithPath: "/synthetic/core"), dataDirectory: URL(fileURLWithPath: "/synthetic/store"))
+        case "refresh": model.refreshSelected()
+        case "remove":
+            model.requestRemoval(); model.confirmRemoval(try #require(model.pendingRemoval))
+        default: model.quit()
+        }
+        #expect(!driver.active)
+        if change != "pause" { #expect(model.automaticRefreshConsent == nil) }
+        // Queued replacements cannot overtake even a cancellation-ignoring worker.
+        #expect(await service.calls == before)
+        try await service.finishIndex(); await model.waitForOperation()
+        #expect(model.indexReport == nil && !model.busy)
+        model.disableAutomaticRefresh()
+    }
+    @Test func automaticFailureStopsUntilExplicitRepairAndReenable() async throws {
+        let driver = ManualRefreshDriver()
+        let (model, service) = await selected(driver: driver)
+        model.enableAutomaticRefresh(try #require(model.automaticRefreshProposal))
+        await service.failNext(.failed); driver.fire(); await model.waitForOperation()
+        #expect(!driver.active && model.automaticRefreshConsent == nil)
+        #expect(model.status.contains("Needs attention") && !model.status.contains("/synthetic"))
+        let before = await service.calls
+        model.togglePause(); model.togglePause(); driver.fire(); await model.waitForOperation()
+        #expect(await service.calls == before)
+        model.refreshSelected(); await model.waitForOperation()
+        model.enableAutomaticRefresh(try #require(model.automaticRefreshProposal))
+        driver.fire(); await model.waitForOperation()
+        #expect(model.indexReport?.project == "alpha")
+        model.disableAutomaticRefresh()
+    }
+    @Test func manualBuildTakesPriorityButJoinsCancellationIgnoringAutomaticWorker() async throws {
+        let driver = ManualRefreshDriver()
+        let (model, service) = await selected(driver: driver)
+        model.editPreparation(query: "synthetic", original: "Synthetic retained draft")
+        model.enableAutomaticRefresh(try #require(model.automaticRefreshProposal))
+        await service.holdNextIndex(); driver.fire(); await service.waitForIndex()
+        #expect(model.busy && model.canBuild && model.canPrepareContext && model.manualActionsAvailable)
+        let before = await service.calls
+        model.build() // Cancels automatic UI immediately, waits for its teardown.
+        #expect(model.busy && !model.canBuild && !model.manualActionsAvailable)
+        for _ in 0..<10 { driver.fire() }
+        #expect(await service.calls == before)
+        try await service.finishIndex(); await model.waitForOperation()
+        #expect(await service.calls == before + 1 && model.indexReport?.project == "alpha")
+        #expect(model.status.contains("Build completed") && model.originalDraft == "Synthetic retained draft")
+        #expect(driver.active && model.automaticRefreshConsent != nil)
+        model.disableAutomaticRefresh()
+    }
+    @Test func staleAndMissingSourceApprovalCannotEnable() async throws {
+        let driver = ManualRefreshDriver()
+        let (model, _) = await selected(driver: driver)
+        let original = try #require(model.automaticRefreshProposal)
+        model.stageSources(["a.rs"])
+        #expect(model.automaticRefreshProposal == nil)
+        model.enableAutomaticRefresh(original); #expect(!driver.active)
+        model.applySources(); await model.waitForOperation()
+        model.enableAutomaticRefresh(original); #expect(!driver.active) // Revision changed.
+        model.select("beta"); await model.waitForOperation()
+        #expect(model.automaticRefreshProposal == nil) // Unknown root identity.
+        model.select(nil); #expect(model.automaticRefreshProposal == nil)
     }
     @Test func contextPreviewAndMemoryOnlyDraft() async {
         let (model, service) = await selected()
@@ -614,8 +764,10 @@ struct AdapterTests {
                 if FileManager.default.fileExists(atPath: marker.path) { break }
                 try await Task.sleep(for: .milliseconds(10))
             }
-            let pid = try Int32(String(contentsOf: marker, encoding: .utf8)) ?? 0
-            #expect(pid > 0)
+            // Never pass waitpid's zero/negative process-group sentinels: a
+            // malformed readiness marker must not reap another test's child.
+            let pid = try #require(Int32(String(contentsOf: marker, encoding: .utf8)))
+            try #require(pid > 0)
             task.cancel()
             let start = ProcessInfo.processInfo.systemUptime
             await #expect(throws: ServiceError.canceled) { try await task.value }
@@ -636,6 +788,7 @@ struct AdapterTests {
                     try await Task.sleep(for: .milliseconds(10))
                 }
                 let pid = try #require(Int32(String(contentsOf: marker, encoding: .utf8)))
+                try #require(pid > 0)
                 task.cancel()
                 await #expect(throws: ServiceError.canceled) { try await task.value }
                 var status: Int32 = 0

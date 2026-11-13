@@ -59,6 +59,21 @@ pub fn validate_removal_binding(id: &str, root: &str, root_identity: &str) -> Re
 fn identity(id: &str) -> Result<()> {
     Scope::new(id, "local", "snapshot").map(|_| ())
 }
+/// Validate automatic index scope before opening storage. This is stale-approval
+/// protection, not authentication or a grant of additional source access.
+pub fn validate_index_binding(
+    id: &str,
+    root: &str,
+    identity: &str,
+    sources: &[String],
+) -> Result<()> {
+    validate_removal_binding(id, root, identity)?;
+    validate_paths(sources)?;
+    if sources.is_empty() {
+        return Err(invalid());
+    }
+    Ok(())
+}
 /// Validate an export selector before opening storage. IDs are not credentials.
 pub fn validate_export_project(id: &str) -> Result<()> {
     identity(id)
@@ -771,10 +786,45 @@ impl Store {
         id: &str,
         extractor: &mut impl SourceExtractor,
         cancel: &AtomicBool,
+        progress: impl FnMut(IndexStage),
+    ) -> Result<Value> {
+        self.index_scoped(id, None, extractor, cancel, progress)
+    }
+
+    /// Reconcile only the exact previously approved project/root/file policy.
+    pub fn index_bound(
+        &mut self,
+        id: &str,
+        root: &str,
+        identity: &str,
+        sources: &[String],
+        cancel: &AtomicBool,
+    ) -> Result<Value> {
+        validate_index_binding(id, root, identity, sources)?;
+        self.index_scoped(
+            id,
+            Some((root, identity, sources)),
+            &mut LexicalLines,
+            cancel,
+            |_| {},
+        )
+    }
+
+    fn index_scoped(
+        &mut self,
+        id: &str,
+        binding: Option<(&str, &str, &[String])>,
+        extractor: &mut impl SourceExtractor,
+        cancel: &AtomicBool,
         mut progress: impl FnMut(IndexStage),
     ) -> Result<Value> {
         canceled(cancel)?;
         let p = self.project(id)?;
+        if let Some((root, identity, sources)) = binding
+            && (p.root != root || p.root_identity != identity || p.sources != sources)
+        {
+            return Err(Error::ScopeMismatch);
+        }
         let inputs = Self::read_sources(&p, cancel)?;
         progress(IndexStage::Read);
         canceled(cancel)?;

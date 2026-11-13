@@ -246,6 +246,37 @@ fn held_index_cannot_resurrect_removed_or_different_root_reregistered_project() 
         }
     }
 }
+
+#[test]
+fn bound_index_rechecks_captured_approval_transactionally_after_read() {
+    for change in ["root", "policy"] {
+        let (f, mut worker) = removal_fixture();
+        let approved = worker.project("a").unwrap();
+        let replacement = Fixture::new();
+        let mut owner = f.store();
+        let result = worker.index_scoped(
+            "a",
+            Some((&approved.root, &approved.root_identity, &approved.sources)),
+            &mut LexicalLines,
+            &token(),
+            |stage| {
+                if stage == IndexStage::Read {
+                    if change == "root" {
+                        owner.remove_project("a", &token()).unwrap();
+                        owner
+                            .add_project("a", &replacement.source(), vec!["code.rs".into()])
+                            .unwrap();
+                    } else {
+                        owner.set_sources("a", vec![]).unwrap();
+                    }
+                }
+            },
+        );
+        assert!(result.is_err());
+        assert!(owner.project("a").unwrap().snapshot.is_none());
+        assert_eq!(project_rows(&owner, "a")[1], 0);
+    }
+}
 #[test]
 fn pending_mutations_cannot_target_a_different_root_reusing_the_project_id() {
     for action in ["write", "sources", "retire", "remove"] {

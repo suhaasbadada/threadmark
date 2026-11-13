@@ -39,7 +39,7 @@ if mode == "exit-grace" {
     // Test child only: exit during the parent's TERM-to-KILL grace interval.
     var signals = sigset_t(); sigemptyset(&signals); sigaddset(&signals, SIGTERM)
     sigprocmask(SIG_BLOCK, &signals, nil)
-    try Data(String(ProcessInfo.processInfo.processIdentifier).utf8).write(to: URL(fileURLWithPath: args[1]).appendingPathComponent("started"))
+    try Data(String(ProcessInfo.processInfo.processIdentifier).utf8).write(to: URL(fileURLWithPath: args[1]).appendingPathComponent("started"), options: .atomic)
     var received: Int32 = 0; sigwait(&signals, &received)
     usleep(195_000); print("{}"); exit(0)
 }
@@ -49,7 +49,7 @@ if mode == "too-many-projects" {
 }
 if mode == "hang" {
     signal(SIGTERM, SIG_IGN)
-    try Data(String(ProcessInfo.processInfo.processIdentifier).utf8).write(to: URL(fileURLWithPath: args[1]).appendingPathComponent("started"))
+    try Data(String(ProcessInfo.processInfo.processIdentifier).utf8).write(to: URL(fileURLWithPath: args[1]).appendingPathComponent("started"), options: .atomic)
     while true { usleep(10_000) }
 }
 if mode == "stdout" { FileHandle.standardOutput.write(Data(repeating: 65, count: 32_768)); exit(0) }

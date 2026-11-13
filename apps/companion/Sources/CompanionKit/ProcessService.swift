@@ -114,7 +114,7 @@ public struct ProcessService: CoreService {
                 guard result.id == id else { throw ServiceError.scopeMismatch }
                 guard InputPolicy.sources(result.sources) else { throw ServiceError.invalid }
                 return .project(result)
-            case .index(let id):
+            case .index(let id), .indexBound(let id, _, _, _):
                 let result = try decoder.decode(IndexReport.self, from: data)
                 guard result.project == id else { throw ServiceError.scopeMismatch }
                 guard result.files >= 0, result.files <= 64, result.anchors >= 0 else { throw ServiceError.invalid }
@@ -172,6 +172,9 @@ public struct ProcessService: CoreService {
             args = ["project", "add", try id(p), root] + (try sources(files))
         case .setSources(let p, let files): args = ["project", "sources", try id(p)] + (try sources(files))
         case .index(let p): args = ["index", try id(p)]
+        case .indexBound(let p, let root, let identity, let files):
+            guard InputPolicy.removal(root: root, identity: identity), !files.isEmpty else { throw ServiceError.invalid }
+            args = ["index", try id(p), "--expected-root", root, "--expected-root-identity", identity, "--expected-sources"] + (try sources(files))
         case .query(let p, let text):
             guard !text.isEmpty, text.utf8.count <= 256, !text.contains("\0") else { throw ServiceError.invalid }
             args = ["query", try id(p), text]

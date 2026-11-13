@@ -5,6 +5,76 @@ import Testing
 @Suite("Explicit opt-in live Rust core adapter integration")
 struct LiveCoreTests {
     @Test(.enabled(if: ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"] != nil,
+                  "Set THREADMARK_CORE_TEST_BINARY explicitly to test timed real SQLite reconciliation"))
+    @MainActor func consentDrivenTimedRealCoreReconciliation() async throws {
+        let path = try #require(ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"])
+        guard path.hasPrefix("/"), FileManager.default.isExecutableFile(atPath: path) else { throw ServiceError.unavailable }
+        let fm = FileManager.default
+        let base = try StoreSelection.existingDirectory(fm.temporaryDirectory).appendingPathComponent("opencode/threadmark-timed-" + UUID().uuidString)
+        try fm.createDirectory(at: base, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        defer { try? fm.removeItem(at: base) }
+        let root = base.appendingPathComponent("alpha")
+        let other = base.appendingPathComponent("beta")
+        for dir in [root, other] { try fm.createDirectory(at: dir, withIntermediateDirectories: false) }
+        let source = root.appendingPathComponent("a.rs")
+        try Data("synthetic_initial\n".utf8).write(to: source)
+        try Data("synthetic_other\n".utf8).write(to: other.appendingPathComponent("b.rs"))
+        // Oversized omitted source would make indexing fail if silently enumerated.
+        try Data(repeating: 65, count: 65537).write(to: root.appendingPathComponent("omitted.rs"))
+        let store = try StoreSelection.newDirectory(parent: base, name: "store")
+        let adapter = ProcessService(executable: URL(fileURLWithPath: path), dataDirectory: store)
+        _ = try await adapter.perform(.addProject("alpha", root.path, ["a.rs"]))
+        _ = try await adapter.perform(.addProject("beta", other.path, ["b.rs"]))
+        _ = try await adapter.perform(.writeContext("alpha", "memo", "note", "Synthetic human note", update: false))
+        let driver = ManualRefreshDriver()
+        let model = CompanionModel(service: adapter, configured: true, refreshDriver: driver)
+        model.select("alpha"); await model.waitForOperation()
+        model.editPreparation(query: "synthetic", original: "Synthetic original — retain unchanged")
+        let consent = try #require(model.automaticRefreshProposal)
+        driver.fire(); await model.waitForOperation()
+        #expect(model.indexReport == nil && !driver.active)
+        model.enableAutomaticRefresh(consent)
+        driver.fire(); await model.waitForOperation()
+        let initial = try #require(model.indexReport?.snapshot)
+        try Data("synthetic_updated\n".utf8).write(to: source)
+        // An unrelated registered project's unreadable policy cannot affect alpha.
+        try Data(repeating: 66, count: 65537).write(to: other.appendingPathComponent("b.rs"))
+        model.closeManagement(); driver.fire(); await model.waitForOperation()
+        #expect(model.indexReport?.snapshot != initial)
+        guard case .query(let updated) = try await adapter.perform(.query("alpha", "synthetic_updated")),
+              case .project(let untouched) = try await adapter.perform(.project("beta")),
+              case .context(let note) = try await adapter.perform(.context("alpha", "memo")) else { throw ServiceError.invalid }
+        #expect(updated.currentness == "current-at-read" && updated.results.map(\.path) == ["a.rs"])
+        #expect(untouched.snapshot == nil && note.history.count == 1 && note.history[0].text == "Synthetic human note")
+        #expect(model.originalDraft == "Synthetic original — retain unchanged")
+        model.togglePause()
+        try Data("synthetic_paused_change\n".utf8).write(to: source)
+        driver.fire(); await model.waitForOperation()
+        guard case .query(let paused) = try await adapter.perform(.query("alpha", "synthetic_updated")) else { throw ServiceError.invalid }
+        #expect(paused.currentness == "stale-or-unindexed" && paused.results.isEmpty && paused.snapshot == updated.snapshot)
+        model.togglePause(); driver.fire(); await model.waitForOperation()
+        #expect(model.indexReport?.snapshot != updated.snapshot)
+        model.stageSources([]); model.applySources(); await model.waitForOperation()
+        driver.fire(); await model.waitForOperation()
+        guard case .project(let revoked) = try await adapter.perform(.project("alpha")) else { throw ServiceError.invalid }
+        #expect(revoked.sources.isEmpty && revoked.snapshot == nil && !driver.active)
+        // Explicit repair and re-consent, then another caller reuses the same ID at
+        // a different root between UI approval and the bound CLI invocation.
+        model.stageSources(["a.rs"]); model.applySources(); await model.waitForOperation()
+        let repaired = try #require(model.automaticRefreshProposal)
+        model.enableAutomaticRefresh(repaired)
+        _ = try await adapter.perform(.removeProject("alpha", repaired.root, repaired.rootIdentity))
+        let replacement = base.appendingPathComponent("replacement")
+        try fm.createDirectory(at: replacement, withIntermediateDirectories: false)
+        try Data("synthetic_replacement\n".utf8).write(to: replacement.appendingPathComponent("a.rs"))
+        _ = try await adapter.perform(.addProject("alpha", replacement.path, ["a.rs"]))
+        driver.fire(); await model.waitForOperation()
+        #expect(model.status.contains("Needs attention") && model.indexReport == nil && !driver.active)
+        guard case .project(let reused) = try await adapter.perform(.project("alpha")) else { throw ServiceError.invalid }
+        #expect(reused.snapshot == nil) // Core, not only model, rejected cross-root work.
+        await model.shutdown()
+    }
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"] != nil,
                   "Set THREADMARK_CORE_TEST_BINARY explicitly to test a built core; no PATH discovery"))
     func syntheticStoreLifecycle() async throws {
         // This environment variable is test-only. An explicitly invalid value
