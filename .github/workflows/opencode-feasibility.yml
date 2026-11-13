@@ -31,3 +31,8 @@ jobs:
         run: |
           node --version
           node --test experiments/opencode/contract.test.mjs
+          node --test experiments/opencode/native-journey/kernel.test.mjs
+          node --check experiments/opencode/native-journey/kernel.js
+          node --check experiments/opencode/native-journey/server.js
+          node --check experiments/opencode/native-journey/tui.js
+          node --check experiments/opencode/native-journey/rpc.js
