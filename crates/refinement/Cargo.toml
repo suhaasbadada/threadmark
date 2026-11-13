@@ -1,0 +1,18 @@
+[package]
+name = "threadmark-refinement"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97"
+license = "MIT"
+publish = false
+description = "Memory-only, provider-neutral preparation and review for Threadmark"
+
+# Temporary isolation: coordinator removes this when joining the root workspace.
+[workspace]
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "deny"
+
+[lints.clippy]
+all = "warn"
