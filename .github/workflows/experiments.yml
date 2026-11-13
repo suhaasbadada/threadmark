@@ -46,6 +46,7 @@ jobs:
           "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/evaluation-directcall -v
           "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/evaluation-runner -v
           "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/evaluation-pilot -v
+          "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/evidence-selection -v
       - name: Node offline host and UX contracts
         run: node --test experiments/opencode/contract.test.mjs experiments/opencode/native-journey/kernel.test.mjs experiments/t3-handoff/prepare.test.mjs experiments/ux-walkthrough/model.test.mjs
       - name: Actual synthetic macOS guards (never installed hosts)

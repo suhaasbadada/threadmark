@@ -51,6 +51,10 @@ records actual lexical/symbol/candidate evidence on both frozen synthetic roots.
 It establishes neither representative product quality nor caller-retrieval benefit
 for the candidate under its fixed eight-anchor envelope; P1-A1/P1-A5 remain partial.
 
+A separate [bounded evidence selector](../progress/phase-1-evidence-selection.md)
+now prototypes interleaved declaration/caller drafts. It preserves that pilot,
+does not adopt a default retriever, and is not new comparative-quality evidence.
+
 Phase 1 establishes representative repository/task fixtures and provisional latency/resource budgets before implementation optimizes against them. Phase 4 sets task-quality evaluation thresholds before held-out runs. Phase 8 freezes release budgets and evaluates whether the benefit outweighs latency, cost, and review effort. There are no measured performance claims yet.
 
 The project license is [MIT](../../LICENSE). Decisions still open include desktop shell confirmation, extraction-worker packaging, supported inference profiles, exact host versions, shortcut assignments, retention durations, resource budgets, and public-release support commitments. Each is owned and resolved in its relevant phase rather than treated as an implicit promise.
