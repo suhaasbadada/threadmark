@@ -95,14 +95,17 @@ data/state, C locale, fixed `/usr/bin:/bin` PATH. No NODE_OPTIONS, NODE_PATH,
 TS_NODE variables, auth, credentials, user npm configuration or provider state.
 The fixed candidate also sets `NODE_DISABLE_COMPILE_CACHE=1`: authentic pinned
 `tsc.js` attempts `enableCompileCache()` unconditionally. This documented Node
-control is not yet measured; absence of NODE_ENV avoids the development-only
+control was subsequently measured by the separate fixed Node-only guard;
+absence of NODE_ENV avoids the development-only
 source-map-support branch. The separate fixed Node-only guard must observe
 `getCompileCacheDir() === undefined` and the named `compileCacheStatus.DISABLED`
-result before any later compiler authorization. No numeric enum is assumed.
+result before any later compiler authorization. Both observations passed for the
+exact reviewed local runtime; no numeric enum is assumed or generic runtime claimed.
 The first contained Node-only CommonJS attempt exposed denied ambient OpenSSL
 configuration loading. A separate candidate now supplies a fixed owned config
-through documented `--openssl-config`, never host settings. Its review and
-measurement remain a prerequisite; this inert compiler descriptor does not yet
+through documented `--openssl-config`, never host settings. That fixed Node-only
+candidate's complete measurement passed after separately reviewed named page-size/
+uname reads. This inert compiler descriptor does not yet
 model that configuration and is not executable authorization.
 The fixed PATH is not spawn permission. Read/write names are typed JSON strings
 and argv arrays, not interpolated shell or SBPL. Quotes are preserved as data;

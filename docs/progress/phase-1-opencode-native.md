@@ -1097,6 +1097,64 @@ diagnostic observer remains permitted. No further permission or automatic retry
 is authorized. All 30 controls, runtime/artifact pre/postchecks and cleanup must
 pass; otherwise preserve the failure and diagnose without claiming certification.
 
+## Exact Node-only discovery PASS — still no compiler/native execution
+
+At commit `4b2558081bfcb014a249ae4d04c9b5b241ebd19f`, the single newly authorized
+run for candidate digest
+`d3f0f76c6ccbb124d14b478e825b6cbf967e561e5551a09e4fe99b4c2881ea2d`
+passed **all 30 controls**. Result `node-only-discovery-pass`; cleanup
+`verified-owned-artifacts-removed`; all runtime/artifact pre/postchecks completed;
+`node_launched: true`, `typescript_launched: false`, `host_launched: false`.
+
+Observed: exact v24.10.0 output; approved read and six state write/read checks;
+denied home/repo/config/sibling/symlink reads and protected writes (including owned
+OpenSSL config); real unauthorized spawn permission denial; exact compile-cache
+APIs returning undefined cache directory and named DISABLED status even after
+enableCompileCache; IPv4/IPv6 connect/UDP/bind/listen permission denials; zero
+traffic at owned loopback receivers. No external target or DNS operation ran.
+Final attempt status 0 with empty stderr. No OS-identity/hostname value was printed
+or transmitted. Bounded private observation copies remain outside the repository.
+
+Measured policy SHA-256:
+`453bdb01390b912d80805c531c701c8160f64faf23187461d90e457e0fff4b51`.
+Fixed CommonJS source SHA-256:
+`1ad0b1c51db4012797e0b840b1e3fcd5fdc5f96aeb628e45082ba0c736481b29`.
+The reviewed 18-file/24-alias runtime and all source/system identities remained
+unchanged through the guard. Earlier OpenSSL/allocator/uname failures and reviews
+are retained above; no blind retry or silent broad permission was substituted.
+
+This closes only the exact local Node discovery measurement. Public-system
+baseline is not minimum closure; seven named metadata reads are explicit, including
+process-wide hostname capability; no necessity of each name is claimed. DNS/IPC,
+JIT policy, total RSS, publisher provenance, compiler archive execution, authentic
+type/consumed-file closure and native OpenCode behavior remain separate unpassed
+gates. No TypeScript, SDK/TUI, provider or host service ran. Phase 1 stays OPEN.
+
+Final full source verification and publication follow separately. No machine-
+specific Node action is added to CI without an independently reviewed inventory;
+existing CI discovers the pure tests only. The inert compiler descriptor still
+needs the owned OpenSSL configuration and concrete compiler runtime/read inventory
+modeled before any new compiler authorization.
+
+## Final Node-discovery source verification
+
+Primary fresh full integrated verification passed **502 tests**: **422 Python**
+(including **119 native** and 29 Node-guard pure tests) plus **80 Node** abstract
+offline contracts. Both existing actual C guards passed; the strict fixed C guard
+again passed 32 controls with verified owned-artifact removal. This verification
+did not repeat the new Node-only guard; its separately authorized 30-control
+measurement remains bound to the reviewed commit/digest above, with unchanged
+guard/probe source bytes.
+
+`python3 scripts/check.py` passed foundation Rust format/build/Clippy/tests/docs,
+finite offline diagnostics, local links and intentional-failure rejection.
+`cargo deny --locked --offline check` passed using cached advisories, not a fresh
+online database. Staged secrets and full staged whitespace passed after the final
+documentation changes. No dependency/lock acquisition, provider, credential
+change, SDK/native host or production/binary deployment occurred. Final published
+head and exact-head CI remain to be recorded separately; no local result is called
+remote green. Phase 1 and full product acceptance stay OPEN.
+
 ## Fixed Node-only preflight and guard candidate — implementation, NOT RUN
 
 Bob completed the next bounded code/pure-test unit in the same assigned branch,

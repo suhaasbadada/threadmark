@@ -295,10 +295,10 @@ compiler config, actual consumed-file/type closure, V8/total memory containment,
 native OpenCode admission, SDK/TUI capture or full product acceptance. Those
 gates, runtime provenance and Phase 1 remain OPEN.
 
-## Fixed Node-only discovery candidate — version observed, controls BLOCKED
+## Fixed Node-only discovery — locally measured, not compiler/native certification
 
 `node_containment.py` and the separately hash-bound `node_containment_probe.cjs`
-are the next review candidate, not an execution authorization. They support
+implement a separately reviewed discovery experiment, not execution authorization. They support
 TM-04/TM-05/TM-08/TM-10 and prerequisite work for P1-A2/P1-A5; neither acceptance
 ID is completed. No compiler, SDK, host, inference or network service is started
 by importing them or by the pure Python tests. No measured Node action is added
@@ -314,7 +314,8 @@ dylibs, their load edges, canonical byte hashes, modes/sizes/inodes and every
 actual alias edge/metadata ancestor. Bounds are 64 non-system files, 128 MiB per
 file and 512 MiB total; this fixed runtime requires exactly 18 reachable files.
 No Homebrew install receipt is substituted for the current aliased runtime.
-Generated machine inventories stay private, unapproved and unredistributed.
+Generated machine inventories stay private/unredistributed; each new candidate
+starts unapproved until its exact bytes receive external review and authorization.
 
 `run_guard(review_bytes, approved_sha256)` requires the exact bytes and a digest
 approved through an independent trusted parent/review channel. The API does not
@@ -330,10 +331,12 @@ quarantines reuse even when the process returned zero.
 
 The typed deny-default policy reuses the existing serializer and its independent
 test oracle. Only literal Node may exec; no fork, network or Mach-service
-allowance is added. A separately reviewable diagnostic candidate permits only
+allowance is added. The separately reviewed diagnostic candidate permits only
 the named page-size pair and five uname reads (`kern.ostype`, `kern.hostname`,
 `kern.osrelease`, `kern.version`, `hw.machine`), not general sysctl access.
-Hostname is transient libc metadata; no values are logged or transmitted.
+This is process-wide hostname-read capability, not a libc-only permission. The
+fixed probe uses it only indirectly; no value is logged or transmitted, and no
+arbitrary code input or network permission is granted.
 Runtime/alias reads/maps are exact; metadata traversal is
 literal. Writes are confined to six fresh owned state directories. The explicitly
 reviewable **public-system discovery baseline**, not minimum runtime closure,
@@ -344,7 +347,7 @@ System, PrivateFrameworks, Homebrew, home, repository or private-data read is
 allowed. A bootstrap failure does not authorize a broader allowance.
 
 Only fixed Node `--max-old-space-size=64`, a fixed owned `--openssl-config=...`,
-and `--version` or the owned hashed CommonJS probe are proposed. The first
+and `--version` or the owned hashed CommonJS probe are accepted by this fixed experiment. The first
 reviewed run observed `v24.10.0`, then blocked at OpenSSL's attempt to read ambient
 host configuration. No controls were marked passed from that failed mode.
 The candidate repair adds a fixed comment-only owned OpenSSL configuration,
@@ -356,8 +359,11 @@ before any CommonJS control. Prior controlled page-size evidence motivates the
 two page metrics as a hypothesis. That candidate reached control output, then
 aborted when Node's cache API imported `os` and its denied uname error path
 asserted. Versioned Node/libuv and pinned Apple source motivate the five exact
-uname reads, not general OS-information access; cache semantics remain unpassed.
-The changed candidate requires fresh review/authorization before execution.
+uname reads, not general OS-information access. That independently reviewed
+candidate then passed all **30 controls** locally, including cache disablement,
+with runtime pre/postchecks and verified owned-artifact removal. All three
+preceding failures remain in the progress record. Each changed candidate still
+requires fresh review/authorization before execution.
 Replacement environment adds
 `NODE_DISABLE_COMPILE_CACHE=1`; no ambient Node/cache/coverage/inspector/ICU/
 OpenSSL/DYLD overrides are inherited. Per-attempt budgets are 5 s and 16 KiB
@@ -367,16 +373,15 @@ old-space flag is not a total RSS bound. Fresh private artifacts use exclusive
 creation; verified ordinary failures remove them, unknown cleanup/drift retains
 them and blocks reuse. Evidence is status/count/hash/constant-label only.
 
-The proposed 30 observations cover exact ASCII version, approved read/six state
+The 30 observed controls cover exact ASCII version, approved read/six state
 writes, forbidden private/home/repo/config-shaped canaries and escaping symlink,
 protected writes (including owned OpenSSL config), real unauthorized `spawnSync`
 (only EPERM/EACCES counts), IPv4/
 IPv6 TCP connect/UDP send/bind/listen permission denials, zero traffic at owned
 loopback receivers, and compile-cache disablement via named Node APIs. Unknown
 API behavior, nonpermission errors, stderr, partial/duplicate/extra labels or
-any malformed version fail closed. The version-only action was observed; the
-CommonJS controls/cache APIs have **not passed**. DNS/IPC/JIT, full system closure,
-publisher provenance, V8/total
-memory, compiler/consumed-file/type closure and native integration remain open.
+any malformed version fail closed. This local pass does not prove DNS/IPC/JIT,
+full system closure, publisher provenance, V8/total memory, compiler/consumed-file/
+type closure or native integration. Those remain open.
 Independent code/policy review, exact inventory approval and explicit primary
 authorization are mandatory before each changed candidate's actual execution.
