@@ -49,6 +49,7 @@ jobs:
           "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/evaluation-pilot -v
           "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/evidence-selection -v
           "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/evidence-review -v
+          "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/decision-brief -v
           "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/graphify-comparison -v
       - name: Node offline host and UX contracts
         run: node --test experiments/opencode/contract.test.mjs experiments/opencode/native-journey/kernel.test.mjs experiments/t3-handoff/prepare.test.mjs experiments/ux-walkthrough/model.test.mjs
