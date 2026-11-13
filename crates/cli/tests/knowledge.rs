@@ -8,6 +8,211 @@ use std::sync::atomic::{AtomicU64, Ordering};
 static NEXT_FIXTURE: AtomicU64 = AtomicU64::new(0);
 
 const EXPORT: [&str; 4] = ["project", "export", "a", "--confirm-export-local-content"];
+const FORGET: [&str; 5] = [
+    "context",
+    "forget",
+    "a",
+    "memo",
+    "--confirm-forget-local-history",
+];
+const UPGRADE: [&str; 3] = ["store", "upgrade", "--confirm-local-schema-upgrade"];
+
+#[test]
+fn forget_and_upgrade_exact_confirmation_required_before_open_or_creation() {
+    let f = Fixture::new();
+    for args in [
+        vec!["context", "forget", "a", "memo"],
+        vec!["context", "forget", "a", "memo", "--confirm"],
+        vec![
+            "context",
+            "forget",
+            "a",
+            "memo",
+            "--confirm-forget-local-history",
+            "extra",
+        ],
+        vec!["store", "upgrade"],
+        vec!["store", "upgrade", "--confirm"],
+        vec![
+            "store",
+            "upgrade",
+            "--confirm-local-schema-upgrade",
+            "extra",
+        ],
+        FORGET.to_vec(),
+        UPGRADE.to_vec(),
+        vec!["context", "forgotten", "a"],
+    ] {
+        let out = f.run(&args, None);
+        assert!(!out.status.success() && out.stdout.is_empty());
+        assert!(!f.0.join("store").exists());
+    }
+}
+
+#[test]
+fn forget_real_process_history_removal_suppression_receipt_bounds_and_new_scope() {
+    let f = Fixture::new();
+    let root = f.0.join("source");
+    f.ok(
+        &["project", "add", "a", root.to_str().unwrap(), "main.rs"],
+        None,
+    );
+    f.ok(&["index", "a"], None);
+    let private = b"synthetic private human history must not appear in receipt";
+    f.ok(&["context", "add", "a", "memo", "note"], Some(private));
+    f.ok(
+        &["context", "update", "a", "memo", "decision"],
+        Some(private),
+    );
+    f.ok(&["context", "retire", "a", "memo"], None);
+    f.ok(
+        &["context", "add", "a", "keep", "note"],
+        Some(b"synthetic survivor"),
+    );
+    let before = f.ok(&EXPORT, None);
+    let db_path = f.0.join("store/knowledge.sqlite");
+    let bytes = std::fs::read(&db_path).unwrap();
+    let missing_confirmation = f.run(&["context", "forget", "a", "memo"], None);
+    assert!(!missing_confirmation.status.success() && missing_confirmation.stdout.is_empty());
+    assert_eq!(std::fs::read(&db_path).unwrap(), bytes);
+    let receipt = f.ok(&FORGET, None);
+    assert_eq!(receipt["removed_revisions"], 3);
+    assert_eq!(receipt["forgotten"], true);
+    assert_eq!(receipt.as_object().unwrap().len(), 5);
+    assert_eq!(
+        receipt["retention_limits"],
+        "Active human-history removal and same-scope suppression only; not forensic erasure. SQLite free pages, journals, backups, earlier exports and displayed copies may retain bytes. Source files are untouched."
+    );
+    let encoded = serde_json::to_string(&receipt).unwrap();
+    assert!(
+        !encoded.contains(root.to_str().unwrap()) && !encoded.contains("private human history")
+    );
+    assert_eq!(f.ok(&FORGET, None)["removed_revisions"], 0);
+    for args in [
+        vec!["context", "show", "a", "memo"],
+        vec!["context", "add", "a", "memo", "note"],
+        vec!["context", "update", "a", "memo", "note"],
+        vec!["context", "retire", "a", "memo"],
+        vec![
+            "context",
+            "forget",
+            "a",
+            "unknown",
+            "--confirm-forget-local-history",
+        ],
+    ] {
+        let out = f.run(&args, Some(private));
+        assert!(!out.status.success() && out.stdout.is_empty());
+        assert_eq!(
+            out.stderr,
+            b"local knowledge operation failed; no content published\n"
+        );
+    }
+    f.ok(&["index", "a"], None);
+    f.ok(&["project", "sources", "a"], None);
+    f.ok(&["project", "sources", "a", "main.rs"], None);
+    f.ok(&["index", "a"], None);
+    let after = f.ok(&EXPORT, None);
+    assert_eq!(after["evidence"], before["evidence"]);
+    assert_eq!(after["human_history"].as_array().unwrap().len(), 1);
+    assert_eq!(after["human_history"][0]["id"], "keep");
+    assert_eq!(
+        f.ok(&["context", "list", "a"], None)["contexts"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+    let markers = f.run(&["context", "forgotten", "a"], None);
+    assert!(
+        markers.status.success()
+            && markers.stdout.len() <= 1_048_576
+            && markers.stdout.ends_with(b"\n")
+    );
+    assert_eq!(
+        serde_json::from_slice::<Value>(&markers.stdout).unwrap(),
+        serde_json::json!({"project":"a","forgotten":[{"id":"memo"}]})
+    );
+    assert_eq!(f.ok(&UPGRADE, None)["upgraded"], false);
+    f.ok(
+        &["project", "remove", "a", "--confirm-remove-local-data"],
+        None,
+    );
+    f.ok(
+        &["project", "add", "a", root.to_str().unwrap(), "main.rs"],
+        None,
+    );
+    assert_eq!(
+        f.ok(&["context", "forgotten", "a"], None)["forgotten"],
+        serde_json::json!([])
+    );
+    f.ok(
+        &["context", "add", "a", "memo", "note"],
+        Some(b"synthetic new authorization scope"),
+    );
+}
+
+#[test]
+fn real_cli_explicit_upgrade_preserves_known_v1_until_confirmation() {
+    use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt};
+    let f = Fixture::new();
+    let store = f.0.join("store");
+    std::fs::DirBuilder::new()
+        .mode(0o700)
+        .create(&store)
+        .unwrap();
+    let path = store.join("knowledge.sqlite");
+    std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .mode(0o600)
+        .open(&path)
+        .unwrap();
+    // Python's standard-library SQLite builds a historical fixture independently
+    // of the product initializer. No shell, dependency install or real data.
+    let result = Command::new("python3").args(["-c", r#"
+import sqlite3, sys
+db = sqlite3.connect(sys.argv[1])
+db.executescript('''PRAGMA application_id=1414351665; PRAGMA user_version=1;
+CREATE TABLE projects(id TEXT PRIMARY KEY, root TEXT NOT NULL UNIQUE, root_identity TEXT NOT NULL, sources TEXT NOT NULL, snapshot TEXT, manifest TEXT);
+CREATE TABLE evidence(project TEXT NOT NULL, path TEXT NOT NULL, line INTEGER NOT NULL, text TEXT NOT NULL, hash TEXT NOT NULL, producer TEXT NOT NULL, PRIMARY KEY(project,path,line));
+CREATE TABLE context(project TEXT NOT NULL, id TEXT NOT NULL, revision INTEGER NOT NULL, kind TEXT NOT NULL, text TEXT NOT NULL, retired INTEGER NOT NULL, PRIMARY KEY(project,id,revision));
+CREATE INDEX context_project ON context(project,id,revision);''')
+db.close()
+"#]).arg(&path).output().unwrap();
+    assert!(result.status.success());
+    f.ok(
+        &[
+            "project",
+            "add",
+            "a",
+            f.0.join("source").to_str().unwrap(),
+            "main.rs",
+        ],
+        None,
+    );
+    f.ok(&["index", "a"], None);
+    f.ok(
+        &["context", "add", "a", "memo", "note"],
+        Some(b"synthetic v1 preserved history"),
+    );
+    let before = f.ok(&EXPORT, None);
+    f.ok(&["context", "list", "a"], None);
+    let bytes = std::fs::read(&path).unwrap();
+    assert_eq!(u32::from_be_bytes(bytes[60..64].try_into().unwrap()), 1);
+    for args in [FORGET.to_vec(), vec!["store", "upgrade"]] {
+        let out = f.run(&args, None);
+        assert!(!out.status.success() && out.stdout.is_empty());
+        assert_eq!(std::fs::read(&path).unwrap(), bytes);
+    }
+    assert_eq!(
+        f.ok(&UPGRADE, None),
+        serde_json::json!({"schema_version":2,"upgraded":true,"compatibility":"Older binaries cannot open schema v2; no automatic downgrade."})
+    );
+    assert_eq!(f.ok(&EXPORT, None), before);
+    assert_eq!(f.ok(&UPGRADE, None)["upgraded"], false);
+    assert_eq!(f.ok(&FORGET, None)["removed_revisions"], 1);
+}
 
 #[test]
 fn bound_index_rejects_malformed_scope_before_store_creation() {

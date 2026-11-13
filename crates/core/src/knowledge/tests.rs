@@ -4,6 +4,7 @@ use std::fs::OpenOptions;
 use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt, PermissionsExt, symlink};
 use std::sync::atomic::AtomicU64;
 mod export_tests;
+mod forget_tests;
 
 struct Fixture(PathBuf);
 impl Fixture {
@@ -791,7 +792,7 @@ fn sql_failure_after_delete_rolls_back_and_forward_schema_is_read_only_rejected(
     assert_eq!(matches(&s, "blue"), 1);
     s.db.execute_batch("DROP TRIGGER synthetic_fail").unwrap();
     index(&mut s);
-    s.db.pragma_update(None, "user_version", 2).unwrap();
+    s.db.pragma_update(None, "user_version", 3).unwrap();
     drop(s);
     let path = f.0.join("private-store/knowledge.sqlite");
     let bytes = std::fs::read(&path).unwrap();
@@ -908,6 +909,9 @@ fn transaction_child() {
     if std::env::var_os("THREADMARK_SYNTHETIC_UNKNOWN_HEADER").is_some() {
         s.db.pragma_update(None, "application_id", 0).unwrap();
     }
+    if std::env::var_os("THREADMARK_SYNTHETIC_FORWARD_HEADER").is_some() {
+        s.db.pragma_update(None, "user_version", 3).unwrap();
+    }
     let tx = s.db.transaction().unwrap();
     tx.execute("DELETE FROM evidence WHERE project='a'", [])
         .unwrap();
@@ -933,7 +937,7 @@ fn transaction_child() {
 fn killed_owned_process_rolls_back_sqlite_transaction_on_reopen() {
     use std::io::BufRead;
     use std::process::{Command, Stdio};
-    for unknown in [false, true] {
+    for header in ["recognized", "foreign", "forward"] {
         let f = Fixture::new();
         let mut s = f.registered();
         index(&mut s);
@@ -955,8 +959,11 @@ fn killed_owned_process_rolls_back_sqlite_transaction_on_reopen() {
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
-        if unknown {
+        if header == "foreign" {
             command.env("THREADMARK_SYNTHETIC_UNKNOWN_HEADER", "1");
+        }
+        if header == "forward" {
+            command.env("THREADMARK_SYNTHETIC_FORWARD_HEADER", "1");
         }
         let mut child = command.spawn().unwrap();
         // Child::wait closes an owned stdin handle. Keep it separately alive
@@ -982,10 +989,10 @@ fn killed_owned_process_rolls_back_sqlite_transaction_on_reopen() {
         let journal = f.0.join("private-store/knowledge.sqlite-journal");
         assert!(
             journal.exists(),
-            "staged rollback journal missing; unknown-header case={unknown}"
+            "staged rollback journal missing; header case={header}"
         );
         assert_eq!(std::fs::metadata(&journal).unwrap().mode() & 0o777, 0o600);
-        if unknown {
+        if header != "recognized" {
             let database = f.0.join("private-store/knowledge.sqlite");
             let before_db = std::fs::read(&database).unwrap();
             let before_journal = std::fs::read(&journal).unwrap();

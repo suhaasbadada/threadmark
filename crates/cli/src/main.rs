@@ -40,6 +40,12 @@ fn usage() -> std::process::ExitCode {
     eprintln!(
         "local sensitive-content export: --data-dir EXISTING_STORE project export PROJECT --confirm-export-local-content (stdout only; no delivery)"
     );
+    eprintln!(
+        "human-history removal: context forget PROJECT ID --confirm-forget-local-history; context forgotten PROJECT (active removal/suppression only, not forensic erasure; sources untouched)"
+    );
+    eprintln!(
+        "explicit compatibility change: store upgrade --confirm-local-schema-upgrade (existing store only; older binaries cannot open schema v2; no automatic downgrade)"
+    );
     std::process::ExitCode::from(2)
 }
 
@@ -67,6 +73,15 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
         .collect::<Vec<_>>()
         .as_slice()
     {
+        ["store", "upgrade", "--confirm-local-schema-upgrade"] => Command::UpgradeStore,
+        [
+            "context",
+            "forget",
+            project,
+            id,
+            "--confirm-forget-local-history",
+        ] => Command::ForgetContext((*project).into(), (*id).into()),
+        ["context", "forgotten", project] => Command::ForgottenContexts((*project).into()),
         ["project", "add", id, root, files @ ..] => Command::AddProject(
             (*id).into(),
             (*root).into(),

@@ -38,6 +38,12 @@ pub enum Command {
     Contexts(String),
     /// Inspect bounded edit history.
     Context(String, String),
+    /// Explicit compatibility-changing schema upgrade of existing storage only.
+    UpgradeStore,
+    /// Confirmed removal of all human revisions and same-scope suppression.
+    ForgetContext(String, String),
+    /// Inspect non-content suppression markers.
+    ForgottenContexts(String),
 }
 
 /// Run one local-owner operation. Source reads, SQLite, and semantics stay in core.
@@ -55,14 +61,25 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
     let mut store = if let Command::ExportProject(id) = &command {
         threadmark_core::knowledge::validate_export_project(id)?;
         Store::open_existing(data_dir)?
-    } else if matches!(&command, Command::IndexBound(..)) {
-        // Automatic reconciliation requires an already registered scope; never
-        // recreate a missing store as a side effect of a background tick.
+    } else if matches!(
+        &command,
+        Command::IndexBound(..)
+            | Command::UpgradeStore
+            | Command::ForgetContext(..)
+            | Command::ForgottenContexts(..)
+    ) {
+        // Reconciliation and explicit lifecycle operations require existing
+        // storage; none may recreate a missing store as a side effect.
         Store::open_existing(data_dir)?
     } else {
         Store::open(data_dir)?
     };
     let result = match command {
+        // Core's final cancellation boundary precedes commit. Do not turn an
+        // authoritative committed Forget/upgrade into a misleading cancel error.
+        Command::UpgradeStore => return store.upgrade(cancel),
+        Command::ForgetContext(project, id) => return store.forget_context(&project, &id, cancel),
+        Command::ForgottenContexts(project) => store.forgotten_contexts(&project)?,
         Command::AddProject(id, root, sources) => {
             store.add_project(&id, &root, sources)?;
             json!({"project":id,"registered":true})

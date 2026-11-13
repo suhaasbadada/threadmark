@@ -49,7 +49,15 @@ printf '%s\n' 'Locate resolve. Do not deploy or change permissions.' | target/de
 Use absolute canonical paths. Source policy changes invalidate indexed evidence;
 changed or unreadable files are not returned as current until explicitly reindexed.
 User context has separate provenance/history and survives reindexing. Indexing is
-manual lexical capture, not AST/semantic understanding or permission to execute.
+never a way to clear human history. CLI-only `context forget PROJECT ID
+--confirm-forget-local-history` removes all revisions and suppresses same-ID
+recreation; `context forgotten PROJECT` lists non-content markers. This is not
+forensic erasure: SQLite free pages, journals, backups, earlier exports and displayed
+copies may retain bytes; source files are untouched. New stores use schema v2.
+Existing v1 stores stay v1 until explicit `store upgrade
+--confirm-local-schema-upgrade` (existing store only); older binaries cannot open
+v2 and there is no automatic downgrade. See the [reviewed contract](docs/contracts/context-forget-v1.md).
+Indexing is manual lexical capture, not AST/semantic understanding or permission to execute.
 No model, network endpoint or host credentials are used.
 `context prepare` produces an in-memory original-versus-context preview through
 the provider-neutral preparation engine. Stale/missing evidence is needs-input;
