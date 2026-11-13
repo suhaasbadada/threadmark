@@ -1,5 +1,10 @@
 # SDK selection planning — authenticated direct notice mapping
 
+The later [transitive preparation](SDK-TRANSITIVE-PREPARATION.md) expands the
+inert selection to 22 packages with a separate fixed SDK config/fixture intent.
+This original nine-package inventory/receipt remains unchanged historical data;
+neither unit authorizes package projection or compiler execution.
+
 This is an **inert read-selection proposal**, not an executable compiler descriptor,
 an approved projection, a resolved graph, or SDK/native acceptance. It supports
 TM-04/TM-05/TM-08/TM-10 and P1-A2/P1-A5 prerequisites only. Full product scope is
