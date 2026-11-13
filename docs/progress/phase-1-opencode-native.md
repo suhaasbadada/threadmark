@@ -1038,6 +1038,65 @@ success still requires all 30 controls, complete runtime pre/postchecks and
 verified cleanup; it does not prove which single name is necessary, minimum
 system closure, TypeScript/SDK compatibility or native acceptance.
 
+## Page-size candidate — control prefix observed, cache/uname assertion BLOCKED
+
+Commit `1ef10c1e1ac0527c0945d6b391c52b4488424e06` was measured once for approved
+digest `c69fa4dbc31af9ad2f47be64efc21fc06634afb93909a8e4d5fe5a038314074a`.
+Version passed. CommonJS startup progressed beyond the allocator failure and
+emitted 19 known filesystem/spawn labels, then aborted **SIGABRT (-6)** before
+cache-disabled. The complete filesystem mode remained failed-or-unverified and
+network remained NOT_RUN. stdout was 367 bytes, stderr 4717 bytes, stderr hash
+`19e6170a8cf56b69203983367a841d3423ac52993fc200489cc31494ed2c6811`.
+Runtime pre/postchecks and owned cleanup were verified; bounded private diagnostics
+remain retained. No TypeScript/SDK/host/provider ran. The partial labels are not
+promoted into whole-mode acceptance.
+
+The observed native assertion was Node `GetOSInformation`, args.Length >= 1;
+the JS frames identify `node:os:78` and enableCompileCache/internal module helpers.
+Targeted public source inspection explains that specific failure path:
+
+- [Node v24.10.0 lib/os.js](https://github.com/nodejs/node/blob/v24.10.0/lib/os.js)
+  initializes OS information by calling the binding without arguments.
+- [Node v24.10.0 node_os.cc](https://github.com/nodejs/node/blob/v24.10.0/src/node_os.cc)
+  calls uv_os_uname and asserts an error-context argument only on its error path.
+- [libuv v1.51.0 core.c](https://github.com/libuv/libuv/blob/v1.51.0/src/unix/core.c)
+  uv_os_uname calls libc uname (lines 1770–1822).
+- [Apple uname.c at pinned source](https://github.com/apple-oss-distributions/Libc/blob/71bbe350ab79eef58113991d817ccc6165061a64/gen/uname.c)
+  reads exactly KERN_OSTYPE, KERN_HOSTNAME, KERN_OSRELEASE, KERN_VERSION and
+  HW_MACHINE, returning failure if any read fails. This source is supporting
+  evidence, not cryptographic matching of the installed system library.
+
+Primary proposes only the corresponding five named read-only uname metrics in
+addition to the already reviewed page-size pair. This includes transient local
+hostname access by libc; libuv's returned OS-information fields omit nodename,
+and the fixed probe does not call/print hostname. No value is logged or transmitted.
+This bounded local metadata read is not a general sysctl, credential, home-file,
+network, Mach or host-modification allowance. Fixed tests parse the emitted seven
+names and reject unrestricted forms; all **29** Node pure tests pass.
+
+New UNAPPROVED candidate digest:
+`d3f0f76c6ccbb124d14b478e825b6cbf967e561e5551a09e4fe99b4c2881ea2d`.
+It requires independent review and a new explicit primary decision before another
+measurement. All three prior Node failures remain preserved; cache behavior,
+full system closure, compiler/type resolution and native acceptance remain CLOSED.
+
+Joffrey independently reviewed the exact uname candidate, passed all 29 pure
+tests and statically revalidated its 18 files/24 aliases/system records. Only the
+expected guard-source binding changed; the other five source bindings are
+identical. He found no substantive blocker for one separately authorized bounded
+Node-only measurement. **Risk correction:** kern.hostname permission is process-
+wide hostname-read capability, not a libc-only enforced permission. Anticipated
+transient use alone is not containment; the fixed hash-bound probe, no arbitrary
+code input and no network permission bound this diagnostic's use. No general
+host-information access or later compiler/SDK is approved.
+
+Primary authorizes **one exact Node-only measurement** for
+`d3f0f76c6ccbb124d14b478e825b6cbf967e561e5551a09e4fe99b4c2881ea2d` after
+committing the reviewed change. The prior bounded exact-forwarding private
+diagnostic observer remains permitted. No further permission or automatic retry
+is authorized. All 30 controls, runtime/artifact pre/postchecks and cleanup must
+pass; otherwise preserve the failure and diagnose without claiming certification.
+
 ## Fixed Node-only preflight and guard candidate — implementation, NOT RUN
 
 Bob completed the next bounded code/pure-test unit in the same assigned branch,

@@ -244,7 +244,8 @@ class SyntheticRuntime(unittest.TestCase):
         model = n.policy(root, self.review)
         decoded, sysctls = decoded_node_policy(n.serialized_policy(root, self.review))
         self.assertEqual(decoded, model)
-        self.assertEqual(sysctls, ['hw.pagesize', 'hw.pagesize_compat'])
+        self.assertEqual(sysctls, ['hw.pagesize', 'hw.pagesize_compat', 'kern.ostype',
+                                  'kern.hostname', 'kern.osrelease', 'kern.version', 'hw.machine'])
         self.assertTrue(decoded.allows('process-exec', self.node))
         self.assertFalse(decoded.allows('process-exec', root / 'exec-marker'))
         for p in [self.node, *self.libraries]:
@@ -270,9 +271,11 @@ class SyntheticRuntime(unittest.TestCase):
         for op in ('network-outbound', 'network-inbound', 'process-fork', 'mach-lookup', 'sysctl-read'):
             self.assertFalse(any(op in rule.operations for rule in decoded.rules))
 
-    def test_named_page_size_policy_has_no_unrestricted_sysctl_or_duplicate_reads(self):
+    def test_named_os_metadata_policy_has_no_unrestricted_sysctl_or_duplicate_reads(self):
         _, names = decoded_node_policy(n.serialized_policy(Path('/owned/synthetic'), self.review))
-        self.assertEqual(names, ['hw.pagesize', 'hw.pagesize_compat'])
+        self.assertEqual(names, ['hw.pagesize', 'hw.pagesize_compat', 'kern.ostype',
+                                'kern.hostname', 'kern.osrelease', 'kern.version', 'hw.machine'])
+        self.assertEqual(len(names), len(set(names)))
         self.assertNotIn('hw.memsize', names)
         for invalid in ('(allow sysctl-read)', '(allow sysctl-read (sysctl-name-regex ".*"))'):
             with self.assertRaises(AssertionError):
