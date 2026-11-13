@@ -26,6 +26,10 @@ struct OwnedChild {
     private var terminatedAt: Double?
     private var killed = false
 
+    // Older Swift toolchains make the synthesized memberwise initializer private
+    // because lifecycle fields are private. Only a fresh PID may be supplied.
+    init(pid: pid_t) { self.pid = pid }
+
     mutating func step(now: Double, stopping: Bool,
                        wait: (pid_t, UnsafeMutablePointer<Int32>?, Int32) -> pid_t = { Darwin.waitpid($0, $1, $2) },
                        signal: (pid_t, Int32) -> Int32 = { Darwin.kill($0, $1) }) -> Bool {

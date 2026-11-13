@@ -25,3 +25,20 @@ host draft placement, delivery, deployment or quality evaluation was performed.
 Source selection remains explicit/manual lexical indexing. Context previews do
 not approve, persist or send originals. Existing paused live-host launches remain
 paused; their gates do not block unrelated product implementation.
+
+## PR #40 macOS compiler compatibility repair
+
+Publication head `da1025e4c06aca0759bb060b2376c9c325442105` ran CI
+[43507486584](https://github.com/suhaasbadada/threadmark/actions/runs/43507486584).
+Its macOS job [132168819171](https://github.com/suhaasbadada/threadmark/actions/runs/43507486584/job/132168819171)
+failed compiling `ProcessService.swift:208`: `'OwnedChild' initializer is
+inaccessible due to 'private' protection level`. The compiler synthesized a
+private memberwise initializer from the private lifecycle fields, unlike the
+newer local compiler. This was not a test failure or a waived/retried job.
+
+Repair supplies an explicit internal PID-only initializer. Private lifecycle
+state remains private and starts fresh; wait/reap/signal behavior is unchanged.
+Local strict Swift tests passed all 27 tests/four suites against the real core,
+including sole-reaper and cancellation-ordering regressions. Release bundle build
+passed. The CI toolchain itself remains a remote verification gate; a new run on
+the repaired head is required, not inferred from the local result.
