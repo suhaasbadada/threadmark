@@ -189,3 +189,17 @@ four syntax checks passed, foundation `scripts/check.py` passed, cached/offline
 passed. No new Python scope changed; full Python/runner suites remain remote CI
 gates rather than a newly claimed local run. Publication head/run tracking follows
 after the source commit; existing unrelated long-progress append stays unstaged.
+
+## Qualified source-prototype merge
+
+PR [#31](https://github.com/suhaasbadada/threadmark/pull/31) tested/published head
+`e540ee1bfd99dc6e056e21a41f51b1ec2b7c7c90`: 100 Node tests, syntax, foundation,
+cached deny, secrets and whitespace reran/passed after main integration. All seven
+remote checks passed: CI `43401430089`, integrated `43401430141`, offline OpenCode
+`43401430345`. Fresh exact-head `main`/discussion/approval/rules inspection was
+clear; Joffrey review and its small skill-receipt correction recorded above.
+Merged as `d6130f2c21700d4ad2c627639e294b9b3a618b3b` without deleting the worktree
+or unrelated changes. Post-merge runs target that exact SHA: offline OpenCode
+`43403098138` passed; CI `43403098148` and integrated `43403098297` initially
+running. No post-merge green or runtime success inferred. P1-A2 remains unproven,
+and the native-host pause remains authoritative.
