@@ -11,6 +11,7 @@ publish.workspace = true
 [dependencies]
 serde_json = "=1.0.154"
 threadmark-core = { path = "../core", version = "0.1.0" }
+threadmark-refinement = { path = "../refinement", version = "0.1.0" }
 
 [lints]
 workspace = true

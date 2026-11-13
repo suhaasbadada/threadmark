@@ -377,7 +377,12 @@ version = "0.1.0"
 dependencies = [
  "serde_json",
  "threadmark-core",
+ "threadmark-refinement",
 ]
+
+[[package]]
+name = "threadmark-refinement"
+version = "0.1.0"
 
 [[package]]
 name = "typenum"

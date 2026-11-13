@@ -1,0 +1,93 @@
+import Foundation
+import Testing
+@testable import CompanionKit
+
+@Suite("Explicit opt-in live Rust core adapter integration")
+struct LiveCoreTests {
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"] != nil,
+                  "Set THREADMARK_CORE_TEST_BINARY explicitly to test a built core; no PATH discovery"))
+    func syntheticStoreLifecycle() async throws {
+        // This environment variable is test-only. An explicitly invalid value
+        // must fail, never skip or fall back to a fixture/installed binary.
+        let path = try #require(ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"])
+        guard path.hasPrefix("/"), FileManager.default.isExecutableFile(atPath: path) else {
+            throw ServiceError.unavailable
+        }
+        let fm = FileManager.default
+        let base = try StoreSelection.existingDirectory(fm.temporaryDirectory).appendingPathComponent("opencode", isDirectory: true)
+            .appendingPathComponent("threadmark-live-core-" + UUID().uuidString, isDirectory: true)
+        try fm.createDirectory(at: base, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        defer { try? fm.removeItem(at: base) }
+        let root = base.appendingPathComponent("alpha", isDirectory: true)
+        let otherRoot = base.appendingPathComponent("beta", isDirectory: true)
+        try fm.createDirectory(at: root, withIntermediateDirectories: false)
+        try fm.createDirectory(at: otherRoot, withIntermediateDirectories: false)
+        let source = root.appendingPathComponent("a.rs")
+        try Data("fn synthetic_alpha() { /* alpha_evidence */ }\n".utf8).write(to: source)
+        try Data("fn synthetic_beta() { /* beta_evidence */ }\n".utf8).write(to: otherRoot.appendingPathComponent("b.rs"))
+        let store = try StoreSelection.newDirectory(parent: base, name: "store")
+        let adapter = ProcessService(executable: URL(fileURLWithPath: path), dataDirectory: store)
+        #expect(!fm.fileExists(atPath: store.path)) // Neither selection nor init creates state.
+        _ = try await adapter.perform(.addProject("alpha", root.path, ["a.rs"]))
+        #expect(fm.fileExists(atPath: store.path))
+        let attributes = try fm.attributesOfItem(atPath: store.path)
+        #expect((attributes[.posixPermissions] as? NSNumber)?.intValue == 0o700)
+        guard case .project(let registered) = try await adapter.perform(.project("alpha")) else {
+            Issue.record("Missing registered project"); return
+        }
+        #expect(registered.sources == ["a.rs"] && registered.snapshot == nil)
+        guard case .indexed(let indexed) = try await adapter.perform(.index("alpha")) else {
+            Issue.record("Missing index report"); return
+        }
+        #expect(indexed.files == 1 && !indexed.empty)
+        guard case .query(let current) = try await adapter.perform(.query("alpha", "alpha_evidence")) else {
+            Issue.record("Missing query report"); return
+        }
+        #expect(current.currentness == "current-at-read" && !current.results.isEmpty)
+        #expect(current.results.allSatisfy { $0.project == "alpha" && $0.path == "a.rs" })
+        try Data("fn synthetic_alpha_changed() { /* alpha_changed */ }\n".utf8).write(to: source)
+        guard case .query(let stale) = try await adapter.perform(.query("alpha", "alpha_evidence")) else {
+            Issue.record("Missing stale report"); return
+        }
+        #expect(stale.currentness == "stale-or-unindexed")
+        _ = try await adapter.perform(.index("alpha"))
+        _ = try await adapter.perform(.writeContext("alpha", "memo", "note", "Synthetic human note", update: false))
+        _ = try await adapter.perform(.writeContext("alpha", "memo", "decision", "Synthetic declared decision", update: true))
+        _ = try await adapter.perform(.writeContext("alpha", "memo", "correction", "Synthetic human correction", update: true))
+        guard case .context(let history) = try await adapter.perform(.context("alpha", "memo")) else {
+            Issue.record("Missing context history"); return
+        }
+        #expect(history.history.count == 3 && history.history.last?.text == "Synthetic human correction")
+        #expect(history.history.first?.kind == "note" && history.history[1].kind == "decision")
+        #expect(history.history.last?.kind == "correction" && history.producer == "human-authored")
+        _ = try await adapter.perform(.retireContext("alpha", "memo"))
+        guard case .context(let retired) = try await adapter.perform(.context("alpha", "memo")) else {
+            Issue.record("Missing retired history"); return
+        }
+        #expect(retired.history.last?.retired == true && retired.history.count == 4)
+        _ = try await adapter.perform(.addProject("beta", otherRoot.path, ["b.rs"]))
+        _ = try await adapter.perform(.index("beta"))
+        guard case .query(let isolated) = try await adapter.perform(.query("beta", "alpha_changed")),
+              case .contexts(let otherContexts) = try await adapter.perform(.contexts("beta")) else {
+            Issue.record("Missing isolation results"); return
+        }
+        #expect(isolated.results.isEmpty && otherContexts.contexts.isEmpty)
+        _ = try await adapter.perform(.setSources("alpha", []))
+        guard case .query(let revoked) = try await adapter.perform(.query("alpha", "alpha_changed")) else {
+            Issue.record("Missing revocation result"); return
+        }
+        #expect(revoked.results.isEmpty && revoked.currentness == "stale-or-unindexed")
+        // A fresh adapter reopens only this explicitly selected, initialized store.
+        let reopened = ProcessService(executable: URL(fileURLWithPath: path), dataDirectory: store)
+        guard case .projects(let projects) = try await reopened.perform(.projects),
+              case .context(let persisted) = try await reopened.perform(.context("alpha", "memo")) else {
+            Issue.record("Missing persisted state"); return
+        }
+        #expect(Set(projects.map(\.id)) == ["alpha", "beta"])
+        #expect(persisted.history.last?.retired == true)
+        let empty = base.appendingPathComponent("empty-existing", isDirectory: true)
+        try fm.createDirectory(at: empty, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        let invalidStore = ProcessService(executable: URL(fileURLWithPath: path), dataDirectory: empty)
+        await #expect(throws: ServiceError.failed) { try await invalidStore.perform(.projects) }
+    }
+}

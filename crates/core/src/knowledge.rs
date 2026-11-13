@@ -44,7 +44,10 @@ fn identity(id: &str) -> Result<()> {
     Scope::new(id, "local", "snapshot").map(|_| ())
 }
 fn context_kind(kind: &str) -> bool {
-    matches!(kind, "decision" | "constraint" | "correction" | "pitfall")
+    matches!(
+        kind,
+        "note" | "decision" | "constraint" | "correction" | "pitfall"
+    )
 }
 fn canceled(token: &AtomicBool) -> Result<()> {
     if token.load(Ordering::SeqCst) {

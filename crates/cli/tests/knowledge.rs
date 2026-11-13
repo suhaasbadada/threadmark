@@ -3,17 +3,25 @@ use serde_json::Value;
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Command, Output, Stdio};
+use std::sync::atomic::{AtomicU64, Ordering};
+
+static NEXT_FIXTURE: AtomicU64 = AtomicU64::new(0);
 
 struct Fixture(PathBuf);
 impl Fixture {
     fn new() -> Self {
-        let path = std::env::temp_dir().canonicalize().unwrap().join(format!(
-            "threadmark-cli-{}-{}",
-            std::process::id(),
+        Self::with_timestamp(
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
-                .as_nanos()
+                .as_nanos(),
+        )
+    }
+    fn with_timestamp(timestamp: u128) -> Self {
+        let path = std::env::temp_dir().canonicalize().unwrap().join(format!(
+            "threadmark-cli-{}-{timestamp}-{}",
+            std::process::id(),
+            NEXT_FIXTURE.fetch_add(1, Ordering::Relaxed)
         ));
         std::fs::create_dir(&path).unwrap();
         std::fs::create_dir(path.join("source")).unwrap();
@@ -48,6 +56,28 @@ impl Drop for Fixture {
     fn drop(&mut self) {
         std::fs::remove_dir_all(&self.0).unwrap();
     }
+}
+
+#[test]
+fn parallel_fixtures_with_identical_timestamps_have_distinct_owned_roots() {
+    let barrier = std::sync::Arc::new(std::sync::Barrier::new(16));
+    let workers: Vec<_> = (0..16)
+        .map(|_| {
+            let barrier = barrier.clone();
+            std::thread::spawn(move || {
+                barrier.wait();
+                Fixture::with_timestamp(0)
+            })
+        })
+        .collect();
+    let fixtures: Vec<_> = workers.into_iter().map(|w| w.join().unwrap()).collect();
+    let roots: std::collections::HashSet<_> = fixtures.iter().map(|f| &f.0).collect();
+    assert_eq!(roots.len(), 16);
+    assert!(
+        fixtures
+            .iter()
+            .all(|f| f.0.join("source/main.rs").is_file())
+    );
 }
 
 #[test]
@@ -137,4 +167,96 @@ fn p2_manual_cli_persists_across_processes_and_errors_are_content_free() {
         assert!(!err.contains(f.0.to_str().unwrap()));
     }
     assert!(f.0.join("source/main.rs").is_file());
+}
+
+#[test]
+fn core_backed_context_preview_preserves_original_without_inference_or_delivery() {
+    let f = Fixture::new();
+    f.ok(
+        &[
+            "project",
+            "add",
+            "synthetic",
+            f.0.join("source").to_str().unwrap(),
+            "main.rs",
+        ],
+        None,
+    );
+    let original =
+        "Locate synthetic_blue. Do not deploy or change permissions. 保持 exact intent.\n";
+    let absent = f.ok(
+        &["context", "prepare", "synthetic", "synthetic_blue"],
+        Some(original.as_bytes()),
+    );
+    assert_eq!(absent["state"], "needs-input");
+    assert_eq!(absent["original"], original);
+    f.ok(&["index", "synthetic"], None);
+    let preview = f.ok(
+        &["context", "prepare", "synthetic", "synthetic_blue"],
+        Some(original.as_bytes()),
+    );
+    assert_eq!(preview["state"], "ready-for-review");
+    assert_eq!(preview["original"], original);
+    assert!(preview["proposed"].as_str().unwrap().starts_with(original));
+    assert!(
+        preview["proposed"]
+            .as_str()
+            .unwrap()
+            .contains("fn synthetic_blue() {}")
+    );
+    assert!(
+        preview["proposed"]
+            .as_str()
+            .unwrap()
+            .contains("quoted untrusted data")
+    );
+    assert_eq!(preview["provider"], "not-invoked");
+    assert_eq!(preview["approval"], "not-requested");
+    assert_eq!(preview["delivery"], "not-attempted");
+    assert!(serde_json::to_vec(&preview).unwrap().len() <= 8192);
+    // The original fits 4 KiB, but the complete original-plus-proposed JSON
+    // does not. Reject rather than truncate intent or evidence.
+    let envelope_overflow = f.run(
+        &["context", "prepare", "synthetic", "synthetic_blue"],
+        Some(&vec![b'x'; 4096]),
+    );
+    assert!(!envelope_overflow.status.success() && envelope_overflow.stdout.is_empty());
+    assert!(
+        f.ok(&["context", "list", "synthetic"], None)["contexts"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+
+    f.ok(
+        &["context", "add", "synthetic", "memo", "note"],
+        Some(b"Synthetic human note"),
+    );
+    std::fs::write(f.0.join("source/main.rs"), "fn synthetic_green() {}\n").unwrap();
+    let stale = f.ok(
+        &["context", "prepare", "synthetic", "synthetic_blue"],
+        Some(original.as_bytes()),
+    );
+    assert_eq!(stale["state"], "needs-input");
+    assert!(
+        !stale["proposed"]
+            .as_str()
+            .unwrap()
+            .contains("fn synthetic_blue() {}")
+    );
+    assert_eq!(
+        f.ok(&["context", "show", "synthetic", "memo"], None)["history"][0]["text"],
+        "Synthetic human note"
+    );
+    let denied = f.run(
+        &["context", "prepare", "unregistered", "synthetic_blue"],
+        Some(original.as_bytes()),
+    );
+    assert!(!denied.status.success() && denied.stdout.is_empty());
+    assert!(!String::from_utf8(denied.stderr).unwrap().contains(original));
+    let oversized = f.run(
+        &["context", "prepare", "synthetic", "synthetic_blue"],
+        Some(&vec![b'x'; 4097]),
+    );
+    assert!(!oversized.status.success() && oversized.stdout.is_empty());
 }

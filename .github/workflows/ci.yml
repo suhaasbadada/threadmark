@@ -29,6 +29,14 @@ jobs:
         run: rustup toolchain install 1.97.1 --profile minimal --component clippy --component rustfmt
       - name: Format, lint, tests, docs, smoke and negative test gate
         run: python3 scripts/check.py
+      - name: Native companion tests, real core adapter and bundle build (no GUI launch)
+        if: runner.os == 'macOS'
+        env:
+          THREADMARK_CORE_TEST_BINARY: ${{ github.workspace }}/target/debug/threadmark
+        run: |
+          sh apps/companion/scripts/swift.sh test --disable-xctest --enable-swift-testing -Xswiftc -warnings-as-errors
+          sh apps/companion/scripts/bundle.sh
+          plutil -lint apps/companion/dist/Threadmark.app/Contents/Info.plist
 
   security:
     name: Dependencies, licenses and secrets
