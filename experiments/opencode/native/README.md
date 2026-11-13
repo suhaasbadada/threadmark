@@ -329,8 +329,10 @@ same-UID container boundary. Any post-launch drift retains owned artifacts and
 quarantines reuse even when the process returned zero.
 
 The typed deny-default policy reuses the existing serializer and its independent
-test oracle. Only literal Node may exec; no fork, network, Mach-service or sysctl
-allowance is added. Runtime/alias reads/maps are exact; metadata traversal is
+test oracle. Only literal Node may exec; no fork, network or Mach-service
+allowance is added. A separately reviewable diagnostic candidate permits only
+the named read-only `hw.pagesize`/`hw.pagesize_compat` metrics, not general sysctl
+access. Runtime/alias reads/maps are exact; metadata traversal is
 literal. Writes are confined to six fresh owned state directories. The explicitly
 reviewable **public-system discovery baseline**, not minimum runtime closure,
 permits `/usr/lib`, this OS's Preboot Cryptex dyld directory, and the directly
@@ -347,7 +349,10 @@ The candidate repair adds a fixed comment-only owned OpenSSL configuration,
 literal data-read permission only, protected hash checks and a write-denial
 control; it does not allow reading host OpenSSL configuration. The installed
 Node manpage documents the flag and its precedence over OPENSSL_CONF. This
-changed candidate requires fresh review/authorization before execution.
+owned-config candidate removed that error but then aborted in LowLevelAlloc
+before any CommonJS control. Prior controlled page-size evidence motivates the
+two named metrics above as a hypothesis, not an established Node root cause.
+The changed candidate requires fresh review/authorization before execution.
 Replacement environment adds
 `NODE_DISABLE_COMPILE_CACHE=1`; no ambient Node/cache/coverage/inspector/ICU/
 OpenSSL/DYLD overrides are inherited. Per-attempt budgets are 5 s and 16 KiB

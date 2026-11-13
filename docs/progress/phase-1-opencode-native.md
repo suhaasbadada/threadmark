@@ -992,6 +992,52 @@ synthetic empty config does not establish host crypto/FIPS equivalence or author
 a later compiler/SDK. Stop on any new failure; no automatic retry, ambient config
 permission, network or other relaxation follows.
 
+## Owned OpenSSL candidate — new allocator failure, page-size hypothesis
+
+Commit `dff0fb86acc731c95d7696b4e76a4cfcae63b5a6` was measured once for approved
+digest `b5efaf1b9be6fe427f5996274c5eea5f4a47a17b83c617874985d43082e178c4`.
+Version again passed; CommonJS startup changed from the OpenSSL config error to
+**SIGABRT (-6)**, stdout 0 bytes, stderr 89 bytes, hash
+`d47bd95de820291fc5c33eeb4d175ba5673ba02867d88de0beb8a925463eaf1b`.
+The content-free diagnosis is LowLevelAlloc arithmetic overflow, before any
+control observation. No CommonJS/cache control is marked passed; network remains
+NOT_RUN. Runtime pre/postchecks completed and owned cleanup was verified. No
+TypeScript, SDK/host or provider ran. Bounded private diagnostics remain retained.
+
+Earlier controlled evidence in [host isolation](phase-1-host-isolation.md)
+isolated denied page-size access with `getconf PAGESIZE` A/B fixtures: the unchanged
+profile failed, and only named `hw.pagesize`/`hw.pagesize_compat` reads produced
+16384. The currently installed Apple `container.sb:95` still names exactly those
+metrics. This supports a **Node allocator bootstrap hypothesis**, not proof of its
+failing syscall or which single metric is necessary. It does not justify general
+sysctl, Mach, fork, network or private-file access.
+
+Primary proposes exactly those two named read-only public page-size metrics as a
+fresh diagnostic candidate. All other policy/runtime/owned-config/probe bindings
+remain unchanged. The independent pure policy decoder now parses the emitted
+sysctl-name rule semantically and rejects unrestricted/regex forms; Node pure
+tests pass **29**. New UNAPPROVED digest:
+`c69fa4dbc31af9ad2f47be64efc21fc06634afb93909a8e4d5fe5a038314074a`.
+It requires independent review and a new explicit primary diagnostic decision
+before another measurement. Both previous Node failures remain evidence;
+compiler/SDK/native execution and all full-system/type closure claims stay CLOSED.
+
+Joffrey independently reviewed the named-page-size candidate, found no
+substantive finding, passed all 29 pure tests and revalidated the exact digest,
+18 runtime files, 24 aliases and source/system bindings without launch/socket
+creation. Only the guard Python source record changed. He confirmed no broader
+sysctl/write/Mach/network/fork rule and preserved the distinction between Python
+policy decoding and actual Apple enforcement.
+
+Primary authorizes **one bounded fixed Node-only diagnostic counterfactual** for
+`c69fa4dbc31af9ad2f47be64efc21fc06634afb93909a8e4d5fe5a038314074a` after
+committing this reviewed delta, with the same exact-forwarding private bounded
+diagnostic observer. No further metric, permission or automatic retry is
+authorized. Both names are public page geometry, not private data access. Any
+success still requires all 30 controls, complete runtime pre/postchecks and
+verified cleanup; it does not prove which single name is necessary, minimum
+system closure, TypeScript/SDK compatibility or native acceptance.
+
 ## Fixed Node-only preflight and guard candidate — implementation, NOT RUN
 
 Bob completed the next bounded code/pure-test unit in the same assigned branch,

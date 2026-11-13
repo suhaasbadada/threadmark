@@ -9,6 +9,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import stat
 import subprocess
@@ -19,6 +20,21 @@ from unittest import mock
 
 import node_containment as n
 from test_synthetic_containment import decoded_rules
+
+
+def decoded_node_policy(text):
+    """Parse emitted file rules and the named-read subset, not implementation text."""
+    filesystem, sysctls = [], []
+    quoted = r'"(?:[^"\\]|\\["\\])*"'
+    for line in text.splitlines():
+        if line.startswith('(allow sysctl-read'):
+            match = re.fullmatch(r'\(allow sysctl-read \(sysctl-name (' + quoted + r'(?: ' + quoted + r')*)\)\)', line)
+            if not match:
+                raise AssertionError('unexpected sysctl policy syntax')
+            sysctls.extend(json.loads(value) for value in re.findall(quoted, match[1]))
+        else:
+            filesystem.append(line)
+    return decoded_rules('\n'.join(filesystem)), sysctls
 
 
 class SyntheticRuntime(unittest.TestCase):
@@ -226,8 +242,9 @@ class SyntheticRuntime(unittest.TestCase):
     def test_serialized_policy_has_only_explicit_discovery_baseline_and_literal_runtime(self):
         root = Path('/private/synthetic/"\\(allow default)')
         model = n.policy(root, self.review)
-        decoded = decoded_rules(n.serialized_policy(root, self.review))
+        decoded, sysctls = decoded_node_policy(n.serialized_policy(root, self.review))
         self.assertEqual(decoded, model)
+        self.assertEqual(sysctls, ['hw.pagesize', 'hw.pagesize_compat'])
         self.assertTrue(decoded.allows('process-exec', self.node))
         self.assertFalse(decoded.allows('process-exec', root / 'exec-marker'))
         for p in [self.node, *self.libraries]:
@@ -252,6 +269,14 @@ class SyntheticRuntime(unittest.TestCase):
             self.assertFalse(decoded.allows('file-write*', root / 'state' / (name + '-other')))
         for op in ('network-outbound', 'network-inbound', 'process-fork', 'mach-lookup', 'sysctl-read'):
             self.assertFalse(any(op in rule.operations for rule in decoded.rules))
+
+    def test_named_page_size_policy_has_no_unrestricted_sysctl_or_duplicate_reads(self):
+        _, names = decoded_node_policy(n.serialized_policy(Path('/owned/synthetic'), self.review))
+        self.assertEqual(names, ['hw.pagesize', 'hw.pagesize_compat'])
+        self.assertNotIn('hw.memsize', names)
+        for invalid in ('(allow sysctl-read)', '(allow sysctl-read (sysctl-name-regex ".*"))'):
+            with self.assertRaises(AssertionError):
+                decoded_node_policy(invalid)
 
     def evidence(self):
         return {'checks': {name: 'NOT_RUN' for name in n.REQUIRED}, 'node_launched': False}

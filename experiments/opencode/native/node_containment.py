@@ -25,6 +25,7 @@ NODE_SHA = 'e7daf91e350dcfc19c3f67bef0a463c1269e98e084606c2e38edf2c349e3842a'
 VERSION = b'v24.10.0\n'
 SOURCE = Path(__file__).with_name('node_containment_probe.cjs')
 OPENSSL_CONFIG = b'# Fixed empty Threadmark discovery configuration; no host settings.\n'
+PAGE_SIZE_SYSCTLS = ('hw.pagesize', 'hw.pagesize_compat')
 BASELINE = ('/usr/lib', '/System/Volumes/Preboot/Cryptexes/OS/System/Library/dyld',
             '/System/Library/Frameworks/CoreFoundation.framework',
             '/System/Library/Frameworks/Security.framework')
@@ -377,9 +378,12 @@ def clean_env(root):
 
 def serialized_policy(root, review):
     # Reuse the independently tested serializer, replacing only its C-only label.
-    return policy(root, review).serialize().replace(
+    filesystem = policy(root, review).serialize().replace(
         '; SYNTHETIC C baseline only; no Node/runtime inventory claim.',
         '; Node public-system discovery baseline; NOT minimum system closure.')
+    # Fixed public page-size metadata only; never a general sysctl allowance.
+    names = ' '.join(c.quoted(name) for name in PAGE_SIZE_SYSCTLS)
+    return filesystem + '(allow sysctl-read (sysctl-name ' + names + '))\n'
 
 
 def parse_version(code, output, diagnostics):
