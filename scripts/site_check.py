@@ -16,6 +16,8 @@ from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = "https://github.com/suhaasbadada/threadmark"
+EXTERNAL = {SOURCE, SOURCE + "/blob/main/docs/spec/README.md",
+            SOURCE + "/tree/main/docs/progress"}
 CSP = "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"
 
 
@@ -91,13 +93,14 @@ def check_html(text, directory):
         require(target, "Empty link")
         url = urlsplit(target)
         if url.scheme or url.netloc:
-            require(target == SOURCE and tag == "a", "Unapproved external URL")
+            require(target in EXTERNAL and tag == "a", "Unapproved external URL")
         else:
             path = (directory / unquote(url.path)).resolve()
             require(path.is_relative_to(directory.resolve()), "Link escapes site")
             require(path.exists(), "Broken local link")
             require(not url.fragment or url.fragment in doc.ids, "Broken fragment")
-    require(len(select("a")) == 2, "Expected skip link and one source CTA")
+    require(EXTERNAL <= {a.get("href") for a in select("a")}, "Missing repo/docs/evidence CTA")
+    require(select("nav") == [{"aria-label": "Main navigation"}], "Named navigation")
     require(not select("link"), "No external styles or fonts")
     css = re.search(r"<style>(.*?)</style>", text, re.S).group(1)
     require(not re.search(r"@import|url\s*\(|@font-face|animation\s*:",
@@ -107,9 +110,13 @@ def check_html(text, directory):
                  ":focus-visible", "max-width: 650px"):
         require(rule in css, f"Missing accessibility rule: {rule}")
     visible = " ".join(doc.text)
-    for phrase in ("Early development", "No released app", "certified host integration",
-                   "permissions", "SQLite", "mem-z", "Graphify", "explicitly authorized inference"):
+    for phrase in ("Early development", "No released installer", "certified host integration",
+                   "permissions", "Implemented offline", "Next product step",
+                   "Illustrative workflow", "Synthetic project, not a running integration",
+                   "Suggested check", "Still to decide", "Synthetic source"):
         require(phrase in visible, f"Missing product boundary: {phrase}")
+    require(visible.count("No released installer") == 1, "Repeated release caveat")
+    require({"example", "source-key", "source-state"} <= doc.ids, "Missing explanatory example")
 
 
 def check_workflow():
@@ -158,7 +165,13 @@ def main():
     for broken in (html.replace('href="#main"', 'href="#missing"'),
                    html.replace("<body>", '<body onload="alert(1)">'),
                    html.replace(SOURCE, "https://example.invalid"),
-                   html.replace("<h1>", "<h4>").replace("</h1>", "</h4>")):
+                   html.replace("<h1>", "<h4>").replace("</h1>", "</h4>"),
+                   html.replace("Illustrative workflow", "Live product"),
+                   html.replace("Implemented offline", "All planned"),
+                   html.replace('href="#source-key"', 'href="#absent"'),
+                   html.replace("<body>", '<body><script>alert(1)</script>'),
+                   html.replace("<style>", '<style>@import "https://example.invalid";'),
+                   html.replace('aria-label="Main navigation"', 'aria-label=""')):
         try:
             check_html(broken, site)
         except ValueError:
@@ -176,7 +189,7 @@ def main():
                     "Output already exists; choose a new directory")
             shutil.copytree(built, args.output)
     print("PASS: static build, local links, semantic/security guards, workflow contract; "
-          "4 negative fixtures rejected. No network used.")
+           "10 negative fixtures rejected. No network used.")
 
 
 if __name__ == "__main__":
