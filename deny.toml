@@ -1,4 +1,4 @@
-# No third-party Rust dependencies in Phase 0. Review this policy before adding any.
+# Product dependencies are pinned and locked; see docs/progress/phase-2-core.md.
 [advisories]
 unmaintained = "all"
 yanked = "deny"
@@ -6,6 +6,12 @@ yanked = "deny"
 [licenses]
 allow = ["MIT"]
 confidence-threshold = 0.95
+
+# Unicode tables used by serde's derive parser; notice must accompany redistribution.
+[[licenses.exceptions]]
+name = "unicode-ident"
+version = "=1.0.27"
+allow = ["Unicode-3.0"]
 
 [bans]
 multiple-versions = "deny"

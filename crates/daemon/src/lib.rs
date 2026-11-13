@@ -1,6 +1,9 @@
-//! Bounded synchronous foundation worker. No listener, persistence, or background service.
+//! Bounded synchronous orchestration over core storage. No listener or background service.
 
 use threadmark_core::{Clock, Error, Extractor, Scope, ScopeGuard};
+
+/// Manual local knowledge orchestration. One operation at a time, no listener or worker.
+pub mod knowledge;
 
 /// Metadata-only successful check; not a persisted knowledge snapshot.
 #[derive(Debug, PartialEq, Eq)]
