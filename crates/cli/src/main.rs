@@ -29,7 +29,7 @@ fn main() -> std::process::ExitCode {
 
 fn usage() -> std::process::ExitCode {
     eprintln!(
-        "usage: threadmark --version | status | smoke; or --data-dir ABSOLUTE_NEW_PRIVATE_DIR project add ID ROOT [FILE ...] | project list | project show ID | project sources ID [FILE ...] | index PROJECT | query PROJECT TEXT | context add/update PROJECT ID KIND (stdin) | context retire/show PROJECT ID | context list PROJECT"
+        "usage: threadmark --version | status | smoke; or --data-dir ABSOLUTE_NEW_PRIVATE_DIR project add ID ROOT [FILE ...] | project list | project show ID | project sources ID [FILE ...] | index PROJECT | query PROJECT TEXT | context prepare PROJECT QUERY (original on stdin) | context add/update PROJECT ID KIND (stdin) | context retire/show PROJECT ID | context list PROJECT"
     );
     std::process::ExitCode::from(2)
 }
@@ -70,6 +70,16 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
         }
         ["index", id] => Command::Index((*id).into()),
         ["query", id, text] => Command::Query((*id).into(), (*text).into()),
+        ["context", "prepare", project, query] => {
+            let mut bytes = Vec::new();
+            if std::io::stdin().take(4097).read_to_end(&mut bytes).is_err() || bytes.len() > 4096 {
+                return failure();
+            }
+            let Ok(original) = String::from_utf8(bytes) else {
+                return failure();
+            };
+            Command::PrepareContext((*project).into(), (*query).into(), original)
+        }
         ["context", op @ ("add" | "update"), project, id, kind] => {
             let mut bytes = Vec::new();
             if std::io::stdin().take(4097).read_to_end(&mut bytes).is_err() || bytes.len() > 4096 {

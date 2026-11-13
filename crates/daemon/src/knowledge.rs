@@ -20,6 +20,8 @@ pub enum Command {
     Index(String),
     /// Bounded source-backed lexical inspection.
     Query(String, String),
+    /// Prepare a memory-only context preview (project, query, unchanged original).
+    PrepareContext(String, String, String),
     /// Create/revise human context (project, ID, kind, content, update).
     WriteContext(String, String, String, String, bool),
     /// Append a retirement revision.
@@ -54,6 +56,9 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         }
         Command::Index(id) => store.index(&id, &mut LexicalLines, cancel)?,
         Command::Query(id, text) => store.query(&id, &text, cancel)?,
+        Command::PrepareContext(id, query, original) => {
+            crate::preparation::context(&store, &id, &query, original, cancel)?
+        }
         Command::WriteContext(project, id, kind, text, update) => {
             store.write_context(&project, &id, &kind, &text, update)?;
             json!({"project":project,"id":id,"saved":true,"producer":"human-authored"})

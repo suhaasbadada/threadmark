@@ -138,3 +138,95 @@ fn p2_manual_cli_persists_across_processes_and_errors_are_content_free() {
     }
     assert!(f.0.join("source/main.rs").is_file());
 }
+
+#[test]
+fn core_backed_context_preview_preserves_original_without_inference_or_delivery() {
+    let f = Fixture::new();
+    f.ok(
+        &[
+            "project",
+            "add",
+            "synthetic",
+            f.0.join("source").to_str().unwrap(),
+            "main.rs",
+        ],
+        None,
+    );
+    let original =
+        "Locate synthetic_blue. Do not deploy or change permissions. 保持 exact intent.\n";
+    let absent = f.ok(
+        &["context", "prepare", "synthetic", "synthetic_blue"],
+        Some(original.as_bytes()),
+    );
+    assert_eq!(absent["state"], "needs-input");
+    assert_eq!(absent["original"], original);
+    f.ok(&["index", "synthetic"], None);
+    let preview = f.ok(
+        &["context", "prepare", "synthetic", "synthetic_blue"],
+        Some(original.as_bytes()),
+    );
+    assert_eq!(preview["state"], "ready-for-review");
+    assert_eq!(preview["original"], original);
+    assert!(preview["proposed"].as_str().unwrap().starts_with(original));
+    assert!(
+        preview["proposed"]
+            .as_str()
+            .unwrap()
+            .contains("fn synthetic_blue() {}")
+    );
+    assert!(
+        preview["proposed"]
+            .as_str()
+            .unwrap()
+            .contains("quoted untrusted data")
+    );
+    assert_eq!(preview["provider"], "not-invoked");
+    assert_eq!(preview["approval"], "not-requested");
+    assert_eq!(preview["delivery"], "not-attempted");
+    assert!(serde_json::to_vec(&preview).unwrap().len() <= 8192);
+    // The original fits 4 KiB, but the complete original-plus-proposed JSON
+    // does not. Reject rather than truncate intent or evidence.
+    let envelope_overflow = f.run(
+        &["context", "prepare", "synthetic", "synthetic_blue"],
+        Some(&vec![b'x'; 4096]),
+    );
+    assert!(!envelope_overflow.status.success() && envelope_overflow.stdout.is_empty());
+    assert!(
+        f.ok(&["context", "list", "synthetic"], None)["contexts"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+
+    f.ok(
+        &["context", "add", "synthetic", "memo", "note"],
+        Some(b"Synthetic human note"),
+    );
+    std::fs::write(f.0.join("source/main.rs"), "fn synthetic_green() {}\n").unwrap();
+    let stale = f.ok(
+        &["context", "prepare", "synthetic", "synthetic_blue"],
+        Some(original.as_bytes()),
+    );
+    assert_eq!(stale["state"], "needs-input");
+    assert!(
+        !stale["proposed"]
+            .as_str()
+            .unwrap()
+            .contains("fn synthetic_blue() {}")
+    );
+    assert_eq!(
+        f.ok(&["context", "show", "synthetic", "memo"], None)["history"][0]["text"],
+        "Synthetic human note"
+    );
+    let denied = f.run(
+        &["context", "prepare", "unregistered", "synthetic_blue"],
+        Some(original.as_bytes()),
+    );
+    assert!(!denied.status.success() && denied.stdout.is_empty());
+    assert!(!String::from_utf8(denied.stderr).unwrap().contains(original));
+    let oversized = f.run(
+        &["context", "prepare", "synthetic", "synthetic_blue"],
+        Some(&vec![b'x'; 4097]),
+    );
+    assert!(!oversized.status.success() && oversized.stdout.is_empty());
+}

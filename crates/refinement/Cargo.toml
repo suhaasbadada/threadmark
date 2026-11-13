@@ -7,9 +7,6 @@ license = "MIT"
 publish = false
 description = "Memory-only, provider-neutral preparation and review for Threadmark"
 
-# Temporary isolation: coordinator removes this when joining the root workspace.
-[workspace]
-
 [lints.rust]
 unsafe_code = "forbid"
 missing_docs = "deny"

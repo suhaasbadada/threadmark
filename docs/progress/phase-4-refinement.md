@@ -7,6 +7,12 @@ acceptance: **P4-A1–P4-A4** have local structural/failure-fixture evidence onl
 **P4-A5 remains open**. Phase 1 live authorization/host/inference gates remain open.
 The sequencing exception changes ordering, not scope or authority.
 
+**Coordinator update:** the crate is now joined to the Rust workspace and actual
+core-backed Context preview is implemented through daemon/CLI. Independent engine
+and bridge reviews passed. Exact publication/CI and the remaining live-provider/
+host/quality gates are separate. The revision bullets below are the historical
+isolated-lane handoff, not the current integration status.
+
 - Frozen integration base: `661bdb3e11118efe979cc7adf06c39db723bf133`.
 - Exact locally tested implementation SHA:
   `c71a04149520a19ca5f5ba1b50971028802a638c`.
@@ -149,3 +155,38 @@ qualified independent review, exact integrated-head CI, host review interaction
 and controlled evaluation. Phase 1 live host/inference, daemon listener, storage,
 certified host support, hands-free execution, deployment and release are not
 established or authorized by this work.
+
+## Coordinator integration and independent review
+
+The isolated implementation/evidence commits were cherry-picked without changing
+their engine behavior; the temporary nested workspace was removed, the root
+workspace/lock regenerated and daemon dependency added. Joffrey independently
+reviewed all engine code/tests at isolated head
+`989679812f0d3e5cec205ffc044e0039d7a6ca9a` with no substantive finding; his 25
+integration tests, doctest, strict Clippy and formatting checks passed offline.
+
+`threadmark --data-dir DIR context prepare PROJECT QUERY` now reads an exact
+original request from stdin and uses actual core authorization/freshness. A
+private `CoreAuthority` captures the registered project/query, re-runs bounded
+SQLite source-backed retrieval and supplies the exact current selection. It does
+not echo caller evidence or trust a supplied root. Original Unicode/negations are
+unchanged; constraints are not guessed from prose. Stale/unindexed/empty context
+is visibly needs-input. The complete JSON original-versus-context preview is
+bounded at 8 KiB; overflow rejects, never silently shortens. Source excerpts stay
+quoted untrusted data, provider is not-invoked, approval not-requested, and delivery
+not-attempted. Original/previews are not stored in SQLite or content logs.
+
+The primary's real multi-process CLI integration test covers current source quotes,
+unchanged original/Unicode/negations, stale suppression, preserved human notes,
+unknown-project rejection and both original-input and full-envelope overflow.
+`note` is now an explicit human-context kind alongside decision/constraint/
+correction/pitfall, matching the management shell without inventing authority.
+Joffrey separately reviewed the core-backed bridge with no substantive finding;
+he ran the integrated core/refinement/daemon/CLI tests successfully. The primary
+full `scripts/check.py` passed after workspace integration. No live inference,
+host handoff, GUI behavior, controlled AI-quality result or phase closure follows.
+
+This is Context mode, not a fake Refine response. Explicit provider configuration
+and consent remain necessary for real Refine; provider implementations and hosts
+remain replaceable. Engine in-memory review/approval behavior is independently
+tested, but the CLI preview does not pretend a human approved it or send it.

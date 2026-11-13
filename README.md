@@ -43,6 +43,7 @@ target/debug/threadmark --data-dir "$FIXTURE/new-private-store" index demo
 target/debug/threadmark --data-dir "$FIXTURE/new-private-store" query demo resolve
 printf '%s\n' 'Synthetic decision: preserve the public API.' | target/debug/threadmark --data-dir "$FIXTURE/new-private-store" context add demo api decision
 target/debug/threadmark --data-dir "$FIXTURE/new-private-store" context show demo api
+printf '%s\n' 'Locate resolve. Do not deploy or change permissions.' | target/debug/threadmark --data-dir "$FIXTURE/new-private-store" context prepare demo resolve
 ```
 
 Use absolute canonical paths. Source policy changes invalidate indexed evidence;
@@ -50,6 +51,9 @@ changed or unreadable files are not returned as current until explicitly reindex
 User context has separate provenance/history and survives reindexing. Indexing is
 manual lexical capture, not AST/semantic understanding or permission to execute.
 No model, network endpoint or host credentials are used.
+`context prepare` produces an in-memory original-versus-context preview through
+the provider-neutral preparation engine. Stale/missing evidence is needs-input;
+approval and delivery are not attempted. It is Context mode, not AI refinement.
 
 ## The problem
 
