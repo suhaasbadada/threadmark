@@ -12,6 +12,7 @@ import unittest
 from unittest.mock import patch
 
 import declaration_receipt as d
+import typings_alignment as a
 
 ROOT = Path(__file__).parent
 
@@ -23,8 +24,10 @@ class ReceiptTests(unittest.TestCase):
 
     def test_exact_owned_pins_and_public_receipt(self):
         receipt = json.loads((ROOT / "declaration-prerequisites.json").read_bytes())
-        self.assertEqual(receipt["packageLockSha256"], hashlib.sha256((ROOT / "package-lock.json").read_bytes()).hexdigest())
-        self.assertEqual(receipt["packageManifestSha256"], hashlib.sha256((ROOT / "package.json").read_bytes()).hexdigest())
+        historical_manifest, historical_lock = a.current((ROOT / 'package.json').read_bytes(),
+            (ROOT / 'package-lock.json').read_bytes(), json.loads((ROOT / 'typings-alignment.json').read_bytes()))
+        self.assertEqual(receipt["packageLockSha256"], hashlib.sha256(historical_lock).hexdigest())
+        self.assertEqual(receipt["packageManifestSha256"], hashlib.sha256(historical_manifest).hexdigest())
         self.assertEqual({r["name"] for r in receipt["records"]}, set(d.PINS))
         notices = (ROOT / "THIRD-PARTY-NOTICES.txt").read_bytes()
         for record in receipt["records"]:

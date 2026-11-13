@@ -4,6 +4,7 @@ from pathlib import Path
 import unittest
 
 import project_types as t
+import typings_alignment as a
 
 HERE = Path(__file__).parent
 
@@ -12,7 +13,8 @@ class SelectionEvidenceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.evidence = json.loads((HERE / 'sdk-selection-discovery.json').read_bytes())
-        cls.lock_bytes = (HERE / 'package-lock.json').read_bytes()
+        _, cls.lock_bytes = a.current((HERE / 'package.json').read_bytes(),
+            (HERE / 'package-lock.json').read_bytes(), json.loads((HERE / 'typings-alignment.json').read_bytes()))
         cls.lock = json.loads(cls.lock_bytes)
         cls.packages = {p['name']: p for p in cls.evidence['packages']}
 
@@ -29,7 +31,7 @@ class SelectionEvidenceTests(unittest.TestCase):
             'SDK-NOTICE-REVIEW-1', 'SDK-GRAPH-1', 'SDK-AMBIENT-1',
             'SDK-FIXTURE-1', 'SDK-CONFIG-1', 'SDK-GUARD-1'})
 
-    def test_all_nine_current_locked_identities(self):
+    def test_all_nine_historical_locked_identities_with_exact_transition(self):
         self.assertEqual(t.sha256(self.lock_bytes), self.evidence['lockSha256'])
         self.assertEqual(len(self.packages), 9)
         for p in self.packages.values():

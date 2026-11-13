@@ -1,0 +1,84 @@
+{
+  "alignmentReceiptSha256": "ccac6466b5229205677fc82ee2469dbad83c828ac3ac1f421195d904c5c50ecf",
+  "archiveNotices": 15,
+  "compilerBindingSha256": "506e39ab4ed28a6c5415c6e99a55759a730d77e4d5b398924ae41ecc8364db79",
+  "counts": {
+    "declarations": 1444,
+    "packages": 22,
+    "potentialReadFiles": 1492,
+    "typingSources": 0
+  },
+  "evidenceBindings": {
+    "THIRD-PARTY-NOTICES.txt": "438aa17535fae426837898acf8c136b3db9ba170ba78ae18a4443c829528e81a",
+    "declaration-prerequisites.json": "720498b4d792a25965a7361a41b6fd690ea4221b9a09d90c685dd9215aa17d5a",
+    "sdk-notice-provenance.json": "8045ca38b56644bed92347390e4a6d70a49ee989a2bc91d650744f000398377e",
+    "sdk-selection-discovery.json": "21e331e3dd936c690538d05262c74ad7f1bc5017e4bb1491e40446fbec98beac",
+    "sdk-transitive-notice-provenance.json": "0b4ccb6fe35a623a5337f6c86429f4aca9e64cf6d9510f9c9bc910931b18795e",
+    "typings-alignment.json": "ccac6466b5229205677fc82ee2469dbad83c828ac3ac1f421195d904c5c50ecf"
+  },
+  "executionApproved": false,
+  "fixtureHashes": {
+    "sdk_negative.ts": "447b106743122a7f75d7c98587bf40fe6d089f818b458f259a1f124909fb060a",
+    "sdk_positive.tsx": "a7a7ebe87414879ff9d22a85b96c9da94d38a6353de1352db4138188ae36c234"
+  },
+  "historicalIntentHeapMiB": 1024,
+  "historicalPlanSha256": "1dc707d3d6fcac4949914698c5649a19cf48760409cb14fd1cb5d374fe4aa198",
+  "historicalSelectionSha256": "a5b57c65fad62a83e0e2a52d446ffc6eb68f630740aec030bbc53977467d4846",
+  "independentReview": "PENDING",
+  "inputPlanSha256": "70b9500102efccef297db94f5e22af08b9a133ad96259ecc637ddbecf074f203",
+  "kind": "inert-aligned-sdk-selection-summary",
+  "lockSha256": "b4566d56a9656b8ff191af83d63cf301cb0398aaf174ae99d4765ab8cbfaae30",
+  "nestedMetadata": 9,
+  "otherTwentyPackageSelections": "byte-identical to historical plan; no Redis archives selected",
+  "outerResourceExperimentHeapMiB": 2048,
+  "replacedPackages": [
+    {
+      "archiveRoot": "node v24.12",
+      "archiveSha256": "d0d6910fab205566ade23a582838e93187f4337b03e63a799cd3443839943ed7",
+      "integrity": "sha512-A1sre26ke7HDIuY/M23nd9gfB+nrmhtYyMINbjI1zHJxYteKR6qSMX56FsmjMcDb3SMcjJg5BiRRgOCC/yBD0g==",
+      "name": "@types/node",
+      "path": "node_modules/@types/node",
+      "resolved": "https://registry.npmjs.org/@types/node/-/node-24.12.2.tgz",
+      "version": "24.12.2"
+    },
+    {
+      "archiveRoot": "package",
+      "archiveSha256": "53b5e2fa12a4118a4838e80b1cc6e1d8cd30d6f7e5bea69640e5386f6eb3f8af",
+      "integrity": "sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==",
+      "name": "undici-types",
+      "path": "node_modules/undici-types",
+      "resolved": "https://registry.npmjs.org/undici-types/-/undici-types-7.16.0.tgz",
+      "version": "7.16.0"
+    }
+  ],
+  "runtimeDependencyClosure": "NOT established",
+  "schema": 1,
+  "scope": [
+    "@opencode/client",
+    "@opencode/plugin",
+    "@opencode/plugin/tui",
+    "@opencode/theme/tui",
+    "@opentui/core",
+    "@opentui/solid",
+    "@opentui/solid/jsx-runtime",
+    "solid-js",
+    "web-tree-sitter"
+  ],
+  "selectionApproved": false,
+  "selectionSha256": "f0dc38a0f023079235ef19b331d93ba0c8e266fa0d0831a302e839e10e13132e",
+  "sourceBindings": {
+    "sdk_aligned_inputs.py": "072a19acd5a9f081d4976de0d8d7bc168da925ec25b9ce68051ccc94abcb440a",
+    "sdk_compiler_candidate.py": "7ccb8d840e023ab43b375eab5edcce0ea579788abdbb5441ece9e6a2112ff1c7",
+    "sdk_negative.ts": "447b106743122a7f75d7c98587bf40fe6d089f818b458f259a1f124909fb060a",
+    "sdk_positive.tsx": "a7a7ebe87414879ff9d22a85b96c9da94d38a6353de1352db4138188ae36c234",
+    "sdk_transitive_notice.py": "364096452c8bc4bf8335ecee688b86583ea4553b2e0a2660422efb7cbe472866",
+    "typings_alignment.py": "36ed98f6ada805b76ebc3f7767f54946e348783f01ba7f5072d39f4c59c5683a"
+  },
+  "typeGraphClosure": "NOT established",
+  "upstreamLexicalReview": {
+    "referenceDirectives": 214,
+    "semanticClosure": "NOT established",
+    "suppressionMentionsInEffectComments": 6,
+    "unknownImportOperandsInRecognizedSyntax": 0
+  }
+}

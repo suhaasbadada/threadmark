@@ -2126,3 +2126,412 @@ Staged tracked-file secret scan and synthetic-secret rejection PASS; staged and
 unstaged whitespace checks and documentation links PASS. Worktree and all private
 evidence retained. Candidate source/fixture/receipt hashes and the original
 progress prefix were rechecked; no SDK package projection/execution is approved.
+
+## Transitive preparation PR tracking
+
+PR #29: https://github.com/suhaasbadada/threadmark/pull/29. Full published/tested
+head `26122cd4e2a5c5a3185878c7190679fcaf052735`. All 622 offline tests,
+foundation, cached cargo-deny, secrets, docs and whitespace reran/passed after
+main integration. Conflict resolution removed only merge markers around our
+append-only sections, preserving reviewed progress/selection/notices bytes.
+CI `43367636838`, integrated `43367636946`, offline OpenCode `43367636963`
+target that exact head; initially seven jobs running. This local append is not
+in the pushed head. No remote green, merge, projection or execution claimed yet.
+
+## PR #29 qualified merge
+
+Fresh inspection verified all seven exact-head jobs SUCCESS on
+`26122cd4e2a5c5a3185878c7190679fcaf052735` (CI `43367636838`, integrated
+`43367636946`, offline OpenCode `43367636963`), main target, CLEAN/MERGEABLE,
+no draft/comments/unresolved review threads or additional approval/protection/
+ruleset gate. Independent actual-byte review and inert preparation acceptance
+above remain the evidence; no forge approval was invented. Under standing
+qualified-merge authorization PR #29 merged as
+`859053d9141e1b029dd43854b162014082011527`, tree identical to tested
+`bd64751ec5121ce962b781b2c93ace3c15d640c2`. PR watch stopped. Post-merge
+CI `43368074565`, integrated `43368074625` and offline OpenCode `43368074604`
+initially running on that exact merge SHA; not claimed green. Worktree/local
+evidence preserved. No SDK projection/execution or phase closure followed.
+
+PR #29 post-merge CI `43368074565`, integrated `43368074625`, and offline OpenCode
+`43368074604` subsequently all passed on exact merge
+`859053d9141e1b029dd43854b162014082011527`.
+
+## First SDK discovery review and primary decision
+
+Joffrey independently verified exact candidate
+`5613c8df9e39d0306e798858c2d3efd648326b9d7c84770224edd93a3c18f156`
+with unmocked preflight, all 22 archives/projected bytes, 1,464 declarations,
+31 metadata files including nine nested manifests, 15 archive notices and seven
+external notice mappings, unchanged fixtures/fixed configs. Projection has
+1,521 files plus ledger and 206 directories. Authentic compiler 112-file/
+107-library inventory and 93-library default graph match. Strict unchanged Node
+validation passes for 18 files/24 aliases/111,994,336 bytes/version 24.10.0.
+
+Historical source-identity drift affects only compiler_containment.py and its
+positive/negative fixtures: reviewed bytes unchanged, inode/mtime/ctime differ.
+Historical validators still reject old identities; this exact new outer binding
+is reviewed anew, not an old-validation pass or runtime-baseline bypass. Static
+policy scope, budgets and fail-closed semantics were independently reviewed;
+46 new pure/mocked tests pass. No substantive findings; no target ran in review.
+
+Primary authorizes **one exact version/SDK positive/intended-negative discovery
+sequence** on that digest with unchanged policy, immutable inputs and bounds.
+No automatic retry, permission expansion, new acquisition, SDK runtime imports,
+host launch, provider/deployment or phase closure is included. Any failure must
+retain diagnostics and be diagnosed before another reviewed decision.
+
+First exact SDK invocation BLOCKED: version 6.0.3/exit 0; positive exit -6 with
+retained stderr `FATAL ERROR: Ineffective mark-compacts near heap limit Allocation
+failed - JavaScript heap out of memory`. Positive stdout was empty; negative
+NOT_RUN and reported program closure NOT established. Both attempts' before/after
+validations and owner cleanup passed; owned execution artifacts removed. Raw
+diagnostics remain private. This is an observed failure of the 1,024 MiB V8
+old-space discovery budget, not SDK semantic failure or success and not total RSS.
+No retry, budget/permission expansion, fixture scope cut or library skip followed.
+Investigate fixture type-instantiation cost versus ordinary SDK checking before
+selecting any new explicitly reviewed measurement budget; preserve this failure.
+
+Sherlock's read-only RCA confirmed heap exhaustion around 1,014 MB after major
+collection at 6.1 s, exactly three intended roots and no accidental glob/duplicate
+tree. No justified source fix emerged; broad declaration/type instantiation load
+versus a compiler hotspot remains unknown. Primary predeclared ADR 0007's separate
+2,048 MiB resource-discovery experiment, preserving the failed original gate and
+all other bounds/policy/fixtures. New kind/bounds reject historical authorization;
+public results explicitly retain the original failure and do not adopt a product
+budget. Original guard/test source bytes were privately snapshotted before change.
+
+Joffrey reviewed exact new candidate
+`d641ea056174aab3cb4c6ce049838c575fcb69be8d395bd4351e32e7add56349`:
+unmocked preflight PASS, all projection bytes identical except owned absolute
+config roots, unchanged compiler/runtime/notice evidence and equivalent policy.
+47 pure tests PASS; no substantive code finding. His low stale-instructions
+finding was fixed by clearly marking old SDK documentation historical and linking
+the failed gate/new candidate/ADR. Primary authorizes **one** exact 2,048 MiB
+version/positive/intended-negative resource-discovery sequence. No automatic
+retry/escalation or product-budget/Phase 1 acceptance is authorized.
+
+The single 2,048 MiB resource-discovery invocation BLOCKED with version PASS and
+positive exit 2, zero stderr, exactly one TS2416 diagnostic: OpenTUI core
+InternalKeyHandler.emit override is incompatible with the base KeyHandler/EventEmitter
+signature. No missing-module/type diagnostics were reported. Positive list output
+is retained but not accepted as semantic success; negative NOT_RUN. Before/after
+validation and cleanup passed. The original 1 GiB gate remains FAILED.
+
+Actual selected metadata shows @types/node26.6.6, whereas pinned OpenCode plugin
+declares dev @types/node24.12.2 and OpenTUI Solid declares ^24.0.0. The Node26
+EventEmitter generic signature is present in the incompatible base type. Primary
+selects an authentic upstream-typings alignment investigation, not suppression,
+library skipping or fixture reduction. Public exact-version metadata reviewed:
+@types/node24.12.2 MIT/index.d.ts/empty scripts depends undici-types~7.16.0;
+integrity sha512-A1sre26ke7HDIuY/M23nd9gfB+nrmhtYyMINbjI1zHJxYteKR6qSMX56FsmjMcDb3SMcjJg5BiRRgOCC/yBD0g==.
+Exact candidate undici-types7.16.0 MIT/index.d.ts, integrity
+sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==.
+Authorize bounded inert acquisition/notice inspection of only these two archives
+and isolated generated-lock-only alignment to those exact pins. No compiler retry
+is authorized; compare actual declaration signatures and independently review the
+new candidate first. Preserve Node26/1GiB/2GiB evidence and historical plans.
+
+The single generated lock-only operation stopped at unexpected drift. Joffrey
+independently verified the exact 378 -> 384 record transition: two requested
+typings replacements, six Redis6.3.1 peer records satisfying existing nonoptional
+@effect/platform-node redis>=5<7, Emscripten dev->devOptional and TypeScript dev
+flag removal consistent with existing peer edges. No other artifact identity or
+record/top-level change. These Redis entries are a real future install expansion,
+not merely descriptive metadata; no Redis acquisition/install/execution is approved.
+
+Primary accepts **only this exact already-generated static prerequisite lock
+transition**, with a hash-bound old/new receipt and pure structural allowlist test
+for the two replacements/six exact new peer records/two flag changes. Do not
+regenerate, hand-trim peers, use legacy-peer bypasses or broaden acquisition.
+Upstream-aligned Node24 remains an investigation, not a proven TS2416 fix; the
+existing bun-ffi-structs TypeScript^5 peer versus TS6, runtime engine/provenance
+and original resource failures remain unresolved/separate gates.
+
+## Reviewed SDK projection boundary and fixed discovery candidate — inert only
+
+TM-04/TM-05/TM-08/TM-10; P1-A2/P1-A5 **PARTIAL**. Source/test base is full HEAD
+`26122cd4e2a5c5a3185878c7190679fcaf052735` on the existing task worktree/branch;
+this unit is an uncommitted staged delta, not a newly tested commit or CI head.
+Primary reports post-merge CI `43368074565`, integrated `43368074625`, offline
+`43368074604` all PASS on exact main merge
+`859053d9141e1b029dd43854b162014082011527`, same tree. These historical results
+were supplied by primary, not re-fetched or reused as current-unit CI evidence.
+The entire pre-existing progress text, including primary's local append, remains.
+
+New `sdk_projection.py` reconstructs only independently reviewed selection
+`a5b57c65fad62a83e0e2a52d446ffc6eb68f630740aec030bbc53977467d4846` and plan
+`1dc707d3d6fcac4949914698c5649a19cf48760409cb14fd1cb5d374fe4aa198` from already-owned
+archives. Actual inert materialization retained 22 packages, 1,464 authentic
+declarations, all whole/nested metadata, all archive notices, seven authentic
+external source-notice mappings, unchanged fixtures and fixed configs: 1,521
+files plus ledger, 206 directories including root. Complete private validation
+and before/after owned-archive hash preservation PASS. No authentic bytes were
+vendored into the repository. INCOMPLETE spans whole-tree validation; interrupted
+or failed preparation retains artifacts, including tested late fsync/close cases.
+
+New `sdk_compiler_containment.py` is a fixed future compiler DISCOVERY guard,
+not a semantic-closure assertion. Util's default #runtime-import has an authentic
+selected import.bun.d.ts with no external imports; standard-schema's absent source
+target belongs to an inactive custom condition. Potential optional bun/electron/
+vite/google-auth-library references are not yet proven consumed requirements.
+Unknown real semantic errors block rather than being suppressed, stubbed, scoped
+away or normalized to success. All explicit roots, the authentic 93-default-lib
+graph and every positive imported SDK surface must be observed with per-file
+provenance; not every potential read must be consumed. Positive zero diagnostics
+and negative exact TS2345 line 4/column 9 remain expected but **UNOBSERVED**.
+
+Inert validation found historical compiler source identity drift: Git integration
+replaced compiler_containment.py and its two fixtures' inodes/timestamps, while
+all reviewed hashes remained identical. The old validator correctly rejected this
+and remains unchanged. The new boundary keeps exact historical compiler candidate
+`aea72b77d1cacbcd2daf30aa5b555f6b52b94e8e7c336d3970b8235702039caf`, compares all
+historical source/fixture bytes, and explicitly binds fresh full source identities
+for NEW independent SDK review. No historical fingerprint/candidate or measured
+Node/C/owner/project_types/compiler_plan source was changed. Node 18-file/24-alias
+and compiler 112-file/107-library inventory validations remain strict and passed
+inertly; this identity refresh does not inherit execution authority.
+
+Final operator-private `sdk-review-candidate.json` SHA-256 is
+`5613c8df9e39d0306e798858c2d3efd648326b9d7c84770224edd93a3c18f156`.
+Private handoff/inventory retain the exact projection/review paths and 46 raw
+evidence bindings. Earlier inert attempts are preserved, not overwritten/deleted.
+Status: **INERT MATERIALIZED; INDEPENDENT REVIEW PENDING; EXECUTION CLOSED**.
+Fixed deny-default literal-read policy, unchanged retained owner, clean env,
+before/after validation, aggregate budgets, private capture-before-interpretation,
+quarantine and provisional-success/returned-receipt separation are reviewable
+candidates, not actual SDK containment measurements. Details and exact exclusions
+are in `experiments/opencode/native/SDK-COMPILER-DISCOVERY.md`.
+
+Local verification PASS: **588 Python + 80 offline Node = 668 tests**, including
+46 new pure/mocked-owner tests and 285 native Python tests; Python 3.12 with
+ResourceWarning errors. Existing offline Node ran only synthetic host/UX contracts,
+not a Node probe/SDK/compiler. Foundation fmt/build/clippy/tests/docs/offline smoke
+and intentional failure gate PASS via `CARGO_NET_OFFLINE=true python3 scripts/check.py`;
+cached `cargo deny --locked --offline check` PASS. New-unit CI and independent
+review have NOT RUN. Staged secrets/whitespace and final preservation results are
+recorded at handoff below. No compiler, sandbox target, SDK/runtime host, network,
+download/npm, acquisition CI, Docker, delegate, commit/push/PR or branch change.
+
+FIRST SDK compiler decision requires independent exact-byte review (including
+identity refresh) plus new explicit primary authorization; neither this hash nor
+preparation self-readback grants it. Actual semantics/consumed closure/containment,
+runtime agent/eastasianwidth/three AWS provenance, Node 24 versus OpenTUI >=26.4,
+native capture/review/admission, host support and P1-A2/P1-A5 closure remain OPEN.
+
+Handoff verification: all six owned/preserved files staged; tracked-file and
+synthetic-negative secrets gates, local documentation links, staged/unstaged
+whitespace PASS. Final private candidate/projection readback, original progress
+prefix preservation and unchanged historical-source/fixture Git bytes PASS.
+Worktree, immutable projection and all earlier evidence remain intact. No commit,
+push, PR, independent review or SDK/compiler execution was performed.
+
+## Authentic typings alignment — stopped on unexpected generated-lock drift
+
+TM-04/TM-05/TM-08/TM-10; P1-A2/P1-A5 remain **PARTIAL**. Bob worked in the
+same task worktree at HEAD `26122cd4e2a5c5a3185878c7190679fcaf052735`,
+preserving all prior staged/unstaged work. No new tested commit or CI exists.
+
+The two explicitly authorized exact public metadata records and archives were
+retrieved with no ambient proxy/authentication, no redirects, 20-second request
+timeouts and 2 MiB response bounds. Complete actual metadata and archives remain
+in fresh private storage, directories 0700 and data files 0400; no extraction or
+package execution occurred. Both archives matched their predeclared SHA-512
+integrities before inspection. Archive SHA-256:
+
+- @types/node 24.12.2: `d0d6910fab205566ade23a582838e93187f4337b03e63a799cd3443839943ed7`
+  (461,127 bytes).
+- undici-types 7.16.0: `53b5e2fa12a4118a4838e80b1cc6e1d8cd30d6f7e5bea69640e5386f6eb3f8af`
+  (27,127 bytes).
+
+Manifest edits added only the two exact dev pins. One isolated npm 11.6.0
+`install --package-lock-only --ignore-scripts --no-audit --no-fund` operation,
+using the explicit public registry, clean environment, empty HOME/XDG/TMP and
+empty user/global configs, returned exit 0 and created no node_modules. However,
+the generated lock changed **11 package records**, not just the intended root
+pins and two typings packages: it added redis 6.3.1 and @redis/{bloom,client,json,
+search,time-series} 6.3.1, changed Emscripten dev to devOptional and removed
+TypeScript's dev flag. This triggers the explicit **STOP on unexpected broad
+drift** instruction. No retry, manual lock edit, revert, additional acquisition
+or continuation into candidate construction was performed.
+
+Previous manifest/lock SHA-256 remain
+`f1bea8babcc92323e67a6c35efc1fccd4527e79502bee660c086955fe4b8a628` /
+`20571ff490c60ed12a0e6b7eefb54138f9292778d2f4be1a2b874f5db1ed6651`.
+Current incomplete manifest/lock SHA-256 are
+`6deb7b4d256721c2ce7c3ec481cb3966079fe55b5a2951f04fcfb444f6689cb0` /
+`b4566d56a9656b8ff191af83d63cf301cb0398aaf174ae99d4765ab8cbfaae30`.
+Private evidence retains both complete before/after files and exact record delta.
+These incomplete changes are NOT a reviewed transition and historical receipts
+still bind the old lock; their checks must not be represented as current passes.
+
+No new candidate, notice append, signature-comparison conclusion, compatibility
+result or independent-review readiness is claimed. Full offline/foundation/deny/
+secrets checks were not run for this stopped incomplete unit. The earlier 1 GiB
+OOM and 2 GiB TS2416 failures remain unchanged; no compiler/Node probe/SDK/host/
+sandbox target, commit/push/PR/delegate or branch/worktree operation occurred.
+Next action requires a primary scope decision on the unrelated lock drift, not
+another compiler attempt. Runtime Node 24.10.0 versus OpenTUI >=26.4, provenance,
+semantic closure, native admission/capture and product budgets remain blocked.
+
+## Primary exact-transition decision and completed inert alignment unit
+
+TM-04/TM-05/TM-08/TM-10; P1-A2/P1-A5 **PARTIAL**. Primary subsequently resolved
+the stop above after Joffrey independently reviewed old378 -> new384 lock
+records: no top-level drift/removals, precisely the two requested typings records,
+six Redis6.3.1 peer records matching the existing @effect/platform-node Redis
+range and Redis dependencies, Emscripten dev -> devOptional and TypeScript dev
+removal. Primary explicitly accepted only this already-generated transition.
+It is a real future ordinary-install graph expansion, NOT harmless metadata or
+Redis acquisition/install/distribution/runtime authorization. Existing
+bun-ffi-structs TypeScript ^5 versus TypeScript 6 remains unresolved and unwaived.
+No npm regeneration, network or acquisition followed that decision.
+
+New `typings-alignment.json` SHA-256
+`ccac6466b5229205677fc82ee2469dbad83c828ac3ac1f421195d904c5c50ecf`
+records every old/new delta field, original/current manifest/lock hashes above,
+actual metadata/archive/file hashes and actual MIT notice blocks. Pure structural
+validation binds both exact hashes, all six complete Redis records/edges, exact
+flag changes and every unchanged record/top-level field. Historical receipts
+remain byte-identical; tests reconstruct and hash-check their ORIGINAL manifest/
+lock bytes through this explicit transition instead of accepting mismatches.
+Two authentic MIT notices append verbatim; all old notice bytes are preserved.
+Notice SHA-256: Node `c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383`,
+undici `a6db8096b2707bc0102d256917d4d33f298ba36d8c3f25de067a2b5bb379db27`.
+
+Actual Node26 events.d.ts has EventEmitter<T extends EventMap<T> = any>, generic
+emit<E extends string | symbol>(eventName: EventNames<T,E>, ...args: Args<T,E>)
+and typed-map emit<E extends keyof T>. Node24 uses DefaultEventMap and
+emit<K>(eventName: Key<K,T>, ...args: Args<K,T>), with Key<K,T> defined as
+T extends DefaultEventMap ? string | symbol : K | keyof T. Actual OpenTUI line57
+narrows emit<K extends keyof KeyHandlerEventMap>. File hashes and exact signature
+line data are retained in the receipt; these are **not compiler semantics proof**.
+Plugin's actual development pin24.12.2 and Solid's ^24.0.0 support alignment;
+whether TS2416 is fixed remains UNOBSERVED.
+
+New `sdk_aligned_inputs.py` preserves the historical preparer byte-for-byte,
+validates the authentic archive-only `node v24.12` root without rewriting it,
+and rechecks all unchanged twenty package selections/actual bytes plus new two
+inventories. No JS/TS implementation source, stub, alias, cast, extra ambient
+type, compiler option or custom condition was added. New exact selection
+`bc0cf07f9cc037e82a4d990c134e9d86cce2d63c3d24f204a936450a1f5fee8a`
+and input plan `15fab187404f5684d69fdefb344f436f6c6f3610443af0262c229d3d57c0a349`
+bind the new lock and evidence. Full scope/fixtures/API identities, all twenty
+other packages, compiler 112-file/107-library inventory and 93-default-library
+graph remain unchanged. Historical plan retains 1,024 MiB; outer resource kind
+retains predeclared 2,048 MiB and all other bounds/policy, not a product budget.
+
+Fresh inert projection: 22 packages, 1,444 declarations, 1,492 potential reads
+including fixtures, nine nested/31 total metadata, 15 archive notices and seven
+external source-notice mappings. Twenty fewer declarations reflect only authentic
+versioned Node/undici inventories. Projection has 1,501 files plus ledger and
+202 directories including root. Actual before/after owned-archive preservation,
+private complete projection validation and outer guard preflight PASS. Runtime
+Node24.10.0 still validates unchanged18 files/24 aliases; no engine gate is waived.
+
+Fresh operator-private `sdk-review-candidate.json` SHA-256:
+`5e5179f1f0005ee6241d2ab43a385acfeea248622f6406681a5f43120f108f89`.
+This was a draft, subsequently superseded after correcting aligned reference
+counts to 214 (historical Node26 count 265 remains unchanged). Primary completed
+fresh inert regeneration with selection
+`f0dc38a0f023079235ef19b331d93ba0c8e266fa0d0831a302e839e10e13132e`,
+input plan `70b9500102efccef297db94f5e22af08b9a133ad96259ecc637ddbecf074f203`,
+and exact candidate `e4af2ede022b192a0eb639fa64bbe4e2e22492de3824a7b5105d93a87d724eb0`.
+Unmocked preflight and archive preservation PASS: 22 packages, 1,444 declarations,
+1,501 projected files plus ledger, 202 directories; no target execution. Final
+tests and independent review of these exact corrected bindings remain required.
+
+Joffrey subsequently reviewed exact corrected candidate
+`e4af2ede022b192a0eb639fa64bbe4e2e22492de3824a7b5105d93a87d724eb0`
+with no substantive findings. Unmocked preflight, actual 22 archive/projection
+reconstruction, unchanged twenty packages/fixtures, historical lock reconstruction,
+exact accepted Redis transition, actual notices and failure/source preservation
+passed. Actual EventEmitter signatures support alignment as a hypothesis only.
+214 directives and unchanged bounded literal policy verified; 19 pure alignment
+tests PASS independently. Primary authorizes one exact aligned 2 GiB
+version/positive/intended-negative resource-discovery sequence. Stop on failure;
+no automatic retry, widening or claim that the original 1 GiB gate passed.
+
+Aligned invocation: version PASS, positive semantic exit 0/no diagnostics with
+669 reported approved program files. Negative compiler exit 2 produced exactly
+the intended TS2345 at sdk_negative.ts(4,9), zero stderr, but guard rejected its
+cwd-relative diagnostic spelling because its oracle incorrectly expected an
+absolute diagnostic path. All pre/post validations/owner cleanup passed; execution
+artifacts removed, output retained. Overall guard remains BLOCKED; no false pass.
+
+Primary corrected only that oracle: compute the single expected relative filename
+from the fixed invocation cwd and exact owned negative fixture; preserve exact
+code/line/column/message/exit and absolute listFiles inventory checks. Alternate
+absolute, ./, traversal-alias, wrong-file and wrong-cwd spellings reject. 29 guard
+pure tests PASS after correcting an intermediate indentation error; no target ran
+for those tests. Regenerated inert candidate
+`73729d1f413da0ec65a96c9234d26e80fce410b0cacb88bda81319458bba99ca`
+passes unmocked consistency preflight and awaits new independent review/decision.
+
+Fresh Joffrey recheck of that exact candidate found no substantive code findings:
+unmocked review/projection/runtime validation PASS, same fixed cwd passed to owner
+and observer, exact relative diagnostic plus unchanged absolute program inventory/
+exit/order/required-root checks, 68 pure tests PASS. Retained previous 0/0/2 exit
+and cleanup evidence corroborated without reclassifying the overall BLOCKED run.
+His stale-documentation finding was corrected before execution. Primary authorizes
+one exact corrected-candidate version/positive/intended-negative resource sequence
+on `73729d1f413da0ec65a96c9234d26e80fce410b0cacb88bda81319458bba99ca`.
+No retry/widening or retroactive original-gate/product-budget acceptance included.
+
+The single corrected-candidate invocation PASSED its predeclared resource-discovery
+gates: TypeScript6.0.3/exit0, positive exit0/no diagnostics with 669 approved
+reported program files and all explicit roots/SDK witnesses, negative exit2 with
+only intended TS2345 and 483 approved reported files. Every before/after runtime,
+compiler, projection/source/config check and retained-owner cleanup passed.
+Temporary execution artifacts removed; immutable projection/private output retained.
+Success receipt binds review
+`73729d1f413da0ec65a96c9234d26e80fce410b0cacb88bda81319458bba99ca`
+and provisional record SHA-256
+`f8380920f9d96ec4585e33e4487c9d682b98fe3badcd7c5388bdc7f7f0a147d0`.
+No automatic repeat or new permission followed. Earlier OOM, Node26 TS2416 and
+aligned oracle failure remain preserved as failures. The original 1 GiB gate
+remains FAILED. Reported file closure is not all-system read tracing or full
+runtime provenance; peer/engine compatibility, native-host behavior, production
+resource budgets, P1-A2/P1-A5 and Phase 1 remain open.
+Its private handoff records exact candidate/projection paths and 46 original raw
+notice evidence bindings. Status: **INERT PREPARED; INDEPENDENT REVIEW READY;
+EXECUTION CLOSED**. Neither self-readback nor earlier Node26 approval authorizes
+this distinct lock/selection/plan/source-bound candidate. Both historical failures
+(1 GiB OOM/SIGABRT and 2 GiB Node26 TS2416), captures and source snapshot remain
+preserved; no target retry occurred.
+
+Verification PASS: **609 Python + 80 offline Node = 689 tests**, 306 native Python
+tests, including 20 new alignment regressions over the 669-test resource baseline.
+Python3.12 ResourceWarning errors enabled; Node tests are existing synthetic
+host/UX contracts, not a probe. Full offline foundation fmt/build/clippy/tests/
+docs/smoke/intentional-failure gate and cached offline cargo-deny PASS. Tests cover
+exact transition/hash failures, all Redis fields/edges, preserved historical
+receipt/notice bindings, authentic inventory/metadata identity, archive-space-root
+handling, required declarations/notices, corrupt bytes/roles, full scope/fixture
+pins and rejection of inherited Node26 candidate approval. Secrets, whitespace
+and final staged readback are recorded at handoff below.
+
+Full source/test base HEAD remains `26122cd4e2a5c5a3185878c7190679fcaf052735`
+plus this uncommitted unit; no current-unit tested commit/CI exists. Historical
+CI identities remain only historical. No compiler/SDK/Node probe/sandbox target,
+host, delegate, commit/push/PR, branch switch/worktree creation or cleanup ran.
+SDK semantics/negative diagnostic/consumed closure, runtime provenance, Node24
+versus OpenTUI>=26.4, native capture/review/admission, certified support and
+product budgets remain OPEN/BLOCKED. Phase1 stays open.
+
+Preservation evidence: private `historical-failure-bindings.json` records every
+raw capture/result and the original two-file guard/test snapshot without
+publishing diagnostic content or private paths. Original 1 GiB failed result
+SHA-256 `3dafa1de09e36310c5746fa82196942b42ba8d18ea6fbc7aed953889cb8274cd`;
+Node26 2 GiB failed result SHA-256
+`b2a136eaf5a72a7488db13f0336a1800382115311878ada48dd5284a88456f51`.
+
+Final handoff: all 19 owned/preserved files staged, including primary resource
+guard/test/ADR/progress changes. Historical planner/receipts and measured
+standalone/compiler/Node/C/owner/fixture Git bytes unchanged. Staged tracked-file
+and history secrets scan plus intentional synthetic-secret failure gate PASS;
+documentation links and staged/unstaged whitespace PASS. Final 306-native-test
+rerun and immutable candidate/projection/archives readback PASS. A prior inert
+alignment draft remains preserved as superseded after correcting a misleading
+review-status docstring; the final digest above alone identifies this handoff.
+No new independent review, actual target measurement or current-unit CI ran.
