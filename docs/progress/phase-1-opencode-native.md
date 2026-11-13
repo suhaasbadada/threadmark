@@ -1,5 +1,89 @@
 # Phase 1 — Release-pinned OpenCode native bridge prerequisite
 
+## Exact compiler path-fix review and primary execution decision
+
+Joffrey independently reviewed regenerated candidate SHA-256
+`7fb64794f4dd856ddcec40afda792538be67742beba411ca49d6ebd70f3da2b8`:
+no substantive findings; authentic archive both pins, all 112 files / 107 libraries,
+93 reachable default libraries, complete metadata/notices and embedded measured
+Node candidate revalidated. Actual compiler normalization/diagnostic/listFiles
+paths, fixed configuration, path rejection, quoting and retained cleanup reviewed.
+143 pure/static native tests passed, including 32 compiler tests. No target ran.
+
+Primary now authorizes **one exact `run_guard` invocation** on that reviewed
+candidate digest for fixed version/positive/negative compiler-only measurement,
+under existing unchanged bounds/policy. No automatic retries, permission expansion,
+SDK/host execution, new acquisition, provider or binary deployment is authorized.
+Failure must retain evidence and be diagnosed before a new reviewed decision.
+This is not SDK closure, certification or phase closure; P1-A2/P1-A5 remain partial.
+
+The single authorized real attempt returned BLOCKED: fixed version check observed
+TypeScript `6.0.3`; positive semantic check did not receive acceptance and negative
+remained NOT_RUN. Target launch occurred; host did not launch. Reported program
+closure is NOT established. Cleanup reported verified-or-not-launched. No retry
+or sandbox permission change followed. The wrapper preserved only sanitized guard
+evidence, not the discarded raw compiler output or precise blocked reason, so the
+positive failure's root cause cannot honestly be inferred from this attempt.
+Before further authorization, add bounded private diagnostic retention and safe
+failure-stage evidence, pure tests and regenerated independent candidate review.
+
+Joffrey's retention review found a medium finalization-evidence inconsistency:
+close/fsync failure could return BLOCKED while the immutable record said PASS.
+Primary repaired this by persisting only explicitly provisional success and
+returning a record/review-bound receipt only after write/close succeeds. Existing
+close-failure regression now checks retained bytes; a new post-rename failure test
+also proves no terminal success record or receipt survives. All 48 compiler pure
+tests pass. Fresh inert candidate digest
+`baed387bb15e809d031e9f24a5c43457526ce450b856165c91eb7f6dc8603530`
+is UNAPPROVED pending new independent review; no additional target ran.
+
+Fresh Joffrey recheck confirmed the provisional-record repair, 48 pure tests and
+actual exact candidate/runtime validation, with no substantive findings. Primary
+authorizes one **instrumented diagnostic invocation** on that exact
+`baed387bb15e809d031e9f24a5c43457526ce450b856165c91eb7f6dc8603530`
+candidate to retain the first failure cause privately under unchanged policy and
+bounds. This is a new reviewed observability experiment, not a blind retry or
+waiver; no automatic retries or SDK/host execution follows it.
+
+Instrumented invocation BLOCKED with version 6.0.3 PASS, positive exit 1/stderr,
+negative NOT_RUN. Before/after validation and owner cleanup passed for both
+attempts; owned execution artifacts removed. Raw output retained privately under
+the approved private parent. Sanitized diagnosis: `EPERM` / `uv_cwd`, stack
+`process.wrappedCwd` -> `Object.getCurrentDirectory` -> compiler CLI. Stdout was
+empty. This identifies cwd access as the observed blocker, not a semantic result.
+
+Primary adds only literal `file-read*` on the owned workspace directory itself,
+not recursive access, to test that diagnosis. Pure policy tests reject unknown
+descendants, host directories and workspace writes. No private/recursive host
+grant or measured shared Node/C source change. This candidate needs fresh review
+and explicit decision before a third real experiment; no retry has occurred.
+
+Joffrey independently corroborated retained `uv_cwd` failure, exact literal grant,
+unchanged fixed oracles/bounds and revalidated candidate
+`aea72b77d1cacbcd2daf30aa5b555f6b52b94e8e7c336d3970b8235702039caf`.
+No substantive findings. Primary authorizes one diagnostic/compiler-only invocation
+of that exact candidate to measure the reviewed owned-cwd-read correction. No
+additional grant/retry/SDK or host execution is included in this decision.
+
+The corrected exact invocation PASSED: version 6.0.3/exit 0, positive semantic
+success/exit 0/no diagnostics, negative exactly TS2322/exit 2. Each semantic run
+reported precisely the expected 93 authentic libraries plus its owned fixture,
+hash/role bound to the reviewed inventory. Every before/after validation and
+retained-owner cleanup passed; owned execution artifacts removed. Private raw
+outputs/attempt records remain retained, outside target access. Successful-call
+receipt binds review digest above and provisional record SHA-256
+`e969a38afdb040eac3919f2da44c0ef10d2afa12db7810586eb87a4ba909f5eb`.
+No second success run or new permission followed. Preserve both earlier failed
+attempts and the unavailable-first-diagnostic limitation. `listFiles` binds
+reported program-file closure, not all metadata/system reads or SDK closure.
+Native compatibility, dependency provenance and P1-A2/P1-A5 remain incomplete.
+
+Primary final local verification: 471 Python tests (including five CI-interpreter
+tests and 49 compiler tests) plus 80 Node offline tests = **551 PASS**. Foundation
+check and offline cargo-deny PASS. No authentic artifact acquisition or live
+compiler execution was added to CI. Staged secrets/whitespace follow final staging;
+exact tested commit and remote CI are separate PR gates, not claimed here.
+
 Status: **BLOCKED at dependency license/closure gate, before installation**.
 TM-05/TM-08/TM-10; P1-A2 and P1-A5 remain **PARTIAL**, not newly satisfied.
 Phase 1 and the full agreed product scope remain OPEN. This is not another
@@ -1155,6 +1239,78 @@ change, SDK/native host or production/binary deployment occurred. Final publishe
 head and exact-head CI remain to be recorded separately; no local result is called
 remote green. Phase 1 and full product acceptance stay OPEN.
 
+## Published Node-discovery prerequisite — PR #24
+
+PR: <https://github.com/suhaasbadada/threadmark/pull/24>, target `main`.
+Full tested implementation head `930c2c420d5fc5d831a61e4dbbca637b2e55bfe8`,
+tree `c40d0fbd5c6aea41c9b5b72b06d9dc2a1d05e733`. Local verification is recorded
+above: 502 tests, both existing C guards, foundation, cached offline cargo-deny,
+staged secrets and full whitespace. The actual local 30-control Node measurement
+remains separately bound to its reviewed digest and unchanged guard/probe bytes;
+it is not claimed as a CI-host or compiler/native certification.
+
+Initial exact-head inspection registered seven queued/in-progress jobs:
+
+- Foundation CI: <https://github.com/suhaasbadada/threadmark/actions/runs/43335474112>
+  — both Rust platforms plus dependency/license/secret checks.
+- Integrated experiments:
+  <https://github.com/suhaasbadada/threadmark/actions/runs/43335474092>
+  — Linux/macOS pure tests and existing measured C guards, not an unapproved
+  machine-specific Node action.
+- Offline OpenCode contracts:
+  <https://github.com/suhaasbadada/threadmark/actions/runs/43335474007>
+  — Linux/macOS, abstract host contracts only.
+
+Pending is not green. Before merge, freshly verify exact-head complete checks,
+approvals/discussions, target and prerequisite-only acceptance. This local progress
+append is not another published head. No duplicate worker/scheduler, TypeScript,
+SDK/TUI, provider, host/binary deployment or phase closure is claimed.
+
+## PR #24 qualified merge and compiler-only next gate
+
+Fresh inspection verified all seven exact-head jobs SUCCESS for
+`930c2c420d5fc5d831a61e4dbbca637b2e55bfe8`, target `main`, MERGEABLE/CLEAN,
+no draft, no unresolved review threads/comments and no additional repository
+approval gate. No forge approval was invented; independent reviews and their
+repairs/candidate approvals are recorded above. Under standing qualified-merge
+authorization, PR #24 was squash-merged at
+`d2a1fdace6b1125bf4d41bda7b821ec9011cc27d`. Its tree equals tested tree
+`c40d0fbd5c6aea41c9b5b72b06d9dc2a1d05e733`. The PR watch was stopped and the
+assigned task branch integrated merged main without branch switch/reset/cleanup,
+preserving the local progress append. Post-merge CI remains a separate unverified
+gate until freshly inspected. No native deployment or phase closure followed.
+
+Primary selects the next executable prerequisite: a **fixed compiler-only smoke
+and containment experiment using authentic TypeScript 6.0.3 bytes**, initially
+with synthetic positive/intended-error roots and authentic default libraries only.
+This is not SDK compatibility and does not substitute for the full native bridge.
+The SDK's missing authentic Emscripten/type/notice graph remains blocked; it is
+not requested by these isolated compiler fixtures and must not be stubbed away.
+
+Implementation, inert compiler materialization from already-verified owned
+archives, private candidate preparation and pure tests are authorized now.
+**No compiler execution is authorized yet.** The exact artifact/source/config/
+runtime inventory and actual launcher/policy must receive independent review and
+a new explicit primary decision first. Preserve complete metadata/notices,
+byte-identical helpers/default libraries and exact archive pin; no npm install,
+scripts, new acquisition, modified compiler, ambient SDK types or library skips.
+
+Reuse the measured Node runtime and named-metadata/public-system discovery
+baseline as an explicit candidate, not minimum closure or compiler proof. Add only
+literal approved compiler/library/owned-root/config reads; keep no target fork,
+network or private host config allowance. Supply fixed owned OpenSSL bytes and
+the measured cache-disable environment. Bound <=120 s wall/16 MiB aggregate
+output/1 GiB old-space/2 s cleanup proof, with retained ownership, before/after
+runtime/compiler/artifact validation and unknown-state retention/quarantine.
+
+Real compiler acceptance must later require exact version, positive semantic
+success, intended negative diagnostic, and every reported program file bound to
+authentic compiler libraries/owned roots. `listFiles` proves reported program-file
+closure, not every metadata/system read; distinguish those from sandbox read
+containment and runtime inventory. No source path/content may enter public evidence.
+No extra compiler flags, plugins, extends, custom resolvers, watch/build, arbitrary
+argv, source suppression, `skipLibCheck` or unknown-result success is permitted.
+
 ## Fixed Node-only preflight and guard candidate — implementation, NOT RUN
 
 Bob completed the next bounded code/pure-test unit in the same assigned branch,
@@ -1227,3 +1383,237 @@ Node bootstrap and compile-cache API semantics are unmeasured and may fail close
 no guessed OS permission has been added to make them pass. DNS/IPC/JIT, minimum
 system/runtime closure, publisher provenance, total memory, compiler declarations/
 consumed-file/type closure and native capture/review/admission remain unproved.
+
+## Fixed compiler-only candidate — implemented and inertly prepared, NOT EXECUTED
+
+Bob completed this bounded next unit at full base/tested HEAD
+`29e62348dfa531dcbae2cb8d63d0d276361a629e`, integrating PR #24's main
+`d2a1fdace6b1125bf4d41bda7b821ec9011cc27d`. Changes remain staged/uncommitted in
+the same task branch; no new push, PR, CI run/head, merge or deployment exists.
+The preceding primary progress text, qualified merge/CI evidence and three actual
+Node failures remain preserved. Earlier NOT RUN entries are historical, not a
+revocation of the separately reviewed 30-control Node measurement recorded above.
+TM-04/TM-05/TM-08/TM-10; P1-A2/P1-A5 **PARTIAL** prerequisites only, not acceptance
+completion or Phase 1 closure. Prior PR checks do not certify these working bytes.
+
+`compiler_containment.py`, the fixed positive/negative TypeScript roots and pure
+tests implement the separately reviewed-next candidate described in
+[the compiler containment contract](../../experiments/opencode/native/COMPILER-CONTAINMENT.md).
+No compiler, new Node program/probe, SDK, sandbox target or host was executed.
+No network, acquisition, installation, package script or new workflow was used.
+The existing ordinary Node offline-contract command was the only Node execution.
+
+Authentic preparation rehashed compressed SHA-256
+`33cd0ee1beaa8c9e9d15a9da836c62ddea4c34a42d7c2d349dbc80d94165d22a` and the
+exact previously pinned SHA-512 before full archive inspection. Exactly **112 files,
+10,073,711 bytes**, including **107 authentic default libraries**, complete
+metadata and both actual legal notices, were exclusively copied unchanged into a
+fresh private 0700 root with 0400 nonexecutable files. Bin/native/extra build files
+were not selected. The archive and prior inventory were not modified. All 112
+selected hashes matched the previously owned authentic inventory, whose hash was
+independently rechecked as
+`0ddbaa519352d4b02cbc691a552b24936f6eb512cba9c10cd8dab6d868ad353f`.
+
+Final private review candidate SHA-256:
+`1fde5aef6ebaa96b1762965d778546941f832851dbd304b3ff0a313685a1098f`.
+Selection/roles/size inventory SHA-256:
+`c6340da859a10d0505112cd14b1ae8ab83228d9c5ebd18ba384047e34af0fe5a`.
+Launcher/preparation method SHA-256:
+`cfe9e9fe385c4600c10dd335f3be8497d417978c68aef8b7e52d38e5f00a6795`.
+Positive fixture SHA-256:
+`f52d78a949b5fe57c24e1a06a82f27a7c3cd341d5007013307050990d39a797e`;
+negative fixture SHA-256:
+`915453356fdbdf2cf410e77b163d7b3b13229238173aa87b2780ce92de228cbe`.
+The final candidate is **UNAPPROVED**, read back/revalidated as data only. An earlier
+inert candidate was superseded by the final size-validation source refinement;
+its original private artifacts were retained, not overwritten or silently removed.
+No authentic package artifacts, private paths or machine inventory are committed.
+
+The exact approved Node-review bytes/digest
+`d3f0f76c6ccbb124d14b478e825b6cbf967e561e5551a09e4fe99b4c2881ea2d` were preserved
+inside the outer candidate and successfully revalidated without new discovery.
+`node_containment.py`, its probe and shared helpers were **not modified**; the
+18-file/24-alias runtime and existing measured baseline/source/system fingerprints
+remain valid. The compiler candidate adds only literal approved data reads and
+metadata ancestors, removing unused probe/read-canary rules. There is no new OS,
+target-spawn, network, recursive compiler/SDK/private/Homebrew read permission.
+
+Future fixed attempts are exact compiler version, strict positive non-any semantic
+success, and controlled TS2322/exit-2 failure, with separate verdicts. Fixed strict
+noEmit/listFiles config is generated from hash-bound source, never caller options.
+The inert ESNext literal-reference oracle expects **93** default libraries; actual
+reported program closure must contain all of them and exactly the selected owned
+root. This is deliberately not a general resolver or all-read trace. Unknown,
+partial, duplicate, outside or unexpected diagnostics never become proof.
+
+Pre/postchecks cover runtime aliases/bytes, compiler tree/roles/hashes, fixed
+sources/config/policy and protected artifact directory identities around every
+attempt. Interrupted postchecks and unknown owner cleanup quarantine/retain, never
+retry or infer success from EOF/zero exit. The retained process owner and clean
+cache-disabled/OpenSSL-owned environment are reused. Budgets remain 120 s envelope
+with a 110 s preflight/launch/final-validation deadline and cleanup reserve, 16 MiB
+**aggregate** output, 1 GiB V8 old-space (not RSS), and 2 s independent owner proof.
+The reserve is not a universal filesystem-latency guarantee; actual compiler
+timing/cleanup and policy behavior remain unmeasured and must pass the next gate.
+
+Verification on final implementation: **529 offline tests PASS = 449 Python +
+80 existing Node contract tests**, including **146 native tests / 27 new pure
+compiler tests**. Python 3.12.6 ran the full integrated suite; default Python also
+passed all native tests. Tests use invented inert archives/inventories and mocked
+orchestration, never actual compiler execution/containment proof. An initial test
+run exposed case-insensitive filesystem alias handling in a test and intermediate
+workspace/state directory modes; both were repaired and the full suite rerun green.
+Foundation fmt/build/clippy/tests/docs/offline smoke/intentional failing-test gate
+and cached `cargo deny --locked --offline check` passed. Staged secrets, full
+staged whitespace and local documentation links also passed before handoff.
+
+Next gate: independent final source/policy/private candidate review, then a **new
+explicit primary decision before the first actual compiler attempt**. No earlier
+Node approval or generated digest authorizes it. The authentic Emscripten/SDK
+type/notice graph remains blocked and is not requested or waived by these fixtures.
+Publisher provenance, formal dynamic helper/minimum system closure, DNS/IPC/JIT,
+total memory, native TUI capture/review/admission and full product acceptance remain
+open. Reported program-file closure, literal sandbox containment and loader
+inventory remain separate evidence categories, none certified by these pure tests.
+
+## Compiler path-representability repair — inert, pending independent review
+
+Bob resumed only the preserved compiler unit at base/tested HEAD
+`29e62348dfa531dcbae2cb8d63d0d276361a629e` on `t3/004628d1`. The eight staged
+files, primary's late-marker fix/regression and priority checkpoint were preserved.
+Changes remain staged/uncommitted; no push, PR, CI run/head, merge or deployment
+exists for these working bytes. Independent review of this regenerated candidate
+has **not run**. TM-04/TM-05/TM-08/TM-10; P1-A2/P1-A5 remain **PARTIAL**, not met.
+
+Read-only inspection confirmed authentic `_tsc.js`'s `normalizeSlashes` replaces
+literal backslashes with separators, and `normalizePath` invokes it. Shared
+`c.artifacts()` deliberately includes a POSIX backslash in its adversarial prefix;
+putting a safe child beneath it cannot repair the absolute config/program path.
+The smallest isolated fix is compiler-local artifact naming, not changing measured
+C/Node source or weakening their quoting tests. `compiler_containment.artifacts`
+uses a representable quote/injection-shaped prefix in the approved private parent
+and the existing shared quarantine/retention registry, retained process owner and
+signal-masked owned removal semantics. No generic framework was introduced.
+
+`compiler_path` rejects backslashes anywhere (including parents), raw dot/empty/
+traversal components, control characters and non-ASCII policy paths before Path
+can silently normalize them. Compiler materialization and candidate revalidation
+check compilerRoot too; config, policy, fixed command and artifact parent checks
+fail before a target launch. Fresh directories remain 0700, protected/compiler
+files 0400. Primary's INCOMPLETE-through-validation repair is unchanged. Exact
+pre/postchecks, policy scope, cancellation/unknown cleanup retention, 110-second
+deadline/cleanup reserve, aggregate 16 MiB output and 1024 MiB old-space remain.
+
+Fresh **UNAPPROVED, INERT, NOT EXECUTED** candidate SHA-256:
+`7fb64794f4dd856ddcec40afda792538be67742beba411ca49d6ebd70f3da2b8`.
+Launcher/preparation source SHA-256:
+`3f5439ca36d936a1f7e61ae86fbf7b237a2acbfbf2374912a27d733463e51593`.
+Private paths and authentic bytes remain outside the repository; the parent has
+the exact candidate path and a private inert-preparation receipt. Prior candidates,
+materializations and failure evidence were retained, not overwritten or removed.
+
+The already-owned authentic archive was revalidated against both pins and copied
+into a fresh private root: **112 files / 10,073,711 bytes / 107 libraries / 93
+literal-reference-reachable libraries**, complete metadata and both actual notices.
+All selected bytes matched the prior owned materialization exactly; selection
+digest remains `c6340da859a10d0505112cd14b1ae8ab83228d9c5ebd18ba384047e34af0fe5a`.
+Archive and prior candidate were reread unchanged. The nested exact Node review
+`d3f0f76c6ccbb124d14b478e825b6cbf967e561e5551a09e4fe99b4c2881ea2d`
+successfully revalidated, including current runtime/source/system identities.
+**Node baseline source-fingerprint impact: NONE**. Shared C/Node/owner/projection/
+compiler-plan sources have no diff against HEAD, and original C/Node adversarial
+quoting tests remain unchanged and pass.
+
+Verification: **454 Python offline tests PASS** with installed Python 3.12.6,
+including **151 native tests / 32 compiler-only pure tests**. The default Python
+also passed all 32 compiler tests. Four new tests cover rejected nonrepresentable
+candidate/config/command/policy paths, backslash parents before creation, private
+representable quoted artifact naming, and removal-failure quarantine/retention.
+Existing mocked tests verify cancellation, timeout, drift, unknown cleanup and
+successful owned removal; they are not actual compiler/containment evidence.
+Foundation fmt/build/clippy/tests/docs/smoke/intentional-failure gate and cached
+`cargo deny --locked --offline check` passed with Cargo network disabled.
+After staging all nine owned/preserved files, the tracked-file secret scan and
+synthetic-secret rejection, staged/unstaged whitespace checks and local docs links
+also passed. No unstaged source changes remain.
+
+No Node (including the ordinary offline-contract suite), TypeScript, C probe,
+sandbox target, SDK or host ran. No acquisition, network, download, Docker,
+delegation, branch/worktree change, commit or publication occurred. First compiler
+execution still requires independent exact regenerated-candidate review and **new
+explicit primary authorization**. Full SDK/type/notice closure, native capture/
+review/admission and product/Phase 1 acceptance remain blocked/open without waiver.
+
+## Private compiler diagnostic retention repair — NEW candidate NOT EXECUTED
+
+Bob preserved the nine staged owned files and primary's unstaged authorization/
+failure record above, on full base/tested HEAD
+`29e62348dfa531dcbae2cb8d63d0d276361a629e`, branch `t3/004628d1`. No commit,
+push, PR, CI run/head, merge or deployment exists for these working bytes. The
+preceding exact candidate `7fb64794f4dd856ddcec40afda792538be67742beba411ca49d6ebd70f3da2b8`
+received Joffrey's no-findings review and 143 pure/static tests, then ONE explicit
+primary-authorized actual guard invocation. **Version 6.0.3 PASS; positive BLOCKED;
+negative NOT_RUN; program-file closure NOT established.** Cleanup reported
+verified-or-not-launched. The prior generic wrapper discarded the raw output and
+masked the precise reason; no root cause can honestly be inferred. No retry ran.
+
+The smallest repair adds `PrivateEvidence` in the already exact-source-bound
+`compiler_containment.py`. Each guard invocation must prepare/fsync a fresh
+fixed-prefix 0700 private sibling directory before any launch. It is outside all
+target read/write allowances; policy/config/fixtures/observe semantics are
+unchanged. Exclusive nofollow dirfd 0400 pending writes, exclusive final-name
+reservation, atomic rename and directory fsync retain bounded returned stdout/
+stderr and fixed per-attempt metadata privately on BOTH pass and failure. The
+aggregate retained output cannot exceed 16 MiB. Old, failed and interrupted evidence
+is never overwritten/deleted. No raw output, source, private path or arbitrary
+exception repr enters public evidence. Public metadata has only safe stages,
+recognized failure codes, exit codes and before/after-validation/cleanup outcomes.
+
+Retention failure blocks further launch/pass; incomplete capture or postchecks
+quarantine and retain run artifacts. Known semantic failure with verified cleanup
+may remove fresh run artifacts but never the separate diagnostic evidence. Missing
+final metadata/pending files mean incomplete evidence and unknown final cleanup,
+not success. Measured `owner.bounded` has **no partial-capture/exit API on raises**;
+those cases explicitly record unavailable capture/null exit instead of inventing
+bytes/status or changing the measured shared helper. A successful helper return
+preserves its exact exit and raw bounded output before postvalidation/observation.
+This is private local retention, not a general output logger or network sink.
+
+Fresh **UNAPPROVED, INERT, NOT EXECUTED** final candidate SHA-256:
+`a8a01b0d9b9c1d6ac601ec32b634694e19987a51cb027fd354f80e6ada2bcbc3`.
+Launcher/source SHA-256:
+`09a4b5bed912a6ff7e1e45036c640e38aef48e594ccf13fa79328256ab02a458`.
+The parent has the exact private candidate path and immutable inert-preparation
+receipt; no authentic bytes/paths were added to repository evidence. All prior
+candidates, intermediate inert preparations, materializations and failure evidence
+remain intact. The owned archive revalidated against both pins; fresh preparation
+contains the same **112 files / 10,073,711 bytes / 107 libraries / 93 reachable
+libraries** as the previous candidate, complete metadata and actual notices.
+Selection digest remains
+`c6340da859a10d0505112cd14b1ae8ab83228d9c5ebd18ba384047e34af0fe5a`.
+Nested Node review
+`d3f0f76c6ccbb124d14b478e825b6cbf967e561e5551a09e4fe99b4c2881ea2d`
+successfully revalidated actual current runtime/alias/source/system fingerprints.
+**Measured Node/C/owner source-fingerprint impact: NONE**; shared source diff is
+empty, including projection/compiler-plan helpers. No Node process was run.
+
+Verification: **469 Python offline tests PASS** under installed Python 3.12.6,
+including **166 native tests / 47 compiler-only pure tests**. Default Python also
+passed all 47 compiler tests. Fifteen new pure mocked-boundary tests cover retained
+success/failure, safe positive-stage/exit/error metadata, private redaction, owner
+raise/cancel/unavailable partial API, unknown cleanup, pre/postvalidation,
+interrupted retention, output cap, secure preparation/fsync/close failure,
+exclusive/nofollow writes, identity drift, policy exclusion and strict diagnostics.
+Mocks are not actual compiler or sandbox evidence. Foundation fmt/build/clippy/
+tests/docs/offline smoke/intentional-failure gate and cached
+`cargo deny --locked --offline check` passed with Cargo network disabled.
+After staging all nine owned/preserved files, the tracked-file secret scan and
+synthetic-secret rejection, staged/unstaged whitespace and local docs links passed.
+
+No Node/TypeScript/C probe/sandbox target/SDK/host execution, acquisition, network,
+download, install, Docker, delegation, branch/worktree change, commit or publication
+occurred in this repair. Independent exact-source/candidate review has NOT RUN;
+new explicit primary execution authorization is still mandatory. TM-04/TM-05/
+TM-08/TM-10, P1-A2/P1-A5 remain PARTIAL; SDK/type/notice/runtime closure, native
+capture/review/admission, host certification and Phase 1/product acceptance remain
+blocked/open without waiver. The prior positive failure is still undiagnosed.

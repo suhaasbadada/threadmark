@@ -1,5 +1,11 @@
 # OpenCode 2.2.5 native bridge — notice/provenance gate BLOCKED
 
+The separate [fixed compiler-only candidate](COMPILER-CONTAINMENT.md) has now
+materialized authentic TypeScript 6.0.3 as inert private data with complete
+metadata/notices and default libraries. Its fixed synthetic positive/negative
+launcher is implemented but **NOT EXECUTED or approved**. No SDK graph is selected,
+no compiler typecheck ran, and all native notice/type/product gates remain open.
+
 **Audit candidate only. No bridge implementation, install, typecheck, TUI runtime
 test or installed-host certification. Do not install or load this directory.**
 It is deliberately outside all auto-loaded plugin directories.
