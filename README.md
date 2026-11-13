@@ -62,6 +62,14 @@ chat or agent launcher. GUI launch, accessibility and native-runtime acceptance
 remain unverified. The [provider-neutral engine](docs/progress/phase-4-refinement.md)
 supports preparation/review contracts without a live provider or host delivery.
 
+Explicit local project removal is available as `project remove PROJECT
+--confirm-remove-local-data`. It removes that project's registration, evidence and
+all human-note revisions atomically, never repository files. Missing confirmation
+does not open/create a store. This is not Forget/suppression or forensic erasure:
+SQLite free pages, sidecars, backups and exports may retain historical bytes.
+Re-registering and explicitly indexing can import approved sources again, but
+does not restore the deleted human-note history.
+
 ## The problem
 
 Switching coding agents often means repeating architecture, decisions, constraints, and previous corrections. A vague request can send an agent toward the wrong implementation even when the necessary knowledge already exists somewhere in the project.

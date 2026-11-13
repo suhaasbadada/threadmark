@@ -10,6 +10,8 @@ use threadmark_core::knowledge::{LexicalLines, Store};
 pub enum Command {
     /// Approve a root and exact relative files.
     AddProject(String, PathBuf, Vec<String>),
+    /// Explicitly remove this project's local data only, never source files.
+    RemoveProject(String),
     /// Inspect registered projects.
     Projects,
     /// Inspect one project's source policy.
@@ -44,6 +46,7 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
             store.add_project(&id, &root, sources)?;
             json!({"project":id,"registered":true})
         }
+        Command::RemoveProject(id) => store.remove_project(&id, cancel)?,
         Command::Projects => {
             serde_json::to_value(store.projects()?).map_err(|_| Error::Unavailable)?
         }

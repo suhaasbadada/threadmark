@@ -260,3 +260,161 @@ fn core_backed_context_preview_preserves_original_without_inference_or_delivery(
     );
     assert!(!oversized.status.success() && oversized.stdout.is_empty());
 }
+
+#[test]
+fn explicit_project_removal_is_local_content_free_and_persistent_across_processes() {
+    let f = Fixture::new();
+    // Confirmation is parsed before any store is opened or created.
+    for args in [
+        vec!["project", "remove", "synthetic"],
+        vec!["project", "remove", "synthetic", "--confirm"],
+    ] {
+        let out = f.run(&args, None);
+        assert!(!out.status.success() && out.stdout.is_empty());
+        assert!(!f.0.join("store").exists());
+    }
+    let other = Fixture::new();
+    for (id, root) in [
+        ("synthetic", f.0.join("source")),
+        ("other", other.0.join("source")),
+    ] {
+        f.ok(
+            &["project", "add", id, root.to_str().unwrap(), "main.rs"],
+            None,
+        );
+        f.ok(&["index", id], None);
+        f.ok(
+            &["context", "add", id, "note", "note"],
+            Some(b"synthetic private note"),
+        );
+    }
+    f.ok(
+        &["context", "update", "synthetic", "note", "decision"],
+        Some(b"synthetic revised note"),
+    );
+    f.ok(&["context", "retire", "synthetic", "note"], None);
+    let source = std::fs::read(f.0.join("source/main.rs")).unwrap();
+    let other_source = std::fs::read(other.0.join("source/main.rs")).unwrap();
+    let other_project = f.ok(&["project", "show", "other"], None);
+    let other_query = f.ok(&["query", "other", "synthetic_blue"], None);
+    let other_context = f.ok(&["context", "show", "other", "note"], None);
+    // Missing confirmation against an existing store must leave it untouched too.
+    assert!(
+        !f.run(&["project", "remove", "synthetic"], None)
+            .status
+            .success()
+    );
+    assert_eq!(
+        f.ok(&["context", "show", "synthetic", "note"], None)["history"]
+            .as_array()
+            .unwrap()
+            .len(),
+        3
+    );
+    let receipt = f.ok(
+        &[
+            "project",
+            "remove",
+            "synthetic",
+            "--confirm-remove-local-data",
+        ],
+        None,
+    );
+    assert_eq!(receipt["project"], "synthetic");
+    assert_eq!(receipt["removed"], true);
+    let encoded = serde_json::to_string(&receipt).unwrap();
+    assert!(encoded.len() < 1024 && receipt["retention_limits"].is_string());
+    for private in [
+        f.0.to_str().unwrap(),
+        "synthetic private note",
+        "synthetic revised note",
+        "fn synthetic_blue",
+    ] {
+        assert!(!encoded.contains(private));
+    }
+    for args in [
+        vec!["project", "show", "synthetic"],
+        vec!["query", "synthetic", "synthetic_blue"],
+        vec!["context", "list", "synthetic"],
+        vec!["context", "show", "synthetic", "note"],
+        vec!["index", "synthetic"],
+        vec![
+            "project",
+            "remove",
+            "unknown",
+            "--confirm-remove-local-data",
+        ],
+        vec![
+            "project",
+            "remove",
+            "../private-note",
+            "--confirm-remove-local-data",
+        ],
+    ] {
+        let out = f.run(&args, None);
+        assert!(!out.status.success() && out.stdout.is_empty());
+        assert_eq!(
+            String::from_utf8(out.stderr).unwrap(),
+            "local knowledge operation failed; no content published\n"
+        );
+    }
+    assert_eq!(
+        f.ok(&["project", "list"], None).as_array().unwrap().len(),
+        1
+    );
+    assert_eq!(f.ok(&["project", "show", "other"], None), other_project);
+    assert_eq!(
+        f.ok(&["query", "other", "synthetic_blue"], None),
+        other_query
+    );
+    assert_eq!(
+        f.ok(&["context", "show", "other", "note"], None),
+        other_context
+    );
+    assert_eq!(std::fs::read(f.0.join("source/main.rs")).unwrap(), source);
+    assert_eq!(
+        std::fs::read(other.0.join("source/main.rs")).unwrap(),
+        other_source
+    );
+    f.ok(
+        &[
+            "project",
+            "add",
+            "synthetic",
+            f.0.join("source").to_str().unwrap(),
+            "main.rs",
+        ],
+        None,
+    );
+    assert!(
+        f.ok(&["context", "list", "synthetic"], None)["contexts"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+    assert!(
+        !f.run(&["context", "show", "synthetic", "note"], None)
+            .status
+            .success()
+    );
+    assert!(
+        f.ok(&["query", "synthetic", "blue"], None)["results"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+    f.ok(&["index", "synthetic"], None);
+    assert_eq!(
+        f.ok(&["query", "synthetic", "blue"], None)["results"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+    assert!(
+        f.ok(&["context", "list", "synthetic"], None)["contexts"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+}

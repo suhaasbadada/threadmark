@@ -29,7 +29,7 @@ fn main() -> std::process::ExitCode {
 
 fn usage() -> std::process::ExitCode {
     eprintln!(
-        "usage: threadmark --version | status | smoke; or --data-dir ABSOLUTE_NEW_PRIVATE_DIR project add ID ROOT [FILE ...] | project list | project show ID | project sources ID [FILE ...] | index PROJECT | query PROJECT TEXT | context prepare PROJECT QUERY (original on stdin) | context add/update PROJECT ID KIND (stdin) | context retire/show PROJECT ID | context list PROJECT"
+        "usage: threadmark --version | status | smoke; or --data-dir ABSOLUTE_NEW_PRIVATE_DIR project add ID ROOT [FILE ...] | project list | project show ID | project sources ID [FILE ...] | project remove ID --confirm-remove-local-data (local policy/evidence/context only; sources untouched; not Forget or forensic erasure) | index PROJECT | query PROJECT TEXT | context prepare PROJECT QUERY (original on stdin) | context add/update PROJECT ID KIND (stdin) | context retire/show PROJECT ID | context list PROJECT"
     );
     std::process::ExitCode::from(2)
 }
@@ -65,6 +65,9 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
         ),
         ["project", "list"] => Command::Projects,
         ["project", "show", id] => Command::Project((*id).into()),
+        ["project", "remove", id, "--confirm-remove-local-data"] => {
+            Command::RemoveProject((*id).into())
+        }
         ["project", "sources", id, files @ ..] => {
             Command::Sources((*id).into(), files.iter().map(|s| (*s).into()).collect())
         }
