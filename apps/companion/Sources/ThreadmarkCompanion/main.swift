@@ -35,7 +35,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         menu.addItem(withTitle: "Project: \(model.selectedID ?? "None")", action: nil, keyEquivalent: "")
         menu.addItem(withTitle: model.status, action: nil, keyEquivalent: "")
         menu.addItem(.separator())
-        add(menu, model.paused ? "Resume automatic scheduling (no scheduler installed)" : "Pause automatic scheduling", #selector(pause), "p")
+        menu.addItem(withTitle: model.automaticRefreshConsent == nil ? "Timed lexical refresh: off (no consent)" : "Timed lexical refresh: approved", action: nil, keyEquivalent: "")
+        add(menu, model.paused ? "Resume approved timed refresh" : "Pause timed refresh", #selector(pause), "p")
         add(menu, "Manage projects/context…", #selector(manage), ",")
         add(menu, "Connections / Privacy…", #selector(connections), "")
         if model.busy { add(menu, "Cancel owned operation", #selector(cancel), ".") }
@@ -89,7 +90,7 @@ struct ManagementView: View {
             Text("Local understanding, not another coding environment").font(.headline)
             Text(model.status).textSelection(.enabled).accessibilityLabel("Status: \(model.status)")
             HStack {
-                Text(model.paused ? "Automatic scheduling: paused" : "Automatic scheduling: resumed (no scheduler installed)")
+                Text(model.paused ? "Timed refresh: paused" : (model.automaticRefreshConsent == nil ? "Timed refresh: off (no consent)" : "Timed refresh: enabled · every 60 seconds"))
                 Spacer()
                 if model.busy { ProgressView().controlSize(.small); Button("Cancel", action: model.cancel).keyboardShortcut(".") }
             }
@@ -121,8 +122,8 @@ struct ProjectsView: View {
                         Text("None").tag("")
                         ForEach(model.projects) { Text($0.id).tag($0.id) }
                     }
-                    Button("Refresh projects", action: model.refreshProjects).disabled(model.busy)
-                    Button("Refresh selected", action: model.refreshSelected).disabled(model.selectedID == nil || model.busy)
+                    Button("Refresh projects", action: model.refreshProjects).disabled(!model.manualActionsAvailable)
+                    Button("Refresh selected", action: model.refreshSelected).disabled(model.selectedID == nil || !model.manualActionsAvailable)
                 }
                 if let project = model.project {
                     Text("Registered root: \(project.root)").textSelection(.enabled)
@@ -137,7 +138,18 @@ struct ProjectsView: View {
                         Button("Apply source policy", action: model.applySources).disabled(!model.policyDirty || model.busy)
                         Button("Build project understanding", action: model.build).disabled(!model.canBuild).keyboardShortcut("b", modifiers: [.command, .shift])
                     }
-                    Text("Build is a bounded local source-evidence operation (30 seconds; current core: lexical lines). No inference or automatic scan. Unsupported/unreadable files are decided by core; inspect coverage.").font(.caption)
+                    Text("Manual Build: bounded local lexical lines (30 seconds). No inference. Unsupported/unreadable files are decided by core; inspect coverage.").font(.caption)
+                    if let consent = model.automaticRefreshProposal {
+                        Text("Optional timed bounded full lexical reconciliation — not a filesystem watcher or incremental symbol index.").font(.headline)
+                        Text("Project: \(consent.projectID) · root: \(consent.root) · identity: \(consent.rootIdentity)").textSelection(.enabled)
+                        Text("Exact files read automatically: \(consent.sources.joined(separator: ", "))").textSelection(.enabled)
+                        Text("Every 60 seconds while unpaused; 30 seconds/job, 64 files, 64 KiB/file, 1 MiB total. Session-only, off on relaunch. Enabling resumes timed refresh; first read is on the next tick. Busy ticks are skipped. Pause cancels in-flight automatic work. No inference, network, notifications or history archive.").font(.caption)
+                        if model.automaticRefreshConsent == nil {
+                            Button("Enable automatic reads for this exact scope") { model.enableAutomaticRefresh(consent) }.disabled(model.busy)
+                        } else {
+                            Button("Disable automatic reads", action: model.disableAutomaticRefresh)
+                        }
+                    }
                     if let report = model.indexReport {
                         Text("Snapshot \(report.snapshot.description) · \(report.files) files · \(report.anchors) anchors")
                         Text("Coverage: \(report.coverage.description)").textSelection(.enabled)
@@ -145,7 +157,7 @@ struct ProjectsView: View {
                     Divider()
                     HStack {
                         TextField("Search authorized source evidence", text: $query)
-                        Button("Search") { model.query(query) }.disabled(query.isEmpty || query.utf8.count > 256 || model.busy || model.policyDirty)
+                        Button("Search") { model.query(query) }.disabled(query.isEmpty || query.utf8.count > 256 || !model.manualActionsAvailable || model.policyDirty)
                     }
                     Text("Search input is limited to 256 UTF-8 bytes; input is never truncated.").font(.caption)
                     if let result = model.evidence {
@@ -168,7 +180,7 @@ struct ProjectsView: View {
                 TextEditor(text: $files).frame(minHeight: 85).accessibilityLabel("New project exact relative file allowlist")
                 if !selectionError.isEmpty { Text(selectionError) }
                 Button("Approve root and file allowlist") { model.addProject(id: newID, root: root, sources: newSources) }
-                    .disabled(root.isEmpty || !InputPolicy.identifier(newID) || !InputPolicy.sources(newSources) || newSources.isEmpty || model.busy)
+                    .disabled(root.isEmpty || !InputPolicy.identifier(newID) || !InputPolicy.sources(newSources) || newSources.isEmpty || !model.manualActionsAvailable)
             }.padding()
         }
         .sheet(item: Binding(get: { model.pendingRemoval }, set: { if $0 == nil { model.cancelRemoval() } })) { confirmation in
@@ -227,7 +239,7 @@ struct ContextView: View {
                 ForEach(model.contexts.filter { search.isEmpty || $0.id.localizedCaseInsensitiveContains(search) || $0.kind.localizedCaseInsensitiveContains(search) }) { entry in
                     Button("\(entry.id) · \(entry.kind) · revision \(entry.revision) · \(entry.retired ? "retired" : "active") · \(entry.producer)") {
                         editing = false; model.openContext(entry.id)
-                    }.disabled(model.busy)
+                    }.disabled(!model.manualActionsAvailable)
                 }
                 if let history = model.history {
                     Text("Scope: \(history.project) · \(history.producer) · authority \(history.authority.description)").font(.caption)
@@ -243,7 +255,7 @@ struct ContextView: View {
                                 id = history.id; kind = latest.kind; text = latest.text; editing = true
                             }
                         }
-                        Button("Retire (retain history)") { model.retireContext(history.id); editing = false }.disabled(model.busy)
+                        Button("Retire (retain history)") { model.retireContext(history.id); editing = false }.disabled(!model.manualActionsAvailable)
                     }
                 }
                 Divider()
@@ -257,7 +269,7 @@ struct ContextView: View {
                 HStack {
                     Button(editing ? "Save new revision" : "Add context") {
                         model.writeContext(id: id, kind: kind, text: text, update: editing)
-                    }.disabled(model.project == nil || model.busy || !InputPolicy.identifier(id) || text.isEmpty || text.utf8.count > 4096)
+                    }.disabled(model.project == nil || !model.manualActionsAvailable || !InputPolicy.identifier(id) || text.isEmpty || text.utf8.count > 4096)
                     Button("New entry") { id = ""; text = ""; kind = "note"; editing = false }
                 }
                 Text("Forget is unavailable in client-v1. Retire does not delete retained history. No removal or persistence claim is made beyond the core response.").font(.caption)
@@ -339,8 +351,8 @@ struct ConnectionsView: View {
             Text(dataDirectory?.path ?? "No valid store selected — choose a new name or a known existing store").textSelection(.enabled)
             Button("Use selected local core") {
                 if let binary, let dataDirectory { model.configure(executable: binary, dataDirectory: dataDirectory) }
-            }.disabled(binary == nil || dataDirectory == nil || model.busy)
-            Text("\(model.configured ? "Configured (not certified)" : "Unavailable") · configuration is memory-only; no executable is invoked until an explicit operation.")
+            }.disabled(binary == nil || dataDirectory == nil || !model.manualActionsAvailable)
+            Text("\(model.configured ? "Configured (not certified)" : "Unavailable") · configuration is memory-only; executable runs only for explicit actions or separately opted-in timed lexical refresh.")
             Divider()
             Text("Inference profiles: unavailable / disabled").font(.headline)
             Text("No provider client, credentials, consent or budget transport is implemented. Semantic work cannot start.")
@@ -366,7 +378,7 @@ struct PrivacyView: View {
             Text("Search results, note drafts, configuration and previews remain in process memory. No shell content archive, telemetry, OS notifications or provider calls. Core history retention is separate; Retire preserves history.")
             Text(model.notificationPolicy)
             Button(model.paused ? "Resume automatic scheduling" : "Pause automatic scheduling", action: model.togglePause)
-            Text("No automatic scheduler is installed. Pause blocks future automatic work; explicit Build remains a labeled manual action.")
+            Text("Timed lexical refresh is off by default. Projects offers exact-scope session-only consent to automatic local reads every 60 seconds. Pause stops its timer and cancels automatic work; Resume never grants consent. Manual Build remains available while paused. Disable, scope/configuration changes and Quit stop automatic work. Closing Manage does not stop opted-in refresh. No watcher or automatic inference is installed.")
             Text("Launch at login: off / unavailable in this build. No login item or global preferences are written.")
             Text("System light/dark appearance, standard controls, keyboard focus and text status are used. No custom animation; reduced-motion settings need no override. Native accessibility/runtime acceptance is still pending.")
             Spacer()

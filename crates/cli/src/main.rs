@@ -35,6 +35,9 @@ fn usage() -> std::process::ExitCode {
         "optional exact removal approval binding: --expected-root ROOT --expected-root-identity IDENTITY (both required together; not credentials)"
     );
     eprintln!(
+        "bound lexical reconciliation: index PROJECT --expected-root ROOT --expected-root-identity IDENTITY --expected-sources FILE ... (exact nonempty registered policy; not credentials)"
+    );
+    eprintln!(
         "local sensitive-content export: --data-dir EXISTING_STORE project export PROJECT --confirm-export-local-content (stdout only; no delivery)"
     );
     std::process::ExitCode::from(2)
@@ -48,7 +51,7 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
     }
     let data_dir = std::path::Path::new(&args[1]);
     // Bounded parser; untrusted arguments and errors are never echoed.
-    if args.len() > 72 {
+    if args.len() > 80 {
         return usage();
     }
     let Some(words) = args[2..]
@@ -91,6 +94,21 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
             Command::Sources((*id).into(), files.iter().map(|s| (*s).into()).collect())
         }
         ["index", id] => Command::Index((*id).into()),
+        [
+            "index",
+            id,
+            "--expected-root",
+            root,
+            "--expected-root-identity",
+            identity,
+            "--expected-sources",
+            files @ ..,
+        ] => Command::IndexBound(
+            (*id).into(),
+            (*root).into(),
+            (*identity).into(),
+            files.iter().map(|s| (*s).into()).collect(),
+        ),
         ["query", id, text] => Command::Query((*id).into(), (*text).into()),
         ["context", "prepare", project, query] => {
             let mut bytes = Vec::new();

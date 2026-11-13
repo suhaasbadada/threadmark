@@ -158,6 +158,7 @@ public enum ServiceError: String, Error, Sendable, LocalizedError {
 }
 
 public enum Operation: Sendable {
+    case indexBound(String, String, String, [String])
     case removeProject(String, String, String)
     case projects, project(String), addProject(String, String, [String]), setSources(String, [String])
     case index(String), query(String, String), contexts(String), context(String, String)

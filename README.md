@@ -9,7 +9,7 @@ Threadmark is a planned local-first background companion that turns rough develo
 
 > Explain less. Carry context forward. Give every agent a better starting point.
 
-**Status: manual Rust knowledge core.** The CLI registers explicitly approved source files, persists lexical source evidence and human context in private SQLite, and returns bounded source-checked queries across restarts. There is no installable background companion, listener, inference provider or certified coding-host integration yet. Later workflows remain planned; [core evidence and limitations](docs/progress/phase-2-core.md) distinguish this slice from full phase acceptance.
+**Status: bounded Rust lexical core and source-built native macOS shell.** The CLI registers explicitly approved source files, persists lexical source evidence and human context in private SQLite, and returns bounded source-checked queries across restarts. The [native shell](apps/companion/README.md) offers optional session-only, exact-scope timed lexical refresh (off by default), not a watcher or incremental symbol index. There is no distributed/signed companion, listener, inference provider or certified coding-host integration yet. Later workflows remain planned; [core evidence and limitations](docs/progress/phase-2-core.md) distinguish these slices from full phase acceptance.
 
 ## Try the foundation from source
 
@@ -116,10 +116,10 @@ flowchart TB
   Host["Existing coding hosts — own chat, permissions and execution"]
   Adapter["Planned: certified host adapters"]
   Daemon["Implemented: finite offline daemon checks\nPlanned: authorized local service and bounded jobs"]
-   Core["Implemented: scoped SQLite lexical evidence / user context\nPlanned: graph, automatic maintenance and full lifecycle"]
+   Core["Implemented: scoped SQLite lexical evidence / user context\nPlanned: graph, incremental structural maintenance and full lifecycle"]
   Worker["Planned: replaceable Graphify extraction"]
   Inference["Planned, optional: explicitly authorized inference"]
-  Shell["Planned: occasional tray / management / review shell\nNot chat, editor, dashboard or agent launcher"]
+  Shell["Source-built macOS tray / management shell\nOpt-in timed lexical refresh; no chat or agent launcher"]
   CLI["Implemented: CLI version / status / synthetic smoke"]
   Host -.-> Adapter
   Adapter -.-> Daemon

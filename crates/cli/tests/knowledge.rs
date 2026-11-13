@@ -10,6 +10,123 @@ static NEXT_FIXTURE: AtomicU64 = AtomicU64::new(0);
 const EXPORT: [&str; 4] = ["project", "export", "a", "--confirm-export-local-content"];
 
 #[test]
+fn bound_index_rejects_malformed_scope_before_store_creation() {
+    let f = Fixture::new();
+    for (id, root, identity, sources) in [
+        ("bad/id", "/synthetic", "r1", vec!["main.rs"]),
+        ("a", "relative", "r1", vec!["main.rs"]),
+        ("a", "/synthetic", "", vec!["main.rs"]),
+        ("a", "/synthetic", "r1", vec![]),
+        ("a", "/synthetic", "r1", vec!["../outside.rs"]),
+        ("a", "/synthetic", "r1", vec!["main.rs", "main.rs"]),
+    ] {
+        let mut args = vec![
+            "index",
+            id,
+            "--expected-root",
+            root,
+            "--expected-root-identity",
+            identity,
+            "--expected-sources",
+        ];
+        args.extend(sources);
+        let out = f.run(&args, None);
+        assert!(!out.status.success() && out.stdout.is_empty());
+        assert!(!f.0.join("store").exists());
+    }
+    // Missing a paired binding flag cannot fall back to unbound indexing.
+    assert!(
+        !f.run(&["index", "a", "--expected-root", "/synthetic"], None)
+            .status
+            .success()
+    );
+    assert!(!f.0.join("store").exists());
+}
+
+#[test]
+fn bound_index_requires_exact_registered_root_identity_and_files() {
+    let f = Fixture::new();
+    let root = f.0.join("source");
+    let root = root.to_str().unwrap();
+    assert!(
+        !f.run(
+            &[
+                "index",
+                "a",
+                "--expected-root",
+                root,
+                "--expected-root-identity",
+                "synthetic",
+                "--expected-sources",
+                "main.rs"
+            ],
+            None
+        )
+        .status
+        .success()
+    );
+    assert!(!f.0.join("store").exists()); // Even valid-shaped ticks cannot create storage.
+    f.ok(&["project", "add", "a", root, "main.rs"], None);
+    let project = f.ok(&["project", "show", "a"], None);
+    let identity = project["root_identity"].as_str().unwrap();
+    for (expected_root, expected_identity, file) in [
+        ("/synthetic/wrong", identity, "main.rs"),
+        (root, "wrong", "main.rs"),
+        (root, identity, "other.rs"),
+    ] {
+        let out = f.run(
+            &[
+                "index",
+                "a",
+                "--expected-root",
+                expected_root,
+                "--expected-root-identity",
+                expected_identity,
+                "--expected-sources",
+                file,
+            ],
+            None,
+        );
+        assert!(!out.status.success() && out.stdout.is_empty());
+        assert!(f.ok(&["project", "show", "a"], None)["snapshot"].is_null());
+    }
+    let args = [
+        "index",
+        "a",
+        "--expected-root",
+        root,
+        "--expected-root-identity",
+        identity,
+        "--expected-sources",
+        "main.rs",
+    ];
+    let initial = f.ok(&args, None);
+    std::fs::write(f.0.join("source/main.rs"), "synthetic_changed\n").unwrap();
+    let updated = f.ok(&args, None);
+    assert_ne!(initial["snapshot"], updated["snapshot"]);
+    f.ok(&["project", "sources", "a"], None);
+    assert!(!f.run(&args, None).status.success());
+    assert!(f.ok(&["project", "show", "a"], None)["snapshot"].is_null());
+    f.ok(
+        &["project", "remove", "a", "--confirm-remove-local-data"],
+        None,
+    );
+    let replacement = Fixture::new();
+    f.ok(
+        &[
+            "project",
+            "add",
+            "a",
+            replacement.0.join("source").to_str().unwrap(),
+            "main.rs",
+        ],
+        None,
+    );
+    assert!(!f.run(&args, None).status.success());
+    assert!(f.ok(&["project", "show", "a"], None)["snapshot"].is_null());
+}
+
+#[test]
 fn export_requires_exact_confirmation_existing_recognized_store_and_project() {
     let f = Fixture::new();
     for args in [

@@ -25,13 +25,19 @@ public final class CompanionModel: ObservableObject {
     @Published public private(set) var configured = false
     @Published public private(set) var scopeRevision: UInt64 = 0
     @Published public private(set) var lastError: ServiceError?
+    @Published public private(set) var automaticRefreshConsent: AutomaticRefreshConsent?
+    public static let automaticRefreshInterval: TimeInterval = 60
+    private let refreshDriver: any RefreshDriver
+    private var automaticTicket: UInt64?
     public let notificationPolicy = "No OS notifications or content history are recorded."
     private var service: any CoreService
     private var job: Task<Void, Never>?
     private var ownedOperations: [UInt64: Task<Void, Never>] = [:]
     private var generation: UInt64 = 0
 
-    public init(service: any CoreService = ProcessService(), configured: Bool = false) {
+    public init(service: any CoreService = ProcessService(), configured: Bool = false,
+                refreshDriver: any RefreshDriver = TimerRefreshDriver()) {
+        self.refreshDriver = refreshDriver
         self.service = service; self.configured = configured
         if configured { status = "Not refreshed — explicit actions only" }
     }
@@ -42,6 +48,7 @@ public final class CompanionModel: ObservableObject {
         status = "Configured, not tested — Refresh projects to connect"
     }
     public func refreshProjects() {
+        disableAutomaticRefresh()
         start { service in [try await service.perform(.projects)] } apply: { replies in
             guard case .projects(let projects) = replies[0], projects.count <= 64 else { throw ServiceError.invalid }
             self.projects = projects
@@ -55,13 +62,14 @@ public final class CompanionModel: ObservableObject {
         }
     }
     public var canRemoveProject: Bool {
-        guard configured, !busy, !quitting, let project, project.id == selectedID,
+        guard configured, manualActionsAvailable, !quitting, let project, project.id == selectedID,
               case .string(let identity) = project.root_identity else { return false }
         return InputPolicy.identifier(project.id) && InputPolicy.removal(root: project.root, identity: identity)
     }
     /// Opening/canceling this immutable approval performs no core operation.
     public func requestRemoval() {
         guard canRemoveProject, let project else { return }
+        if automaticTicket != nil { cancel() }
         pendingRemoval = RemovalConfirmation(id: UUID(), project: project, generation: generation, scopeRevision: scopeRevision)
     }
     public func cancelRemoval() { pendingRemoval = nil }
@@ -128,10 +136,12 @@ public final class CompanionModel: ObservableObject {
     }
     /// Removal/revocation takes effect in the UI immediately, including during an index job.
     public func stageSources(_ sources: [String]) {
+        disableAutomaticRefresh()
         cancel(); clearResults(); scopeRevision &+= 1; sourceDraft = sources; policyDirty = true
         status = "Source policy changed — apply before Build; displayed evidence invalidated"
     }
     public func applySources() {
+        disableAutomaticRefresh()
         guard let id = selectedID, project != nil, InputPolicy.sources(sourceDraft) else { fail(.invalid); return }
         let sources = sourceDraft
         clearResults()
@@ -145,7 +155,8 @@ public final class CompanionModel: ObservableObject {
             self.status = "Policy applied — old evidence invalidated; Build explicitly"
         }
     }
-    public var canBuild: Bool { configured && project != nil && !policyDirty && !sourceDraft.isEmpty && !busy && !quitting }
+    public var manualActionsAvailable: Bool { !busy || automaticTicket != nil }
+    public var canBuild: Bool { configured && project != nil && !policyDirty && !sourceDraft.isEmpty && manualActionsAvailable && !quitting }
     public func build() {
         guard canBuild, let id = selectedID else { fail(.invalid); return }
         clearResults()
@@ -183,7 +194,7 @@ public final class CompanionModel: ObservableObject {
     }
     public var canPrepareContext: Bool {
         configured && project?.id == selectedID && project != nil && !policyDirty &&
-        InputPolicy.sources(sourceDraft) && !busy && !quitting &&
+        InputPolicy.sources(sourceDraft) && manualActionsAvailable && !quitting &&
         InputPolicy.preparation(query: preparationQuery, original: originalDraft)
     }
     public func prepareContext() {
@@ -227,10 +238,61 @@ public final class CompanionModel: ObservableObject {
         guard hostProject == selectedID else { cancel(); clearResults(); fail(.scopeMismatch); return false }
         return true // No host transport or delivery is implemented.
     }
-    public func togglePause() { paused.toggle() } // No automatic scheduler is installed.
+    public var automaticRefreshProposal: AutomaticRefreshConsent? {
+        guard configured, !quitting, !policyDirty, let project, project.id == selectedID,
+              InputPolicy.identifier(project.id), !sourceDraft.isEmpty, InputPolicy.sources(sourceDraft),
+              sourceDraft == project.sources, case .string(let identity) = project.root_identity,
+              InputPolicy.removal(root: project.root, identity: identity) else { return nil }
+        return AutomaticRefreshConsent(projectID: project.id, root: project.root, rootIdentity: identity,
+                                       sources: sourceDraft, scopeRevision: scopeRevision)
+    }
+    public func enableAutomaticRefresh(_ consent: AutomaticRefreshConsent) {
+        guard !busy, consent == automaticRefreshProposal else { return }
+        automaticRefreshConsent = consent
+        paused = false
+        updateRefreshDriver()
+        status = "Timed lexical refresh enabled — approved files read automatically every 60 seconds"
+    }
+    public func disableAutomaticRefresh() {
+        let wasEnabled = automaticRefreshConsent != nil
+        automaticRefreshConsent = nil
+        refreshDriver.stop()
+        if automaticTicket != nil { cancel() }
+        if wasEnabled { status = "Automatic reads disabled — refresh persisted state after any canceled work" }
+    }
+    private func updateRefreshDriver() {
+        refreshDriver.stop()
+        guard !paused, !quitting, let consent = automaticRefreshConsent,
+              consent == automaticRefreshProposal else { return }
+        refreshDriver.start(interval: Self.automaticRefreshInterval) { [weak self] in self?.automaticRefreshTick() }
+    }
+    /// Busy ticks are skipped, never queued or allowed to cancel manual work.
+    private func automaticRefreshTick() {
+        guard !paused, !quitting, let consent = automaticRefreshConsent else { return }
+        guard consent == automaticRefreshProposal else { disableAutomaticRefresh(); return }
+        guard !busy, ownedOperations.isEmpty, pendingRemoval == nil else { return }
+        evidence = nil; indexReport = nil
+        start(status: "Updating — timed bounded full lexical reconciliation", automatic: true) { service in
+            [try await service.perform(.indexBound(consent.projectID, consent.root, consent.rootIdentity, consent.sources))]
+        } apply: { replies in
+            guard case .indexed(let report) = replies[0], report.project == consent.projectID else { throw ServiceError.scopeMismatch }
+            self.indexReport = report
+            self.status = report.empty ? "Partial — timed lexical snapshot empty; inspect coverage" : "Timed lexical refresh completed — currentness checked only at Build"
+        }
+    }
+    public func togglePause() {
+        paused.toggle()
+        if paused, automaticTicket != nil { cancel() }
+        updateRefreshDriver()
+        if !busy {
+            status = paused ? "Paused — no automatic reads; manual actions remain available"
+                : (automaticRefreshConsent == nil ? "Automatic reads off — explicit scope consent required" : "Timed lexical refresh resumed for the same approved scope")
+        }
+    }
     public func showManagement() { managementVisible = true }
     public func closeManagement() { managementVisible = false; closeExplanationShown = true }
     public func quit() {
+        disableAutomaticRefresh()
         quitting = true; cancel()
         for pending in ownedOperations.values { pending.cancel() }
         status = "Quitting — owned work canceled"
@@ -246,6 +308,7 @@ public final class CompanionModel: ObservableObject {
         for operation in pending { await operation.value }
     }
     public func cancel() {
+        automaticTicket = nil
         pendingRemoval = nil
         preview = nil
         generation &+= 1; job?.cancel(); job = nil
@@ -254,20 +317,23 @@ public final class CompanionModel: ObservableObject {
     }
     private func clearResults() { evidence = nil; history = nil; indexReport = nil; preview = nil }
     private func clearProject() {
+        disableAutomaticRefresh()
         scopeRevision &+= 1
         originalDraft = ""; preparationQuery = ""
         project = nil; contexts = []; sourceDraft = []; policyDirty = false; clearResults()
     }
     private func invalidate(clearProject: Bool) {
+        disableAutomaticRefresh()
         cancel(); clearResults(); if clearProject { self.clearProject() }
     }
     private func fail(_ error: ServiceError) {
         lastError = error; status = error.localizedDescription
     }
-    private func start(status: String = "Working — bounded local core operation", work: @escaping @Sendable (any CoreService) async throws -> [Reply],
+    private func start(status: String = "Working — bounded local core operation", automatic: Bool = false, work: @escaping @Sendable (any CoreService) async throws -> [Reply],
                        apply: @escaping @MainActor ([Reply]) throws -> Void) {
         guard !quitting else { return }
         cancel(); let ticket = generation; let service = service
+        automaticTicket = automatic ? ticket : nil
         let prior = Array(ownedOperations.values)
         for pending in prior { pending.cancel() }
         busy = true; lastError = nil; self.status = status
@@ -281,11 +347,16 @@ public final class CompanionModel: ObservableObject {
                 guard let self, self.generation == ticket, !Task.isCancelled, !self.quitting else { return }
                 let replies = try await work(service)
                 guard self.generation == ticket, !Task.isCancelled, !self.quitting else { return }
-                try apply(replies); self.busy = false; self.job = nil
+                try apply(replies); self.busy = false; self.job = nil; self.automaticTicket = nil
             } catch {
                 guard let self, self.generation == ticket, !self.quitting else { return }
                 self.clearResults(); self.busy = false; self.job = nil
                 self.fail(error as? ServiceError ?? (error is CancellationError ? .canceled : .failed))
+                self.automaticTicket = nil
+                if automatic {
+                    self.disableAutomaticRefresh()
+                    self.status = "Needs attention — automatic refresh stopped. Check permissions/configuration, refresh project policy, then explicitly enable again."
+                }
             }
         }
         ownedOperations[ticket] = job

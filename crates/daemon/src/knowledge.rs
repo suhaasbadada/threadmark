@@ -24,6 +24,8 @@ pub enum Command {
     Sources(String, Vec<String>),
     /// Explicit bounded index job.
     Index(String),
+    /// Timed reconciliation bound to exact previously approved scope.
+    IndexBound(String, String, String, Vec<String>),
     /// Bounded source-backed lexical inspection.
     Query(String, String),
     /// Prepare a memory-only context preview (project, query, unchanged original).
@@ -47,8 +49,15 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
     if let Command::RemoveProjectBound(id, root, identity) = &command {
         threadmark_core::knowledge::validate_removal_binding(id, root, identity)?;
     }
+    if let Command::IndexBound(id, root, identity, sources) = &command {
+        threadmark_core::knowledge::validate_index_binding(id, root, identity, sources)?;
+    }
     let mut store = if let Command::ExportProject(id) = &command {
         threadmark_core::knowledge::validate_export_project(id)?;
+        Store::open_existing(data_dir)?
+    } else if matches!(&command, Command::IndexBound(..)) {
+        // Automatic reconciliation requires an already registered scope; never
+        // recreate a missing store as a side effect of a background tick.
         Store::open_existing(data_dir)?
     } else {
         Store::open(data_dir)?
@@ -74,6 +83,9 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
             json!({"project":id,"source_evidence_invalidated":true})
         }
         Command::Index(id) => store.index(&id, &mut LexicalLines, cancel)?,
+        Command::IndexBound(id, root, identity, sources) => {
+            store.index_bound(&id, &root, &identity, &sources, cancel)?
+        }
         Command::Query(id, text) => store.query(&id, &text, cancel)?,
         Command::PrepareContext(id, query, original) => {
             crate::preparation::context(&store, &id, &query, original, cancel)?

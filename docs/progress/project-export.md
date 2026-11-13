@@ -56,3 +56,16 @@ No database schema, third-party dependency, lockfile, GUI or live integration
 changed. Remote exact-head CI/PR outcome remains a subsequent gate. GUI/runtime,
 Forget, automatic watching, live provider/host acceptance and phase closure remain
 open. All worktrees and inherited progress appends were preserved.
+
+## Publication outcome
+
+PR [#44](https://github.com/suhaasbadada/threadmark/pull/44) passed all five
+checks on `b410dac367e5afd6505936d7ade58642953152b4`: CI
+[43522245973](https://github.com/suhaasbadada/threadmark/actions/runs/43522245973)
+and integrated [43522245900](https://github.com/suhaasbadada/threadmark/actions/runs/43522245900).
+Fresh exact-head/main/discussion/rules checks found no blocker; independent review
+and acceptance above applied. It merged at `2026-11-13T22:53:43Z` as
+`7f6e2a248c0ec18b75bd814d1e910b62c8a15fb2`; the PR watch was removed.
+Post-merge CI [43522953736](https://github.com/suhaasbadada/threadmark/actions/runs/43522953736)
+and integrated [43522953654](https://github.com/suhaasbadada/threadmark/actions/runs/43522953654)
+both passed on that exact merge. Export is not inference, delivery or phase closure.

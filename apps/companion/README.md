@@ -84,9 +84,23 @@ the real adapter, and removes its data. It does not launch an app GUI or host.
   owned operations before calling the service. A canceled mutation cannot commit
   after a replacement policy or refresh overtakes it. Join and Quit also include
   outstanding work whose visible job was already canceled.
-- Pause/resume changes scheduling state only; there is no automatic scheduler,
-  watcher or unsolicited core operation in this lane. Explicit Build is labeled
-  manual and can run while automatic scheduling is paused.
+- Optional **timed bounded full lexical reconciliation** is off by default and
+  session-memory-only. Projects shows the selected ID, root, root identity, exact
+  approved files, 60-second interval and bounds before explicit Enable consent.
+  Enable resumes this scope and installs one owned Foundation Timer (no immediate
+  read); only its ticks can start automatic work. Resume alone never grants consent.
+  A clean nonempty loaded policy, known root identity and configured core are required.
+  Pause invalidates the timer and cancels automatic work; resume reuses only the
+  same valid consent. Manual operations take priority; busy ticks are skipped with
+  no queue, overlap or cancellation thrashing. Closing Manage leaves opted-in work
+  active. Disable, selection/refresh, source-policy edits/revocation, configuration,
+  removal and Quit immediately stop the timer and invalidate consent/late results.
+  Cancellation joins teardown before replacement work. Failure stops the timer and
+  shows content-free Needs attention; repair and explicit re-enable are required.
+  Successful reconciliation updates the snapshot report and invalidates prepared
+  evidence, but never changes the original draft, query, human notes or editor scope.
+  This is not a watcher, debounce/incremental symbol index or full phase acceptance.
+  Explicit Build remains manual and available while paused.
 - Closing Manage retains the window/model and owned job. A one-time close
   explanation distinguishes it from Quit. Quit cancels **all** outstanding owned
   operations (including previously superseded ones), waits for adapter teardown,
@@ -97,7 +111,8 @@ the real adapter, and removes its data. It does not launch an app GUI or host.
 - Configuration and drafts/previews are memory-only. Relaunch requires selecting
   the executable/data directory again; core persistence is not shell persistence.
 - No notifications, telemetry, content archive, custom animation, login startup
-  or automatic source/provider calls. Standard native controls/system appearance
+  or automatic provider calls. Automatic source reads require the separate timed
+  refresh consent above. Standard native controls/system appearance
   provide the compiled accessibility starting point, not a runtime certification.
 
 ## Transport integration
@@ -115,7 +130,16 @@ in its environment. There is no shell, PATH discovery,
 HOME credential lookup or listener. Until configured, production visibly fails
 `unavailable`. Selecting a binary is not a version check or trust certification.
 
-`CoreService.perform(Operation)` exposes exactly the contract's operations.
+`CoreService.perform(Operation)` exposes the contract's operations plus an additive
+scope-bound lexical index variant used for every automatic job:
+`index ID --expected-root ROOT --expected-root-identity IDENTITY --expected-sources FILE ...`.
+Core validates malformed bindings before opening/creating storage, compares the
+entire approval before reading any source, and rechecks the same captured policy
+transactionally before publication. A reused ID at a different root, replaced root
+identity or changed file policy fails closed; model-only scope checks are not
+authority. Bound reconciliation requires an existing recognized store and never
+recreates a missing store on a tick. These bindings prevent stale approval, not
+authenticate a caller.
 Command mapping follows the coordinator-provided CLI. Project list is a JSON
 array; project show is a summary object. Most mutation output must be valid JSON;
 the model re-reads authoritative project/context state instead of guessing a
@@ -159,5 +183,13 @@ After separate authorization and core CLI integration:
 
 Phase 1 live host/inference gates stay OPEN. Full P3-A1–P3-A6 acceptance remains
 open pending these observed journeys. Forget, conflict resolution, export,
-login startup, automatic scheduling, host certification and inference are visibly
+login startup, event-driven incremental indexing, host certification and inference are visibly
 unavailable or outside client-v1, not simulated by the shell.
+
+The deterministic tests exercise injected ticks and the real Foundation Timer
+callback without waiting 60 seconds. Opt-in live-core tests drive consent/ticks
+through the actual adapter and built Rust CLI into SQLite, including source
+modification, pause/revocation, human-note/draft preservation, omitted-file and
+other-project isolation, and an external same-ID/root replacement. These cover
+bounded parts of P2-A1–P2-A3/P2-A6 and P3-A1/P3-A3–P3-A5; observed GUI/accessibility,
+event watchers, structural/symbol extraction and complete phase acceptance stay open.
