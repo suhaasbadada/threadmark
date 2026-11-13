@@ -84,6 +84,58 @@ check and offline cargo-deny PASS. No authentic artifact acquisition or live
 compiler execution was added to CI. Staged secrets/whitespace follow final staging;
 exact tested commit and remote CI are separate PR gates, not claimed here.
 
+Published separately as PR #26:
+https://github.com/suhaasbadada/threadmark/pull/26. Full tested/pushed head
+`1d8b3d3c1633494afa8421218ec5c14504da1ac9`, with merged main/site PR #25
+integrated without changing measured compiler/runtime sources. All 551 offline
+tests and foundation/site checks reran successfully at that exact head. CI
+`43353895237`, integrated `43353895253` and offline OpenCode `43353895601`
+target that head; initially two offline jobs passed and five jobs remained running.
+No CI success, merge or phase closure is claimed before fresh final inspection.
+This local append retains exact-head tracking for the notification continuation.
+
+## PR #26 qualified merge and next authentic declaration gate
+
+Fresh exact-head inspection verified all seven jobs SUCCESS on
+`1d8b3d3c1633494afa8421218ec5c14504da1ac9`, main target, CLEAN/MERGEABLE,
+no draft/comments/unresolved threads or additional approval/protection/ruleset
+gate. Independent reviews and actual bounded compiler acceptance above remain
+the acceptance evidence; no forge approval was invented. Under standing qualified
+merge authorization, PR #26 merged as `1590450e2c40684080fe67ac5c07d1aa87134af1`;
+tree equals tested `2df32e199e3d7d5c9816bb3d3051cfe96af3591e`. Watch stopped.
+Post-merge offline OpenCode `43354230483`, integrated `43354230530` and CI
+`43354230775` all succeeded on that exact merge SHA. No native deployment followed.
+
+Sherlock independently inspected all 345 owned archives, checking compressed
+hashes, and confirmed a new declaration dependency: plugin promise entrypoint ->
+plugin declarations -> aisdk declarations -> `@ai-sdk/provider@3.0.8` ->
+`json-schema` types. Owned json-schema@0.4.0 has no declarations; the provider's
+authentic metadata pins dev dependency `@types/json-schema@7.0.15`, absent from
+the lock/archive set. Existing Emscripten bytes do not define EmscriptenModule;
+the web-tree-sitter surface's optional peer is needed if explicitly consumed,
+but ordinary plugin/TUI reachability has not been established for that surface.
+
+Primary reviewed public exact-version registry metadata only for
+`@types/json-schema@7.0.15` and candidate `@types/emscripten@1.40.0`: both MIT,
+declaration entry `index.d.ts`, empty dependencies/scripts. JSON Schema integrity
+`sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==`;
+Emscripten integrity
+`sha512-MD2JJ25S4tnjnhjWyalMS6K6p0h+zQV6+Ylm+aGbiS8tSn/aHLSGNzBgduj6FB4zH0ax2GRMGYi/8G1uOxhXWA==`.
+These are metadata pins, not acquired-byte/license/semantic certification.
+Next unit may add these exact declaration-only prerequisites through generated
+lock-only npm and bounded inert acquisition of only those two public registry
+archives, with actual notices/dependency inspection and independent review.
+No install scripts, runtime import, compiler/SDK execution, new credentials or
+waiver of the remaining runtime provenance/engine/type-closure gates is authorized.
+
+Primary final verification also reran all 80 Node offline contract tests: PASS,
+bringing this unit to 478 Python + 80 Node = **558 offline tests PASS**.
+Joffrey independently verified both authentic archives/pins, all eight selected
+file hashes/sizes and MIT notice bytes, generated lock's two-entry-only delta,
+unchanged existing notices and qualified closure limitations. No substantive
+findings; 175 native tests and whitespace passed independently. Final staged
+secrets and whitespace checks PASS. No compiler/SDK execution followed acquisition.
+
 Status: **BLOCKED at dependency license/closure gate, before installation**.
 TM-05/TM-08/TM-10; P1-A2 and P1-A5 remain **PARTIAL**, not newly satisfied.
 Phase 1 and the full agreed product scope remain OPEN. This is not another
@@ -1617,3 +1669,100 @@ new explicit primary execution authorization is still mandatory. TM-04/TM-05/
 TM-08/TM-10, P1-A2/P1-A5 remain PARTIAL; SDK/type/notice/runtime closure, native
 capture/review/admission, host certification and Phase 1/product acceptance remain
 blocked/open without waiver. The prior positive failure is still undiagnosed.
+
+## Two exact authentic declaration prerequisites — inert receipt, not closure
+
+Bob completed this bounded unit on tested base HEAD
+`926abccc729b5f19cebdd7e335098af884a1e292`, branch `t3/004628d1`, integrating
+main `1590450e2c40684080fe67ac5c07d1aa87134af1` after PR #26. The primary's
+entire preexisting uncommitted PR #26 progress append is preserved. Working
+changes are staged/uncommitted: no current-unit commit, CI head/run, PR, push,
+merge or deployment exists. Independent review of this unit has NOT RUN.
+TM-04/TM-05/TM-08/TM-10 and P1-A2/P1-A5 remain **PARTIAL**, not met.
+
+Added only development pins `@types/json-schema@7.0.15` and
+`@types/emscripten@1.40.0`. Existing npm 11.6.0 generated the lock using
+`install --package-lock-only --ignore-scripts --legacy-peer-deps --omit=optional
+--no-audit --no-fund --registry=https://registry.npmjs.org/` with replacement
+environment, fresh private HOME/TMPDIR/XDG/cache, empty private user/global
+configuration and update notifier disabled. No inherited credentials, Node
+overrides, scripts or installed packages were used. All **existing non-root lock
+entries are byte-equivalent as parsed JSON**, with only the two new entries and
+root pins added. No node_modules exists. Current lock SHA-256:
+`20571ff490c60ed12a0e6b7eefb54138f9292778d2f4be1a2b874f5db1ed6651`.
+
+Exactly two public registry archive requests used the existing redirect-denying,
+proxy/auth/cookie-free opener, 30-second request timeout and 512 KiB compressed
+read cap each. SHA-512 matched the exact primary-reviewed pins before the existing
+strict project_types inspector parsed anything. Each archive's actual expansion
+was bounded at 1 MiB (at most 1 MiB compressed / 2 MiB expanded combined).
+Observed totals: **11,873 compressed / 60,928 expanded tar / 50,771 declared
+file bytes**. Actual archives contain **four regular files each**, not the five
+advertised by registry fileCount metadata: complete package.json, index.d.ts,
+README.md and LICENSE. No extra file was invented to match the metadata count.
+All eight authentic files and both original archives were exclusively preserved
+as 0400 inert files in fresh private 0700 owned directories; no extraction API,
+package import or package execution was used. Existing archives/evidence were
+not changed or cleaned. No authentic declaration source was vendored in Git.
+
+Compressed SHA-256 identities:
+- `@types/emscripten@1.40.0`:
+  `dd0dceaf2578bbaa1563db0632657806b18e48c0ff1cbff9f54171708e8d7fb1`.
+- `@types/json-schema@7.0.15`:
+  `12dcb1dcff7099bff0663fc220551ba53fcf23c136a22375e323bb6626d95724`.
+
+`declaration-prerequisites.json` records both computed SHA-512 pins, compressed
+SHA-256s, complete actual metadata, all file sizes/hashes and notice/type paths.
+It supplements, rather than regenerates or approves, the older full blocked audit.
+Both actual LICENSE files have the MIT License heading and Copyright (c)
+Microsoft Corporation; identical notice SHA-256:
+`c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383`.
+Their exact unmodified notice bytes were appended to THIRD-PARTY-NOTICES.txt;
+every preexisting byte is preserved. No old runtime notice gap was waived.
+
+Both actual manifests have empty dependency/script maps. Full declaration texts
+were inspected as inert data: no external import/reference lines or wildcard
+reference was found. JSON Schema defines JSONSchema7/JSONSchema7Definition;
+Emscripten defines global EmscriptenModule. These are byte/inspection facts, not
+semantic checking or complete declaration-graph proof. The former follows the
+authentic provider 3.0.8 dev pin; the latter is for explicitly selected
+web-tree-sitter, whose ordinary plugin/TUI reachability is still unestablished.
+No Bun types or other closure dependencies were added.
+
+`declaration_receipt.py` is a narrow offline identity/inventory checker reusing
+the strict inspector; it has no acquisition CLI, resolver, execution or approval
+path. Seven new tests cover real manifest/lock/receipt and actual notice-byte hash
+agreement, exact source/version/integrity/root pins, corrupt archives, missing
+notice/declaration, complete metadata preservation and wrong actual metadata or
+extra dependencies/scripts, plus compressed/expanded rejection before the shared
+tar parser. Archive fixtures are explicitly synthetic.
+README now distinguishes the independently reviewed historical standalone compiler
+PASS from the still-unselected/unexecuted SDK graph; no measured compiler policy,
+oracle, fixture, source binding or successful candidate was changed.
+
+Verification: **478 Python offline tests PASS**, including **175 native tests**
+and five CI-interpreter tests, under installed Python 3.12.6. The existing 80
+Node offline contracts were **NOT RUN** in this unit per execution restriction;
+do not call this a new 558-test full-suite pass. No Node/TypeScript compiler,
+SDK/runtime host or sandbox guard ran; only the expressly authorized npm metadata
+generator used Node. Foundation fmt/build/clippy/tests/docs/smoke and deliberate
+failing-test rejection passed through `CARGO_NET_OFFLINE=true python3
+scripts/check.py`; cached `cargo deny --locked --offline check` passed. No Docker,
+provider access, credential reuse, new workflow, deployment or delegation occurred.
+
+Next: independent review of these staged prerequisites, then a separate bounded
+authentic SDK selection/fixed-guard design and review. No projection approval,
+SDK semantic/consumed-file closure, install/runtime approval or new target
+execution is implied. Existing runtime notices/provenance, Node 24.10.0 versus
+OpenTUI >=26.4.0, publisher authentication, native capture/review/admission and
+full Phase 1/product gates remain open. Staged secrets/whitespace results are
+recorded below after final staging; no exact-current-head CI evidence exists.
+
+Final local handoff: all 478 Python tests reran green on the final checker source;
+the seven receipt tests also pass under default Python. Both authentic private
+archives/files revalidated against the final checker/receipt and restrictive
+modes, and the two-entry-only generated lock delta rechecked. Staged tracked-file
+secret scanning and synthetic-secret rejection, staged/unstaged whitespace and
+local documentation links passed. Eight files are staged, including the entire
+preserved primary progress append; no unstaged source changes remain. No new
+independent review, remote CI or execution authorization is claimed.
