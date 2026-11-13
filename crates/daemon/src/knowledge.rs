@@ -18,6 +18,8 @@ pub enum Command {
     Projects,
     /// Inspect one project's source policy.
     Project(String),
+    /// Explicit caller-approved sensitive local-content export, never delivery.
+    ExportProject(String),
     /// Revoke/replace source policy and invalidate active evidence immediately.
     Sources(String, Vec<String>),
     /// Explicit bounded index job.
@@ -45,7 +47,12 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
     if let Command::RemoveProjectBound(id, root, identity) = &command {
         threadmark_core::knowledge::validate_removal_binding(id, root, identity)?;
     }
-    let mut store = Store::open(data_dir)?;
+    let mut store = if let Command::ExportProject(id) = &command {
+        threadmark_core::knowledge::validate_export_project(id)?;
+        Store::open_existing(data_dir)?
+    } else {
+        Store::open(data_dir)?
+    };
     let result = match command {
         Command::AddProject(id, root, sources) => {
             store.add_project(&id, &root, sources)?;
@@ -61,6 +68,7 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         Command::Project(id) => {
             serde_json::to_value(store.project(&id)?).map_err(|_| Error::Unavailable)?
         }
+        Command::ExportProject(id) => store.export_project(&id, cancel)?,
         Command::Sources(id, paths) => {
             store.set_sources(&id, paths)?;
             json!({"project":id,"source_evidence_invalidated":true})

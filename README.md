@@ -70,6 +70,17 @@ SQLite free pages, sidecars, backups and exports may retain historical bytes.
 Re-registering and explicitly indexing can import approved sources again, but
 does not restore the deleted human-note history.
 
+Explicit sensitive local-content inspection is available as
+`--data-dir EXISTING_STORE project export PROJECT --confirm-export-local-content`.
+It writes one [versioned JSON archive](docs/contracts/project-export-v1.md) to
+stdout only after complete success (at most 1 MiB including the newline), never
+creates a store, indexes, chooses a file, or sends content. It includes all
+eligible current lexical anchors and all human revisions, including retired
+ones, with separate provenance. Stale/unindexed evidence is omitted explicitly;
+authorization failures or overflow fail the whole export without stdout. Source
+excerpts and notes are sensitive: subsequent redirection/sharing is the caller's
+responsibility. This is not backup/restore or an import capability.
+
 ## The problem
 
 Switching coding agents often means repeating architecture, decisions, constraints, and previous corrections. A vague request can send an agent toward the wrong implementation even when the necessary knowledge already exists somewhere in the project.

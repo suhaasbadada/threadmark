@@ -34,6 +34,9 @@ fn usage() -> std::process::ExitCode {
     eprintln!(
         "optional exact removal approval binding: --expected-root ROOT --expected-root-identity IDENTITY (both required together; not credentials)"
     );
+    eprintln!(
+        "local sensitive-content export: --data-dir EXISTING_STORE project export PROJECT --confirm-export-local-content (stdout only; no delivery)"
+    );
     std::process::ExitCode::from(2)
 }
 
@@ -68,6 +71,9 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
         ),
         ["project", "list"] => Command::Projects,
         ["project", "show", id] => Command::Project((*id).into()),
+        ["project", "export", id, "--confirm-export-local-content"] => {
+            Command::ExportProject((*id).into())
+        }
         ["project", "remove", id, "--confirm-remove-local-data"] => {
             Command::RemoveProject((*id).into())
         }
