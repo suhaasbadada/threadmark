@@ -96,3 +96,25 @@ staged for the secret scan; no implementation commit was created.
 The only commit made here is the explicitly authorized baseline merge. No reset,
 branch switch, cleanup, Docker resource or external service was used. Full checks
 include inherited synthetic loopback transport fixtures, not live providers.
+# Primary combined integration
+
+Primary committed only the nine owned files as `a6a793c` in the completed lane
+and applied them without conflicts as
+`3cc3aff4d4a49d061146969ddba07eff50e96cb4`, the exact combined tested runtime.
+No baseline/site merges or native editing changes were replayed. Joffrey's
+independent review was **CLEAR**; he passed seven core/three CLI cases, the full
+offline workspace gate, dependency policy, secrets and whitespace. Two inherited
+production-duration deadline tests remain ignored.
+
+Primary combined workspace gate **PASS**, 247 Rust tests/two doctests; strict
+serial actual-CLI/C-fixture native suite **PASS**, 188 tests/26 suites. The
+ordinary-import model API compiler gate, dependency policy, staged secrets and
+whitespace passed. Primary verified exact binding precedes the shared human-data
+callback, callbacks reuse the transaction, and fresh registration checking occurs
+after transaction commit. This is not an atomic external revocation lease.
+
+Native human LIST/HISTORY/SEARCH calls are not migrated by this backend unit.
+Native revision editing is PR #69; native bound-read integration follows this
+additive contract separately. Publication exact-head CI remains required. Nine
+inherited progress edits, all worktrees and parent reminders remain preserved;
+GUI/AX/live-quality/host-delivery/phase closure remain unverified.
