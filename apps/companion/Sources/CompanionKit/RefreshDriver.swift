@@ -69,6 +69,9 @@ public final class TimerRefreshDriver: RefreshDriver {
                       failure: @escaping @MainActor @Sendable () -> Void) throws {
         stop()
         precondition(interval >= 60)
+        guard InputPolicy.identifier(consent.projectID),
+              InputPolicy.removal(root: consent.root, identity: consent.rootIdentity),
+              InputPolicy.incarnation(consent.incarnation), InputPolicy.sources(consent.sources) else { throw ServiceError.invalid }
         request = Request(consent: consent, service: service, interval: interval,
                           token: generation, ready: ready, tick: tick, failure: failure)
         authorize(initial: true)

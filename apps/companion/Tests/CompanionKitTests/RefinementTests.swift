@@ -46,7 +46,7 @@ private actor RefinementCore: CoreService {
         case .project: return .project(seed.project)
         case .contexts: return .contexts(ContextList(project: "alpha", contexts: []))
         case .context: return .context(ContextHistory(project: "alpha", id: "memo", producer: "human-authored", authority: .string("human-declared"), history: [ContextRevision(revision: 1, kind: "note", text: "Synthetic retained history", retired: false)]))
-        case .query: return .query(seed.selection)
+        case .query, .queryBound: return .query(seed.selection)
         case .refinePreview(let consent):
             calls += 1; didBegin = true; began?.resume(); began = nil
             if hold { await withCheckedContinuation { held = $0 } } // Deliberately ignores task cancellation.

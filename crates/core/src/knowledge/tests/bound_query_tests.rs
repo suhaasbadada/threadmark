@@ -84,3 +84,38 @@ fn bound_query_checks_policy_snapshot_and_cancellation_before_source_boundary() 
     assert_eq!(stale["currentness"], "stale-or-unindexed");
     assert!(stale["results"].as_array().unwrap().is_empty());
 }
+
+#[test]
+fn cached_read_requires_complete_valid_metadata_but_not_an_indexed_snapshot() {
+    let fixture = Fixture::new();
+    let store = fixture.registered();
+    let captured = store.project("a").unwrap();
+    assert!(captured.snapshot.is_none());
+    let result = store.query_bound(&captured, "alpha", &token()).unwrap();
+    assert_eq!(result["currentness"], "stale-or-unindexed");
+    assert!(result["results"].as_array().unwrap().is_empty());
+    for field in ["root", "identity", "incarnation", "snapshot", "sources"] {
+        let mut malformed = store.project("a").unwrap();
+        match field {
+            "root" => malformed.root = "relative".into(),
+            "identity" => malformed.root_identity.clear(),
+            "incarnation" => malformed.incarnation = Some("legacy".into()),
+            "snapshot" => malformed.snapshot = Some("not-a-hash".into()),
+            "sources" => malformed.sources = vec!["../escape.rs".into()],
+            _ => unreachable!(),
+        }
+        assert!(validate_query_binding(&malformed, "alpha").is_err());
+        assert!(store.query_bound(&malformed, "alpha", &token()).is_err());
+    }
+    for query in ["".into(), "a".repeat(257), "nul\0query".into()] {
+        assert!(validate_query_binding(&captured, &query).is_err());
+    }
+    let mut wrong = store.project("a").unwrap();
+    wrong.root_identity = "different-filesystem-identity".into();
+    assert!(matches!(
+        store.query_scoped("a", "alpha", &token(), Some(&wrong), || panic!(
+            "root mismatch reached source boundary"
+        )),
+        Err(Error::ScopeMismatch)
+    ));
+}

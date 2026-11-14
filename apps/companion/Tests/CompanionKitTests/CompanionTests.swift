@@ -89,6 +89,8 @@ private actor ExplicitFakeCoreService: CoreService {
         calls += 1
         if let error = nextFailure { nextFailure = nil; throw error }
         switch operation {
+        case .queryBound(let p, let q): return try await perform(.query(p.id, q))
+        case .prepareContextBound(let p, let q, let original): return try await perform(.prepareContext(p.id, q, original))
         case .searchHumanContext, .refinePreview: throw ServiceError.unavailable
         case .forgetContext, .forgottenContexts, .forgetSource, .forgottenSources: throw ServiceError.unavailable
         case .removeProject(let id, let root, let identity, let token):
@@ -426,7 +428,7 @@ struct ModelTests {
         #expect(await service.calls == before && model.busy)
         await service.finishPreview("Synthetic original"); await model.waitForOperation()
         #expect(model.preview != nil && model.originalDraft == "Synthetic original")
-        #expect(await service.calls == before && !model.busy) // No queued follow-up.
+        #expect(await service.calls == before + 1 && !model.busy) // One post-read namespace check; no queued follow-up.
         model.disableAutomaticRefresh()
     }
     @Test(arguments: ["pause", "disable", "sources", "selection", "configuration", "refresh", "remove", "quit"])
@@ -486,7 +488,7 @@ struct ModelTests {
         for _ in 0..<10 { driver.fire() }
         #expect(await service.calls == before)
         try await service.finishIndex(); await model.waitForOperation()
-        #expect(await service.calls == before + 1 && model.indexReport?.project == "alpha")
+        #expect(await service.calls == before + 2 && model.indexReport?.project == "alpha") // Build plus actual fresh metadata.
         #expect(model.status.contains("Build completed") && model.originalDraft == "Synthetic retained draft")
         #expect(driver.active && model.automaticRefreshConsent != nil)
         model.disableAutomaticRefresh()

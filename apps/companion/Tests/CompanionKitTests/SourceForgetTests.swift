@@ -60,6 +60,8 @@ private actor SourceForgetCore: CoreService {
     func perform(_ operation: CompanionKit.Operation) async throws -> Reply {
         calls += 1
         switch operation {
+        case .queryBound(let p, let q): return try await perform(.query(p.id, q))
+        case .prepareContextBound(let p, let q, let original): return try await perform(.prepareContext(p.id, q, original))
         case .project(let id):
             if holdProject {
                 holdProject = false; events.append("authority-start"); projectObserver?.resume(); projectObserver = nil

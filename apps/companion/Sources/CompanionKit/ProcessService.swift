@@ -82,6 +82,8 @@ public struct ProcessService: CoreService {
         }
         if case .searchHumanContext = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .query = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
+        if case .queryBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
+        if case .prepareContextBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .prepareContext = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .removeProject = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 1024) }
         if case .forgetContext = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 1024) }
@@ -98,7 +100,13 @@ public struct ProcessService: CoreService {
         guard !Task.isCancelled else { throw ServiceError.canceled }
         do {
             let decoder = JSONDecoder()
+            let responseOperation: Operation
             switch operation {
+            case .queryBound(let p, let q): responseOperation = .query(p.id, q)
+            case .prepareContextBound(let p, let q, let original): responseOperation = .prepareContext(p.id, q, original)
+            default: responseOperation = operation
+            }
+            switch responseOperation {
             case .refinePreview(let consent):
                 return .refinementPreview(try RefinementPreview.decode(data, consent: consent))
             case .searchHumanContext(let project, _):
@@ -201,6 +209,24 @@ public struct ProcessService: CoreService {
         var args: [String]
         var input = Data()
         switch operation {
+        case .queryBound(let p, let query), .prepareContextBound(let p, let query, _):
+            guard InputPolicy.identifier(p.id), case .string(let identity) = p.root_identity,
+                  InputPolicy.removal(root: p.root, identity: identity),
+                  let token = p.incarnation, InputPolicy.incarnation(token), InputPolicy.sources(p.sources),
+                  !query.isEmpty, query.utf8.count <= 256, !query.contains("\0") else { throw ServiceError.invalid }
+            let snapshot: String
+            if p.snapshot == nil || p.snapshot == .null { snapshot = "none" }
+            else {
+                guard case .string(let hash) = p.snapshot, hash.utf8.count == 64,
+                      hash.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }) else { throw ServiceError.invalid }
+                snapshot = hash
+            }
+            if case .prepareContextBound(_, _, let original) = operation {
+                guard InputPolicy.preparation(query: query, original: original) else { throw ServiceError.invalid }
+                args = ["context", "prepare", p.id, query]; input = Data(original.utf8)
+            } else { args = ["query", p.id, query] }
+            args += ["--expected-root", p.root, "--expected-root-identity", identity,
+                     "--expected-incarnation", token, "--expected-snapshot", snapshot, "--expected-sources"] + p.sources
         case .refinePreview(let consent):
             try consent.validate()
             guard case .string(let identity) = consent.project.root_identity,
