@@ -21,8 +21,9 @@ public struct RefinementConsent: Identifiable, Equatable, Sendable {
         self.generation = generation; self.scopeRevision = scopeRevision; self.retrievalMode = retrievalMode
     }
 
-    // Rust char::is_whitespace / char::is_control and per-scalar lowercase,
-    // deliberately not normalization, stemming, or locale-sensitive tokenization.
+    // Rust char::is_whitespace / char::is_control and contextual whole-term
+    // lowercase. Unicode root locale is explicit: never the user's locale,
+    // normalization or stemming. Swift's scalar lowercase omits final sigma.
     static func rankedTerms(_ query: String) throws -> [String] {
         guard query.utf8.count <= 256,
               !query.unicodeScalars.contains(where: { $0.value < 32 || (127...159).contains($0.value) }) else { throw ServiceError.invalid }
@@ -32,7 +33,7 @@ public struct RefinementConsent: Identifiable, Equatable, Sendable {
         }
         var terms: [String] = []
         for part in parts {
-            let term = part.map { String($0).lowercased() }.joined()
+            let term = String(String.UnicodeScalarView(part)).lowercased(with: Locale(identifier: "und"))
             guard term.utf8.count <= 64 else { throw ServiceError.invalid }
             if !terms.contains(where: { $0.utf8.elementsEqual(term.utf8) }) { terms.append(term) }
         }

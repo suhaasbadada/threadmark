@@ -28,7 +28,12 @@ public struct RetainedReviewBinding: Equatable, Sendable {
                   configurationGeneration: configurationGeneration, retrievalMode: consent.retrievalMode)
     }
     public static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.consentID == rhs.consentID && lhs.project == rhs.project &&
+        // Swift String equality normalizes canonical equivalents; core paths do
+        // not. Stable encoding preserves every scope string's original UTF-8 and
+        // ordered source policy, including opaque identity/snapshot metadata.
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+        guard let left = try? encoder.encode(lhs.project), let right = try? encoder.encode(rhs.project) else { return false }
+        return lhs.consentID == rhs.consentID && left == right &&
         lhs.original.utf8.elementsEqual(rhs.original.utf8) && lhs.query.utf8.elementsEqual(rhs.query.utf8) &&
         lhs.retrievalMode == rhs.retrievalMode && lhs.settings == rhs.settings &&
         lhs.generation == rhs.generation && lhs.scopeRevision == rhs.scopeRevision &&

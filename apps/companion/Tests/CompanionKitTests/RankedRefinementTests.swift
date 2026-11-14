@@ -114,7 +114,7 @@ struct RankedRefinementTests {
     }
 
     @Test func grammarMatchesCoreAndRejectsBeforeStoreOrSpawn() throws {
-        #expect(try RefinementConsent.rankedTerms(" BLUE blue\u{2003}Σ ΟΣ e\u{301} é ") == ["blue", "σ", "οσ", "e\u{301}", "é"])
+        #expect(try RefinementConsent.rankedTerms(" BLUE blue\u{2003}Σ ΟΣ e\u{301} é ") == ["blue", "σ", "ος", "e\u{301}", "é"])
         for query in ["", "  ", "a\tb", "a\nb", "a\u{7f}", String(repeating: "é", count: 33), "a b c d e f g h i", String(repeating: "x", count: 257)] {
             #expect(throws: ServiceError.self) { try RefinementConsent.rankedTerms(query) }
         }
@@ -165,6 +165,49 @@ struct RankedRefinementTests {
         await controller.synchronize(binding)
         await controller.start(consent: captured, executable: URL(fileURLWithPath: "/absent/cli"), store: URL(fileURLWithPath: "/absent/store"))
         #expect(controller.state == .idle && controller.lastError == .invalid && controller.ownedLifetime == nil)
+    }
+
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"] != nil))
+    func contextualLowercaseAndDeduplicationMatchActualCore() async throws {
+        let fixture = try ApprovedWatchFixture(); defer { fixture.remove() }
+        try fixture.rewrite("// synthetic ΟΣ ος οσ\n")
+        let binary = try #require(ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"])
+        let adapter = ProcessService(executable: URL(fileURLWithPath: binary),
+            dataDirectory: try StoreSelection.newDirectory(parent: fixture.root, name: "case-parity"))
+        _ = try await adapter.perform(.addProject("alpha", fixture.root.path, ["a.rs"]))
+        _ = try await adapter.perform(.index("alpha"))
+        guard case .project(let project) = try await adapter.perform(.project("alpha")) else { throw ServiceError.invalid }
+        for query in ["ΟΣ ος", "ΟΣ οσ", "Σ Σ", "AΣ AΣA", "Ο\u{301}Σ ο\u{301}ς", "Σ'Σ Σ'"] {
+            guard case .query(let selected) = try await adapter.perform(.queryTermsBound(project, query)) else { throw ServiceError.invalid }
+            let native = try RefinementConsent.rankedTerms(query), core = try #require(selected.terms)
+            #expect(native.count == core.count && zip(native, core).allSatisfy { $0.utf8.elementsEqual($1.utf8) })
+            try consent(project, selected, "http://127.0.0.1:1/v1/chat/completions", query: query).validate()
+            if query == "ΟΣ ος" { #expect(core == ["ος"]) }
+        }
+    }
+
+    @Test @MainActor func canonicallyEquivalentScopeBytesRevokeUnusedConsent() async throws {
+        let project = Project(id: "alpha", root: "/synthetic/é", sources: ["é.rs"],
+            snapshot: .string(String(repeating: "a", count: 64)), rootIdentity: .string("é"), incarnation: String(repeating: "b", count: 32))
+        let selection = QueryReport(project: "alpha", snapshot: project.snapshot, currentness: "current-at-read",
+            coverage: .string("indexed-source-lines-only; any-term literal text matches; no semantic/symbol coverage"), results: [],
+            truncated: false, selection: "distinct-matched-terms-desc,total-nonoverlap-occurrences-desc,path-line-asc", terms: ["synthetic", "blue"])
+        for change in ["root", "policy", "identity"] {
+            let captured = try consent(project, selection, "http://127.0.0.1:1/v1/chat/completions")
+            let binding = RetainedReviewBinding(consent: captured, configurationGeneration: 1)
+            let changedProject = Project(id: project.id, root: change == "root" ? "/synthetic/e\u{301}" : project.root,
+                sources: change == "policy" ? ["e\u{301}.rs"] : project.sources, snapshot: project.snapshot,
+                rootIdentity: change == "identity" ? .string("e\u{301}") : project.root_identity, incarnation: project.incarnation)
+            #expect(project == changedProject) // Swift equality is not the core's byte identity.
+            let changed = RetainedReviewBinding(consentID: captured.id, project: changedProject, original: captured.original,
+                query: captured.query, settings: captured.settings, generation: 1, scopeRevision: 1,
+                configurationGeneration: 1, retrievalMode: .rankedTerms)
+            #expect(binding != changed && !changed.matches(captured))
+            let controller = RetainedReviewController()
+            await controller.synchronize(binding); await controller.synchronize(changed); await controller.synchronize(binding)
+            await controller.start(consent: captured, executable: URL(fileURLWithPath: "/absent/cli"), store: URL(fileURLWithPath: "/absent/store"))
+            #expect(controller.lastError == .invalid && controller.ownedLifetime == nil && controller.state == .idle)
+        }
     }
 
     @Test(.enabled(if: ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"] != nil))
