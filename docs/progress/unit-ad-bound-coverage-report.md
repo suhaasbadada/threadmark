@@ -1,5 +1,30 @@
 # Unit AD — bound metadata-only lexical coverage
 
+## Primary integration and independent repair recheck
+
+Primary committed only the eight owned files as `adce0b4` and applied cleanly as
+**`2ab31bdf0c2ff81a93b320c13681baafb2969390`**, exact integrated tested runtime.
+No lane baseline/site history replay. Joffrey's initial Medium finding and primary
+repair are recorded below; new independent repair recheck **CLEAR**, 17 core
+coverage tests + six actual-CLI cases and core/daemon/CLI regressions **PASS**,
+unchanged deadline fixtures ignored. He did not rerun deny/secrets/remote CI;
+kernel partial-read faults were inspected, not injected.
+
+Primary integrated full workspace gate **317 Rust tests + two doctests PASS**,
+strict serial actual-CLI/retained/export/inspection-C Swift **239 tests/36 suites
+PASS**, all three API gates, offline locked deny, staged secrets and whitespace
+**PASS**. Other shared-reader consumers retain original errors/all-or-nothing
+semantics. Exact publication-head CI remains a separate gate.
+
+PR #78 passed all five checks at `4de4b4a2bd844cc850e5ecfd050019cf3616221e`
+(CI `43586328934`, integrated `43586328984`); fresh exact-head/main/check/review/
+approval/discussion/rules gates preceded merge
+`71958a0ee5c334f4068d6683997d171c78922f2f`. Watch removed; separate post-merge
+CI remains unverified. PR #77 exact post-merge runs `43586265859`/`43586265812`,
+both `04d4e58548c768b8b193f2b66c549002cce722cb`, completed **PASS**. Human kind-
+filter work continues independently. Nine inherited progress edits, worktrees and
+parent reminders preserved; no GUI/AX/live-quality/host-delivery/phase closure claim.
+
 ## Primary repair after independent review
 
 Initial Joffrey review was **not clear**: 4097-line sources with NUL/invalid UTF-8
