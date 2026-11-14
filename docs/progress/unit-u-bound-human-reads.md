@@ -98,6 +98,16 @@ branch switch, cleanup, Docker resource or external service was used. Full check
 include inherited synthetic loopback transport fixtures, not live providers.
 # Primary combined integration
 
+PR #68's separate exact post-merge CI `43573440000`/`43573440001` passed at
+`5cf014511d28888958353aeb195f018f347ae3de`. PR #69 passed all five checks at
+`8f6de77a82b6728ffe6bfed6b00bdd1a750a9f3e` (CI `43573532206`, integrated
+`43573532190`); fresh exact head/main/check/review/approval/discussion/rules gates
+preceded merge `93b76c95662f2d88f585688f79c500242721fd46`. Separate exact post-
+merge CI remains pending verification. PR #70 was retargeted to main and a branch
+update requested; its resulting exact-head checks are a new gate, not inherited
+from the previous stacked head. Native migration and bounded export binding
+follow as separate product units.
+
 Primary committed only the nine owned files as `a6a793c` in the completed lane
 and applied them without conflicts as
 `3cc3aff4d4a49d061146969ddba07eff50e96cb4`, the exact combined tested runtime.
