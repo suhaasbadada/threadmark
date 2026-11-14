@@ -157,7 +157,7 @@ THREADMARK_CORE_TEST_BINARY="$PWD/target/debug/threadmark" \
 THREADMARK_RETAINED_FIXTURES="$PWD/target/retained-fixtures" \
   sh apps/companion/scripts/swift.sh test \
     -Xswiftc -strict-concurrency=complete -Xswiftc -warnings-as-errors
-# Repeat the same wrapper/env with: test -c release ...
+# Repeat the same wrapper/env with: test -c release --no-parallel ...
 CARGO_NET_OFFLINE=true python3 scripts/check.py
 cargo deny --offline --locked check
 python3 scripts/secrets.py
@@ -168,7 +168,43 @@ The initial direct C compiler attempt hit this machine's incompatible
 `/usr/local/include` headers; the isolated SDK command above passes without
 changing system headers. SwiftPM emits existing native-build-system deprecation
 and macOS deployment-target/Testing linker warnings; source warnings remain errors.
-Final tested runtime SHA and gate results are recorded below after committing.
 Remote CI/review and app/GUI integration have **not** run in this lane. No phase
 closes. Plum lookup returned `thread_not_found`; no coordination message, watcher
 or scheduled follow-up exists.
+
+## Exact-head final evidence
+
+Full tested runtime commit: **`6821ed0d275b7c97035f11f43923ad624df61c6c`**.
+The subsequent evidence-only commit changes only this document, not runtime/tests.
+All the following were executed again with a clean worktree on that runtime SHA:
+
+| Gate | Result |
+| --- | --- |
+| `CARGO_NET_OFFLINE=true python3 scripts/check.py` | PASS: format/build/strict Clippy/rustdoc, **185 Rust tests + two doctests**, finite diagnostics, doc links and intentional failing-test rejection. Two J production-duration tests remain intentionally ignored here. |
+| `cargo deny --offline --locked check` | PASS: advisories/bans/licenses/sources. |
+| Strict complete-concurrency Swift debug, actual rebuilt CLI and C fixtures enabled | PASS: **142 tests, 17 suites**, including all seven new retained-review tests (each with multiple fixture cases). |
+| Same strict Swift release, explicit `--no-parallel` | PASS: **142 tests, 17 suites**. |
+| `python3 scripts/secrets.py` after staging only owned new files, then again on clean runtime commit | PASS: tracked files/history and synthetic secret rejection. The separately committed existing-file exception is only the permitted duplicate-gate visibility change. |
+| `git diff --check`, final runtime `git status` | PASS; runtime commit clean. |
+| Independent review / current integrated-head remote CI / app wiring / GUI acceptance | NOT RUN by this lane; primary-owned gates, no inferred pass. |
+
+One clean-head **concurrent release** run failed in the inherited
+`HumanSearchTests.actualProcessArgvEmptyStdinEnvironmentAndFailures`, not the new
+suite: its existing 50ms subprocess deadline expired before Apple's Python shim
+wrote `child.pid`, and the test then tried to read that missing marker. It had
+passed earlier full debug/release runs; no unrelated source was changed. The
+explicit serial release run removes concurrent fixture load and passes the full
+suite. Treat that timing-sensitive inherited fixture as a known integration-test
+limitation, not a waived CI failure or a claim that the failed run passed.
+
+Ignored local evidence logs: `target/retained-check.log`, `retained-deny.log`,
+`retained-secrets.log`, `retained-swift-full.log`,
+`retained-swift-release-concurrent-failure.log`, and
+`retained-swift-release-serial.log` (all under `target/`). No sensitive public
+artifact or content log is produced. Reproduction fixtures and ignored compiled
+test binaries remain task-owned; no processes/sockets/test databases are retained.
+
+For integration, apply only owned runtime commit `6821ed0` and its evidence-only
+follow-up. Do **not** replay lane base merges `25280fd`, `2f0fbb9`, `e0fa2a6`,
+`66f72b3` or `51bc602`; primary already owns those required bases. Keep this
+worktree intact. No push/PR/watch/scheduler/merge/host action was performed.
