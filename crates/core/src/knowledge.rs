@@ -28,6 +28,7 @@ mod export;
 mod forget;
 mod human_ranked_search;
 mod human_read;
+mod human_revision_export;
 mod human_search;
 mod incremental;
 mod ranked_query;
@@ -42,6 +43,7 @@ pub use coverage::validate_coverage_binding;
 pub use forget::{ForgetBinding, ForgetStage};
 pub use human_ranked_search::HumanRankedQuery;
 pub use human_read::ContextReadBinding;
+pub use human_revision_export::ExportHumanRevisionsPlan;
 pub use human_search::{HumanSearchKinds, validate_human_search};
 pub use incremental::validate_incremental_binding;
 pub use ranked_query::validate_query_terms;
@@ -515,21 +517,31 @@ impl Store {
     /// Open an explicit store directory. New directories are 0700 and database 0600.
     /// Existing stores must already be private, owned, regular, and schema-compatible.
     pub fn open(path: &Path) -> Result<Self> {
-        Self::open_with_creation(path, true, false)
+        Self::open_with_creation(path, true, false, false)
     }
 
     /// Open only a recognized existing private store, never create a directory or DB.
     pub fn open_existing(path: &Path) -> Result<Self> {
-        Self::open_with_creation(path, false, false)
+        Self::open_with_creation(path, false, false, false)
     }
 
     /// Open an existing store read-only for source inspection. Reject WAL before
     /// SQLite opens the database; never normalize its journal mode or create it.
     pub fn open_existing_for_inspection(path: &Path) -> Result<Self> {
-        Self::open_with_creation(path, false, true)
+        Self::open_with_creation(path, false, true, false)
     }
 
-    fn open_with_creation(path: &Path, allow_creation: bool, inspection: bool) -> Result<Self> {
+    /// Existing human-only read, without journal normalization; WAL is supported.
+    pub fn open_existing_for_human_read(path: &Path) -> Result<Self> {
+        Self::open_with_creation(path, false, false, true)
+    }
+
+    fn open_with_creation(
+        path: &Path,
+        allow_creation: bool,
+        inspection: bool,
+        human_read: bool,
+    ) -> Result<Self> {
         if !path.is_absolute() {
             return Err(Error::ScopeMismatch);
         }
@@ -626,7 +638,7 @@ impl Store {
                 return Err(Error::Unavailable);
             }
         }
-        let access = if inspection {
+        let access = if inspection || human_read {
             rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY
         } else {
             rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE
@@ -663,6 +675,9 @@ impl Store {
             if !mode.eq_ignore_ascii_case("delete") {
                 return Err(Error::Unavailable);
             }
+            db.execute_batch("PRAGMA trusted_schema=OFF; PRAGMA foreign_keys=ON;")
+                .map_err(unavailable)?;
+        } else if human_read {
             db.execute_batch("PRAGMA trusted_schema=OFF; PRAGMA foreign_keys=ON;")
                 .map_err(unavailable)?;
         } else {
@@ -1541,6 +1556,18 @@ impl Store {
 
     fn context_in(tx: &rusqlite::Transaction<'_>, project: &str, id: &str) -> Result<Value> {
         forget::require_unmarked(tx, project, id)?;
+        Self::context_history_in(tx, project, id, &AtomicBool::new(false))
+    }
+
+    // Caller must admit registration and suppression in this same transaction.
+    // No other notes' text is selected. Shared by history and explicit export.
+    fn context_history_in(
+        tx: &rusqlite::Transaction<'_>,
+        project: &str,
+        id: &str,
+        cancel: &AtomicBool,
+    ) -> Result<Value> {
+        canceled(cancel)?;
         let mut stmt = tx.prepare("SELECT revision,kind,text,retired FROM context WHERE project=?1 AND id=?2 ORDER BY revision LIMIT 33").map_err(unavailable)?;
         let rows = stmt
             .query_map(params![project, id], |r| {
@@ -1554,6 +1581,7 @@ impl Store {
             .map_err(unavailable)?;
         let mut records = Vec::new();
         for row in rows {
+            canceled(cancel)?;
             let (revision, kind, text, retired) = row.map_err(unavailable)?;
             if revision != records.len() as i64 + 1
                 || !context_kind(&kind)

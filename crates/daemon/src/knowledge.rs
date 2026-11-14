@@ -8,6 +8,8 @@ use threadmark_core::knowledge::{LexicalLines, Store};
 
 /// Typed local-owner commands. No request-supplied root can override registered policy.
 pub enum Command {
+    /// Explicit caller-requested local sensitive human revision export, not delivery.
+    ExportHumanRevisions(threadmark_core::knowledge::ExportHumanRevisionsPlan),
     /// Explicit atomic edits of 2..8 existing human notes in one registration.
     EditContextBatchBound(
         String,
@@ -325,7 +327,9 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         }
         .validate(project, path)?;
     }
-    let mut store = if matches!(
+    let mut store = if matches!(&command, Command::ExportHumanRevisions(..)) {
+        Store::open_existing_for_human_read(data_dir)?
+    } else if matches!(
         &command,
         Command::InspectSourceAnchor(..)
             | Command::InspectSourceSet(..)
@@ -382,6 +386,7 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         Store::open(data_dir)?
     };
     let result = match command {
+        Command::ExportHumanRevisions(plan) => store.export_human_revisions(&plan, cancel)?,
         Command::PrepareContextFiles(plan, original) => {
             crate::preparation::file_scoped::context_files(&store, plan, original, cancel)?
         }
