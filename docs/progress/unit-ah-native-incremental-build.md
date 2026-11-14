@@ -1,5 +1,31 @@
 # Unit AH — native explicit incremental lexical Build
 
+## Required macOS CI compilation failure and repair
+
+PR #84 first head `e00dd28d987f78c3bca6b37916c4a61679c78d54` failed CI
+[`43593711656`](https://github.com/suhaasbadada/threadmark/actions/runs/43593711656),
+macOS job `132443661112`. Rust/full workspace passed; the native step could not
+compile `IncrementalBuildTests.swift:186`: compiler type-check time limit on the
+mixed String/Substring hostile-frame array expression. Primary retained/read the
+complete trace in ignored `target/unit-ah-ci-macos-failure.log`. Inspected every
+job: this was the only failed job; Ubuntu/security and integrated `43593711689`
+passed at that old head, not evidence for the repair. No retry or waiver.
+
+Primary changed only that test expression: materialize the object tail as String
+and type the frame array explicitly as `[String]`. All ten hostile frames, their
+byte semantics/order and rejection assertions remain unchanged; no runtime or
+decoder behavior changed. Joffrey independently reviewed **CLEAR**, verified
+expression equivalence and whitespace; he did not rerun tests or older CI.
+
+Repair tested runtime **`764cce63ce5f29e949149f20a109d07b56cb2322`**: full workspace
+**368 Rust tests + two doctests PASS**; full strict serial actual-CLI/all-C Debug
+and Release each **272 tests/43 suites PASS**; all six API gates, offline locked
+deny, secrets/whitespace, bundle and Info.plist **PASS**. Ignored local logs
+`target/unit-ah-ci-repair-*`. Local Swift remains 6.4; this does **not** prove the
+older CI compiler succeeds. Fresh pushed-head CI remains required before merge.
+Nine inherited progress edits/worktrees/parent reminders preserved; AJ/AK product
+lanes continue independently, without duplicate workers or reminders.
+
 ## Primary integration and independent review
 
 Primary committed only thirteen owned files as `df82934` and applied cleanly as
