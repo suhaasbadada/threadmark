@@ -48,6 +48,8 @@ private actor BatchCore: CoreService {
                 await withCheckedContinuation { release = $0 }; active = false
             }
             return .context(batchHistory(id))
+        case .queryFilesBound(let request):
+            return .filteredQuery(try FilteredQuery.decode(fileQueryBytes(request), request: request))
         case .editContextBatchBound(let execution):
             executions.append(execution)
             if hold {
@@ -92,7 +94,7 @@ struct BatchEditTests {
         #expect(throws: (any Error).self) { try execution.claim() }
         await m.shutdown()
     }
-    @Test(arguments: ["cancel", "quit", "config", "selection", "edit", "remove", "review", "restage"])
+    @Test(arguments: ["cancel", "quit", "config", "selection", "edit", "remove", "review", "restage", "query-filter", "filtered-query"])
     @MainActor func delayedPreclaimRevocationAndNoLatePublication(fence: String) async throws {
         let core = BatchCore(), m = await prepare(core)
         await core.pause(); m.reviewBatch(); m.applyBatch(try #require(m.pendingBatchReview)); await core.wait()
@@ -104,6 +106,8 @@ struct BatchEditTests {
         case "remove": m.removeBatchEntry("n0")
         case "review": m.cancelBatchReview()
         case "restage": m.stageBatchRetire()
+        case "query-filter": m.setQueryFileFilter(["a.rs"])
+        case "filtered-query": m.setQueryFileFilter(["a.rs"]); m.query("center")
         default: m.cancel()
         }
         let execution = try #require(await core.executions.first)
@@ -112,7 +116,32 @@ struct BatchEditTests {
         #expect(m.batchReceipt == nil && !m.stagedBatch.isEmpty)
         #expect(m.batchStatus.contains("unknown") && !m.canReviewBatch)
         #expect(m.batchOutcomeUnknown)
-        if ["cancel", "edit", "review", "remove"].contains(fence) { #expect(m.history?.id == "n1") }
+        if ["cancel", "edit", "review", "remove", "query-filter", "filtered-query"].contains(fence) { #expect(m.history?.id == "n1") }
+        if fence == "filtered-query" {
+            #expect(await !core.overtook)
+            #expect(m.querySelectedPaths == ["a.rs"] && m.evidence?.results.count == 1)
+        }
+        await m.shutdown()
+    }
+    @Test @MainActor func queryFilterRevokesPendingBatchReviewWithoutIOOrLosingDraftState() async throws {
+        let core = BatchCore(), m = await prepare(core)
+        m.editPreparation(query: "center", original: "Unsent original")
+        m.writeContext(id: "n1", kind: "note", text: "draft", update: true)
+        let base = m.humanContextRevisionBinding("n1"), editor = m.contextEditorRevision
+        m.reviewBatch()
+        let review = try #require(m.pendingBatchReview)
+        let calls = await core.calls
+        m.setQueryFileFilter(["a.rs"])
+        m.applyBatch(review)
+        #expect(await core.calls == calls)
+        #expect(await core.executions.isEmpty)
+        #expect(m.pendingBatchReview == nil && m.stagedBatch.count == 2)
+        #expect(m.humanContextRevisionBinding("n1") == base && m.contextEditorRevision == editor)
+        #expect(m.history?.id == "n1" && m.originalDraft == "Unsent original" && m.lastError == .contextConflict)
+        m.query("center"); await m.waitForOperation()
+        #expect(m.evidence?.results.count == 1 && m.querySelectedPaths == ["a.rs"])
+        #expect(m.stagedBatch.count == 2 && m.canReviewBatch && !m.batchOutcomeUnknown)
+        #expect(m.humanContextRevisionBinding("n1") == base && m.lastError == .contextConflict)
         await m.shutdown()
     }
     @Test @MainActor func successorJoinsAndCanceledQueuedAttemptNeverClaims() async throws {

@@ -196,11 +196,13 @@ struct ProjectsView: View {
                     CoverageControls(model: model)
                     Divider()
                     SourceRetrievalModePicker(model: model)
+                    QueryFilterControls(model: model)
                     HStack {
                         TextField("Search authorized source evidence", text: Binding(
                             get: { query }, set: { query = $0; model.sourceQueryChanged() }))
                             .accessibilityIdentifier("project-evidence-query")
-                        Button("Search") { model.query(query) }.disabled(query.isEmpty || query.utf8.count > 256 || !model.manualActionsAvailable || model.policyDirty || model.sourceRequiresRefresh)
+                        Button("Query") { model.query(query) }.disabled(!model.canQuery(query))
+                            .accessibilityLabel("Query source evidence using the displayed Query file scope")
                     }
                     Text("Search input is limited to 256 UTF-8 bytes; input is never truncated.").font(.caption)
                     if let result = model.evidence {
