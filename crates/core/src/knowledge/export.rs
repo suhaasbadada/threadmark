@@ -1,6 +1,14 @@
 //! Project export v1: one read snapshot, no indexing and no partial publication.
 use super::*;
 
+/// Validate complete cached export approval without opening storage or paths.
+/// Metadata is a stale-approval guard, not authentication or export consent.
+pub fn validate_export_binding(expected: &Project) -> Result<()> {
+    // Export and source reads bind the same complete registration shape. The
+    // fixed literal only satisfies the read validator's unrelated query bound.
+    validate_query_binding(expected, "export")
+}
+
 fn valid_file_identity(identity: &str) -> bool {
     identity.split_once(':').is_some_and(|(dev, ino)| {
         !dev.is_empty()
@@ -57,6 +65,13 @@ impl Store {
         self.export_project_with_progress(id, cancel, |_| {})
     }
 
+    /// Export only the exact captured registration, ordered policy and snapshot
+    /// (including None). The caller must separately obtain explicit local-content
+    /// consent. Legacy registrations without an incarnation fail closed.
+    pub fn export_project_bound(&self, expected: &Project, cancel: &AtomicBool) -> Result<Value> {
+        self.export_scoped(&expected.id, cancel, Some(expected), || {}, |_| {})
+    }
+
     /// Observe finite boundaries before the final source/authorization recheck.
     /// A read transaction prevents concurrent removal/writers from mixing policy,
     /// evidence and human history. Lock contention fails without implicit retries.
@@ -64,14 +79,38 @@ impl Store {
         &self,
         id: &str,
         cancel: &AtomicBool,
+        progress: impl FnMut(ExportStage),
+    ) -> Result<Value> {
+        self.export_scoped(id, cancel, None, || {}, progress)
+    }
+
+    pub(super) fn export_scoped(
+        &self,
+        id: &str,
+        cancel: &AtomicBool,
+        expected: Option<&Project>,
+        before_sources: impl FnOnce(),
         mut progress: impl FnMut(ExportStage),
     ) -> Result<Value> {
         canceled(cancel)?;
         identity(id)?;
+        if let Some(expected) = expected {
+            validate_export_binding(expected)?;
+        }
         self.healthy()?;
         let tx = self.db.unchecked_transaction().map_err(unavailable)?;
         // project() uses the same connection and therefore this read transaction.
         let p = self.project(id)?;
+        if let Some(expected) = expected
+            && (p.id != expected.id
+                || p.root != expected.root
+                || p.root_identity != expected.root_identity
+                || p.incarnation != expected.incarnation
+                || p.sources != expected.sources
+                || p.snapshot != expected.snapshot)
+        {
+            return Err(Error::ScopeMismatch);
+        }
         // Store opens enforce DELETE journals. Keep its reader-lock guarantee
         // explicit: an externally switched WAL connection must not let policy
         // revocation commit invisibly behind this read snapshot.
@@ -81,6 +120,8 @@ impl Store {
         if journal != "delete" {
             return Err(Error::Unavailable);
         }
+        before_sources(); // Private deterministic boundary before any root/source I/O.
+        canceled(cancel)?;
         root_authorized(&p)?; // Authorization failure must never become stale output.
         let encoded: Option<String> = tx
             .query_row("SELECT manifest FROM projects WHERE id=?1", [id], |r| {

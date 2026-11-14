@@ -56,6 +56,9 @@ fn usage() -> std::process::ExitCode {
         "local sensitive-content export: --data-dir EXISTING_STORE project export PROJECT --confirm-export-local-content (stdout only; no delivery)"
     );
     eprintln!(
+        "cached export: append --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-snapshot HASH|none --expected-sources [FILE ...] to the confirmed export command (all required once, exact order, list last, max 64; stale-approval guards, not credentials; JSON v1 unchanged)"
+    );
+    eprintln!(
         "human-history removal: context forget PROJECT ID --confirm-forget-local-history; context forgotten PROJECT (active removal/suppression only, not forensic erasure; sources untouched)"
     );
     eprintln!(
@@ -239,6 +242,27 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
         ["project", "show", id] => Command::Project((*id).into()),
         ["project", "export", id, "--confirm-export-local-content"] => {
             Command::ExportProject((*id).into())
+        }
+        [
+            "project",
+            "export",
+            id,
+            "--confirm-export-local-content",
+            binding @ ..,
+        ] => {
+            if binding
+                .iter()
+                .skip(1)
+                .step_by(2)
+                .take(4)
+                .any(|v| v.starts_with("--"))
+            {
+                return usage();
+            }
+            let Some(expected) = read_binding(id, "export", binding) else {
+                return usage();
+            };
+            Command::ExportProjectBound(expected)
         }
         ["project", "remove", id, "--confirm-remove-local-data"] => {
             Command::RemoveProject((*id).into())

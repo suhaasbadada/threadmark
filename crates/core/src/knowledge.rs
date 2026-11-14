@@ -328,6 +328,8 @@ pub struct Project {
     pub snapshot: Option<String>,
 }
 
+pub use export::validate_export_binding;
+
 /// Validate cached source-read metadata without opening storage or source paths.
 /// This is stale-approval protection, not source authorization.
 pub fn validate_query_binding(expected: &Project, text: &str) -> Result<()> {

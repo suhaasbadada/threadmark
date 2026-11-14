@@ -1,6 +1,8 @@
 //! P2-A1/A3/A4/A5/A6: synthetic project-export-v1 contract fixtures.
 use super::*;
 
+mod bound;
+
 #[test]
 fn export_all_anchors_and_human_revisions_are_separate_isolated_and_read_only() {
     let f = Fixture::new();
