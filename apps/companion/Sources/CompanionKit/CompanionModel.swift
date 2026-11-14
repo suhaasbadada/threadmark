@@ -62,11 +62,20 @@ public final class CompanionModel: ObservableObject {
     private var job: Task<Void, Never>?
     private var ownedOperations: [UUID: Task<Void, Never>] = [:]
     private var generation: UInt64 = 0
+    @Published public private(set) var pendingProjectExport: ProjectExportConfirmation?
+    @Published public private(set) var projectExportStatus: String?
+    private var exportPicker: ProjectExportConfirmation?
+    private var exportActive = false
+    private var exportWriteStarted = false
+    // Internal injection is only for synthetic model tests; production captures
+    // the exact configured ProcessService store, never a response destination.
+    var exportStoreDirectory: URL?
 
     public init(service: any CoreService = ProcessService(), configured: Bool = false,
                 refreshDriver: any RefreshDriver = TimerRefreshDriver()) {
         self.refreshDriver = refreshDriver
         self.service = service; self.configured = configured
+        exportStoreDirectory = (service as? ProcessService)?.dataDirectory
         if configured { status = "Not refreshed — explicit actions only" }
     }
     deinit {
@@ -77,6 +86,7 @@ public final class CompanionModel: ObservableObject {
         invalidate(clearProject: true)
         configurationGeneration &+= 1
         service = ProcessService(executable: executable, dataDirectory: dataDirectory)
+        exportStoreDirectory = dataDirectory
         configured = true; projects = []; selectedID = nil
         status = "Configured, not tested — Refresh projects to connect"
     }
@@ -94,6 +104,98 @@ public final class CompanionModel: ObservableObject {
             self.status = "Projects refreshed — select a project to verify policy"
         }
     }
+    public var canExportProject: Bool {
+        guard canRemoveProject, !policyDirty, !sourceRequiresRefresh, !forgetRequiresRefresh,
+              !retainedOperationActive, sourceDraft == project?.sources,
+              pendingRemoval == nil, pendingForget == nil, pendingSourceForget == nil,
+              let project, exportStoreDirectory != nil else { return false }
+        return (try? ProjectExportDocument.validateBinding(project)) != nil
+    }
+    /// No service, filesystem read, or data fetch when opening this confirmation.
+    public func requestProjectExport() {
+        guard canExportProject else { return }
+        disableAutomaticRefresh()
+        cancelOperation()
+        guard let project else { return }
+        pendingProjectExport = ProjectExportConfirmation(id: UUID(), project: project,
+            generation: generation, scopeRevision: scopeRevision, configurationGeneration: configurationGeneration)
+        status = "Review sensitive local export scope — Cancel is the default; no export read yet"
+    }
+    private func currentExport(_ c: ProjectExportConfirmation) -> Bool {
+        guard !quitting, !policyDirty, !sourceRequiresRefresh, !forgetRequiresRefresh,
+              selectedID == c.project.id, let project, ProjectExportDocument.exact(project, c.project),
+              sourceDraft.count == project.sources.count,
+              zip(sourceDraft, project.sources).allSatisfy({ $0.utf8.elementsEqual($1.utf8) }),
+              generation == c.generation, scopeRevision == c.scopeRevision,
+              configurationGeneration == c.configurationGeneration,
+              pendingRemoval == nil, pendingForget == nil, pendingSourceForget == nil else { return false }
+        return true
+    }
+    /// Returns the immutable picker token only after explicit current approval.
+    /// An old callback cannot consume a newer confirmation or picker.
+    public func confirmProjectExport(_ c: ProjectExportConfirmation) -> ProjectExportConfirmation? {
+        guard pendingProjectExport == c, currentExport(c) else { return nil }
+        pendingProjectExport = nil; exportPicker = c
+        status = "Choose a NEW private local file — no export read until selection"
+        return c
+    }
+    public func cancelProjectExport() {
+        pendingProjectExport = nil; exportPicker = nil
+        if exportActive { cancel() }
+    }
+    public func completeProjectExportSelection(_ c: ProjectExportConfirmation, destination: URL?) {
+        guard exportPicker == c, currentExport(c) else { return }
+        exportPicker = nil
+        guard let destination, let store = exportStoreDirectory else { return }
+        let prior = Array(ownedOperations.values), ticket = generation, operationID = UUID(), service = service
+        for operation in prior { operation.cancel() }
+        busy = true; exportActive = true; exportWriteStarted = false; lastError = nil
+        status = "Exporting confirmed local content — no sharing or provider call"
+        job = Task { [weak self] in
+            defer { self?.ownedOperations.removeValue(forKey: operationID) }
+            do {
+                for operation in prior { await operation.value }
+                guard let self, self.currentExport(c), !Task.isCancelled else { return }
+                await self.refreshDriver.shutdown()
+                guard self.currentExport(c), !Task.isCancelled else { return }
+                try ProjectExportFile.validateDestination(destination, project: c.project, store: store)
+                try Task.checkCancellation()
+                guard case .projects(let registered) = try await service.perform(.projects), registered.count <= 64,
+                      registered.allSatisfy({ $0.root.hasPrefix("/") && !$0.root.contains("\0") }) else { throw ServiceError.invalid }
+                guard self.currentExport(c), !Task.isCancelled else { return }
+                let roots = registered.map(\.root)
+                try ProjectExportFile.validateDestination(destination, project: c.project, store: store, roots: roots)
+                // Core checks the captured binding within its export transaction.
+                // Never replace this with project-show + an unbound ID export.
+                let execution = ProjectExportExecution(c)
+                defer { execution.revoke() }
+                let reply = try await withTaskCancellationHandler {
+                    try Task.checkCancellation()
+                    return try await service.perform(.exportProjectBound(execution))
+                } onCancel: { execution.revoke() }
+                guard case .projectExport(let document) = reply else { throw ServiceError.invalid }
+                guard self.currentExport(c), !Task.isCancelled else { return }
+                let validated = try ProjectExportDocument.decode(document.bytes, scope: c.project)
+                self.exportWriteStarted = true
+                let writer = Task.detached { try ProjectExportFile.save(validated, to: destination, project: c.project, store: store, roots: roots) }
+                try await withTaskCancellationHandler {
+                    if Task.isCancelled { writer.cancel() }
+                    try await writer.value
+                } onCancel: { writer.cancel() }
+                guard self.generation == ticket, !Task.isCancelled else { return }
+                self.status = "Private local export saved — complete bounded JSON; no upload. Local folders may be synced or backed up; retention/isolation not guaranteed."
+                self.projectExportStatus = self.status
+                self.busy = false; self.exportActive = false; self.exportWriteStarted = false; self.job = nil
+            } catch {
+                guard let self, self.generation == ticket else { return }
+                let uncertain = self.exportWriteStarted
+                self.busy = false; self.exportActive = false; self.exportWriteStarted = false; self.job = nil
+                self.fail(uncertain ? .exportUncertain : (error as? ServiceError ?? .failed))
+                self.projectExportStatus = self.status
+            }
+        }
+        ownedOperations[operationID] = job
+    }
     public var canRemoveProject: Bool {
         guard configured, manualActionsAvailable, !quitting, let project, project.id == selectedID,
               case .string(let identity) = project.root_identity,
@@ -103,6 +205,7 @@ public final class CompanionModel: ObservableObject {
     /// Opening/canceling this immutable approval performs no core operation.
     public func requestRemoval() {
         guard canRemoveProject, let project else { return }
+        cancelProjectExport()
         if automaticTicket != nil { cancel() }
         pendingForget = nil
         pendingSourceForget = nil
@@ -118,6 +221,7 @@ public final class CompanionModel: ObservableObject {
     }
     public func requestForget() {
         guard canForgetContext, let project, let history else { return }
+        cancelProjectExport()
         disableAutomaticRefresh()
         self.history = history
         pendingRemoval = nil
@@ -246,6 +350,7 @@ public final class CompanionModel: ObservableObject {
     }
     public func requestSourceForget(_ path: String) {
         guard canForgetSource(path), let target = project else { return }
+        cancelProjectExport()
         let markers = sourceMarkers, retainedHistory = history
         disableAutomaticRefresh()
         // Canceling an automatic index may clear display results, not this metadata proof.
@@ -989,6 +1094,7 @@ public final class CompanionModel: ObservableObject {
         }
     }
     public func togglePause() {
+        if pendingProjectExport != nil || exportPicker != nil || exportActive { cancelProjectExport() }
         pendingForget = nil
         pendingSourceForget = nil
         paused.toggle()
@@ -1027,6 +1133,8 @@ public final class CompanionModel: ObservableObject {
         cancelOperation()
     }
     private func cancelOperation() {
+        let uncertainExport = exportWriteStarted
+        pendingProjectExport = nil; exportPicker = nil; exportActive = false; exportWriteStarted = false
         let preserveHistory = refinementOperation || retainedOperationActive
         let revokeReview = retainedOperationActive
         retainedOperationActive = false
@@ -1068,8 +1176,13 @@ public final class CompanionModel: ObservableObject {
         if sourceRequiresRefresh { status = refreshRequiredError.localizedDescription }
         busy = false
         if cancelingSearch != nil { status = "Human search cancel requested — joining owned worker" }
+        if uncertainExport {
+            status = ServiceError.exportUncertain.localizedDescription
+            projectExportStatus = status // Other settings/status updates must not hide an uncertain file outcome.
+        }
     }
     private func clearResults(preserveHistory: Bool = false) {
+        pendingProjectExport = nil; exportPicker = nil
         pendingRefinement = nil; refinementPreview = nil
         clearHumanSearch(); evidence = nil; if !preserveHistory { history = nil }
         indexReport = nil; preview = nil; forgottenMarkers = nil; sourceMarkers = nil; inspectedSourceScope = nil

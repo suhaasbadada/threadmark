@@ -150,6 +150,7 @@ struct ProjectsView: View {
                 if let project = model.project {
                     Text("Registered root: \(project.root)").textSelection(.enabled)
                     Text("Root identity: \(project.root_identity?.description ?? "not supplied")").textSelection(.enabled)
+                    ProjectExportView(model: model)
                     Button("Inspect source suppression markers", action: model.inspectForgottenSources)
                         .disabled(!model.canRemoveProject || model.policyDirty)
                     if let markers = model.sourceMarkers {
@@ -520,6 +521,8 @@ struct PrivacyView: View {
             Text("Local storage is owned by core in your explicitly selected data directory. Source scope is an exact file allowlist; source files are never changed by this shell. IDs are not credentials.")
             Text("Search results, note drafts and previews are not archived by this shell. Explicitly confirmed retained Refine sends the original request and selected source evidence to the chosen local HTTP provider; a local server may forward data elsewhere. Separate engine review may return an approved in-memory value with delivery not attempted. Context, settings and automatic lexical refresh make no provider calls. Nonsecret profiles are saved only to an explicitly chosen private file; loading never enables inference. No shell telemetry, OS notifications, clipboard write, host draft, Send or admission. Core history retention is separate; Retire preserves history.")
             Text(model.notificationPolicy)
+            ProjectExportView(model: model)
+            Text("Export is explicit and scoped to the currently inspected project. It includes eligible source evidence and ALL saved human revisions, including retired edits. Confirm content, then choose a NEW private local file before any export read. Local folders may be cloud-synced/backed up; exports cannot be recalled by Forget. No automatic archives or sharing.")
             Button(model.paused ? "Resume automatic scheduling" : "Pause automatic scheduling", action: model.togglePause)
             Text("File-event + periodic lexical refresh is off by default. Projects offers exact-scope session-only consent to file metadata watches and automatic approved-content reconciliation, with a 60-second fallback for missed/busy events. Pause closes watches, stops debounce/timer and cancels automatic work; Resume never grants consent. Manual Build remains available while paused. Disable, scope/configuration changes and Quit stop automatic work. Closing Manage does not stop opted-in refresh. No directory discovery or automatic inference.")
             Text("Launch at login: off / unavailable in this build. No login item or global preferences are written.")

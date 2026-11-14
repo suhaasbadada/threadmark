@@ -117,6 +117,8 @@ public struct ProcessService: CoreService {
             default: responseOperation = operation
             }
             switch responseOperation {
+            case .exportProjectBound(let execution):
+                return .projectExport(try ProjectExportDocument.decode(data, scope: execution.confirmation.project))
             case .refinePreview(let consent):
                 return .refinementPreview(try RefinementPreview.decode(data, consent: consent))
             case .searchHumanContext(let project, _):
@@ -255,6 +257,15 @@ public struct ProcessService: CoreService {
             }
             args += ["--expected-root", binding.root, "--expected-root-identity", binding.rootIdentity,
                      "--expected-incarnation", binding.incarnation]
+        case .exportProjectBound(let execution):
+            let consent = try execution.claim()
+            try consent.validate()
+            let p = consent.project
+            guard case .string(let identity) = p.root_identity, let token = p.incarnation else { throw ServiceError.invalid }
+            args = ["project", "export", p.id, "--confirm-export-local-content",
+                    "--expected-root", p.root, "--expected-root-identity", identity,
+                    "--expected-incarnation", token, "--expected-snapshot", try ProjectExportDocument.snapshotArgument(p),
+                    "--expected-sources"] + p.sources
         case .queryBound(let p, let query), .prepareContextBound(let p, let query, _),
              .queryTermsBound(let p, let query), .prepareContextTermsBound(let p, let query, _):
             guard InputPolicy.identifier(p.id), case .string(let identity) = p.root_identity,
