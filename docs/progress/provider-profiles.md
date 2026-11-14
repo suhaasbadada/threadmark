@@ -12,7 +12,9 @@ provider call, credential reuse, expenditure, Docker or host launch was used.
 The assigned old branch was merged with reviewed `origin/main`
 `86dba4cd1e442c5e704e55f38fef4e7c69b5683e` before edits. PR 51/source Forget work
 was neither copied nor redone. The coordinator owns newer shared integration.
-Exact tested implementation SHA and final checks are recorded below after commit.
+Exact tested implementation SHA:
+`22e43b4d79d1e137a10ebc3351d6c9f1612e7f93`. This evidence-only follow-up does
+not change runtime/tests. The final handoff identifies the resulting tested head.
 Remote CI/run/head: **not run** in this lane; no push/PR/merge/watch/deploy/release.
 Independent review: **not run**; primary coordinator owns integrated-head review.
 
@@ -130,3 +132,29 @@ explicit State-wrapper alias and Swift Testing patterns. Wrapper invocation requ
 `sh` because the tracked script is not executable. Native-build-system deprecation
 and Testing-framework macOS-version linker warnings are tooling limitations, not
 proof of macOS 13 runtime coverage. No sensitive desktop was launched or captured.
+
+## Exact implementation-head verification
+
+All commands were repeated on the clean implementation SHA above:
+
+- `python3 scripts/check.py`: **PASS** (workspace format/build/strict Clippy/tests/
+  rustdoc, finite CLI/daemon smoke, local docs links, intentional failing-test gate).
+  Refinement: **25 existing engine + 8 new provider/HTTP tests**, plus one doctest.
+- Documented strict Swift wrapper: **PASS, 85 tests in 7 suites**. First run left
+  four existing explicitly opt-in real-core tests skipped. Repeated with
+  `THREADMARK_CORE_TEST_BINARY` explicitly selecting the freshly rebuilt workspace
+  `target/debug/threadmark`: **85 tests passed, none skipped**, including synthetic
+  actual-SQLite/process/file-event tests. This is not native host/UI certification.
+- `cargo deny --offline --locked check`: **PASS**, advisories/bans/licenses/sources.
+- `python3 scripts/secrets.py`, after staging only owned new files and again after
+  commit: **PASS**, synthetic secret correctly rejected.
+- `git diff --check`: **PASS**; implementation-head status **clean**.
+- Cargo-generated lock diff verified: only refinement-to-serde_json edge; no other
+  package versions, checksums or resolved-package changes.
+
+Local logs are retained in ignored `target/provider-lane-check.log`,
+`target/provider-lane-swift.log` and `target/provider-lane-swift-core.log`. They are
+not committed/public evidence artifacts. No runtime changes followed verification.
+No remote CI or independent review was run by this lane. The coordinator must run
+those gates against the actual integrated head, including its shared authority
+recheck, persisted nonsecret settings, mounted UI and retained approval flow.
