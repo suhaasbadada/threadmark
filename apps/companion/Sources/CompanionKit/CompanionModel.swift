@@ -49,6 +49,16 @@ public final class CompanionModel: ObservableObject {
         let scopeRevision: UInt64
     }
     @Published public private(set) var sourceInspection: SourceInspectionDocument?
+    @Published public private(set) var sourceInspectionSet: SourceInspectionSetDocument?
+    @Published public private(set) var sourceInspectionRows: [SourceInspectionRow] = []
+    @Published public private(set) var stagedSourceRows: [SourceInspectionRow] = []
+    private struct InspectionQueryCapture {
+        let id: UUID
+        let query: String
+        let mode: SourceRetrievalMode
+        let paths: [String]?
+    }
+    private var inspectionQueryCapture: InspectionQueryCapture?
     @Published public private(set) var coverageReport: CoverageDocument?
     private var coverageOperation = false
     private var coverageNeedsMetadata = false
@@ -288,6 +298,8 @@ public final class CompanionModel: ObservableObject {
     }
     /// Opening/canceling this immutable approval performs no core operation.
     public func requestRemoval() {
+        if inspectionOperation { cancel() }
+        clearSourceInspectionSet(); inspectionQueryGeneration = nil; sourceInspection = nil
         if humanSearchTicket != nil || fileContextOperation || coverageOperation || incrementalBuildOperation || batchActive || (sourceQueryOperation && queryFileFilter != nil) { cancel() }
         guard canRemoveProject, let project else { return }
         cancelProjectExport()
@@ -305,6 +317,8 @@ public final class CompanionModel: ObservableObject {
         return history.history.map(\.revision).sorted() == Array(1...history.history.count)
     }
     public func requestForget() {
+        if inspectionOperation { cancel() }
+        clearSourceInspectionSet(); inspectionQueryGeneration = nil; sourceInspection = nil
         if humanSearchTicket != nil || fileContextOperation || coverageOperation || incrementalBuildOperation || batchActive || (sourceQueryOperation && queryFileFilter != nil) { cancel() }
         guard canForgetContext, let project, let history else { return }
         cancelProjectExport()
@@ -575,6 +589,8 @@ public final class CompanionModel: ObservableObject {
         return InputPolicy.sourceMarker(path)
     }
     public func requestSourceForget(_ path: String) {
+        if inspectionOperation { cancel() }
+        clearSourceInspectionSet(); inspectionQueryGeneration = nil; sourceInspection = nil
         if humanSearchTicket != nil || fileContextOperation || coverageOperation || incrementalBuildOperation || batchActive || (sourceQueryOperation && queryFileFilter != nil) { cancel() }
         guard canForgetSource(path), let target = project else { return }
         cancelProjectExport()
@@ -845,7 +861,7 @@ public final class CompanionModel: ObservableObject {
     }
     /// No selection/appearance/query/coverage/event caller. No preflight ID reload or Full Build fallback.
     public func buildIncrementally() {
-        if humanSearchTicket != nil || fileContextOperation || (sourceQueryOperation && queryFileFilter != nil) { cancel() }
+        if humanSearchTicket != nil || fileContextOperation || inspectionOperation || (sourceQueryOperation && queryFileFilter != nil) { cancel() }
         guard canBuildIncrementally, let captured = project,
               let request = try? IncrementalBuildRequest(project: captured) else { return }
         disableAutomaticRefresh()
@@ -956,6 +972,7 @@ public final class CompanionModel: ObservableObject {
             self.sourceQueryOperation = false
             self.inspectionQueryScope = target
             self.inspectionQueryGeneration = self.generation
+            self.captureInspectionRows(query: text, report: result)
             self.status = result.currentness == "current-at-read"
                 ? "Current at read — inspect coverage, not complete comprehension" : "Stale or unindexed — Build explicitly"
         }
@@ -1012,6 +1029,7 @@ public final class CompanionModel: ObservableObject {
             self.evidence = document.report; self.querySelectedPaths = request.selectedPaths
             self.sourceQueryOperation = false
             self.inspectionQueryScope = target; self.inspectionQueryGeneration = self.generation
+            self.captureInspectionRows(query: text, report: document.report)
             self.status = document.report.currentness == "current-at-read"
                 ? "Filtered Query current at read — all approved files freshness-read; unselected changes invalidate the whole snapshot."
                 : "Stale or unindexed — no filtered results; Build explicitly."
@@ -1023,13 +1041,96 @@ public final class CompanionModel: ObservableObject {
     public func setInspectionRadius(_ radius: Int) {
         guard (0...3).contains(radius), radius != inspectionRadius else { return }
         if inspectionOperation || fileContextOperation { cancel() }
-        inspectionRadius = radius; sourceInspection = nil
+        inspectionRadius = radius; sourceInspection = nil; sourceInspectionSet = nil
     }
     /// Called when the source query text changes; displayed rows are not fresh authority.
     public func sourceQueryChanged() {
         if fileContextOperation || inspectionOperation || sourceQueryOperation || coverageOperation { cancel() }
         if queryFileFilter != nil { evidence = nil; querySelectedPaths = nil }
         inspectionQueryGeneration = nil; sourceInspection = nil
+        clearSourceInspectionSet()
+    }
+    private func captureInspectionRows(query: String, report: QueryReport) {
+        let id = UUID()
+        inspectionQueryCapture = InspectionQueryCapture(id: id, query: query, mode: sourceRetrievalMode, paths: queryFileFilter)
+        sourceInspectionRows = report.results.map { SourceInspectionRow(anchor: $0, readID: id) }
+        stagedSourceRows = []; sourceInspectionSet = nil
+    }
+    private func clearSourceInspectionSet() {
+        inspectionQueryCapture = nil; stagedSourceRows = []; sourceInspectionSet = nil
+    }
+    public func canStageSourceRow(_ row: SourceInspectionRow) -> Bool {
+        guard let capture = inspectionQueryCapture, capture.id == row.readID,
+              capture.mode == sourceRetrievalMode, capture.paths == queryFileFilter,
+              sourceInspectionRows.contains(where: { $0.id == row.id && SourceInspectionRequest.exact($0.anchor, row.anchor) }) else { return false }
+        return canInspectSource(row.anchor)
+    }
+    /// Pure memory edit. Canceling an active read requests teardown; a later
+    /// successor still joins that worker through the existing owned registry.
+    public func stageSourceRow(_ row: SourceInspectionRow, selected: Bool) {
+        if inspectionOperation { cancel(); return }
+        guard canStageSourceRow(row) else { return }
+        if selected {
+            guard !stagedSourceRows.contains(where: { $0.id == row.id }), stagedSourceRows.count < 8,
+                  !stagedSourceRows.contains(where: { $0.anchor.path.utf8.elementsEqual(row.anchor.path.utf8) && $0.anchor.line == row.anchor.line }) else { return }
+            stagedSourceRows.append(row)
+        } else { stagedSourceRows.removeAll { $0.id == row.id } }
+        revokeBatchReview()
+        sourceInspectionSet = nil
+        status = "Query anchor selection changed in memory only — select 2–8, then Inspect selected evidence explicitly."
+        if lastError == .contextConflict { status += " " + ServiceError.contextConflict.localizedDescription }
+    }
+    public func selectAllSourceRows() {
+        if inspectionOperation { cancel(); return }
+        guard (2...8).contains(sourceInspectionRows.count), sourceInspectionRows.allSatisfy({ canStageSourceRow($0) }) else { return }
+        // No prefix selection or truncation if a future Query returns >8 rows.
+        revokeBatchReview()
+        stagedSourceRows = sourceInspectionRows; sourceInspectionSet = nil
+        status = "All displayed Query anchors selected in memory only — no read until Inspect selected evidence."
+        if lastError == .contextConflict { status += " " + ServiceError.contextConflict.localizedDescription }
+    }
+    public func clearStagedSourceRows() {
+        if inspectionOperation { cancel(); return }
+        revokeBatchReview()
+        stagedSourceRows = []; sourceInspectionSet = nil
+        status = "Selected Query anchors cleared from memory — no source read."
+        if lastError == .contextConflict { status += " " + ServiceError.contextConflict.localizedDescription }
+    }
+    private func selectedSourceRequest() -> SourceInspectionSetRequest? {
+        guard let capture = inspectionQueryCapture, let project = inspectionQueryScope,
+              stagedSourceRows.allSatisfy({ canStageSourceRow($0) }) else { return nil }
+        return try? SourceInspectionSetRequest(project: project, anchors: stagedSourceRows.map(\.anchor),
+            radius: inspectionRadius, query: capture.query, mode: capture.mode, selectedPaths: capture.paths, readID: capture.id)
+    }
+    public var canInspectSelectedSources: Bool { selectedSourceRequest() != nil }
+    public func inspectSelectedSources() {
+        guard let request = selectedSourceRequest(), let capture = inspectionQueryCapture else { return }
+        let rows = sourceInspectionRows, staged = stagedSourceRows
+        let ticket = generation &+ 1, config = configurationGeneration, revision = scopeRevision
+        disableAutomaticRefresh()
+        start(status: "Inspecting selected Query anchors — all approved sources remain freshness-read",
+              joinRefreshDriver: true, preserveHistory: true, preserveQuery: true, preserveConflict: true, inspectionSetRead: true) { service in
+            try Task.checkCancellation()
+            let reply = try await service.perform(.inspectSourceSetBound(request))
+            try Task.checkCancellation()
+            return [reply]
+        } apply: { replies in
+            guard case .sourceInspectionSet(let document) = replies[0], self.generation == ticket,
+                  self.configurationGeneration == config, self.scopeRevision == revision,
+                  let current = self.project, ProjectExportDocument.exact(current, request.project),
+                  self.sourceRetrievalMode == request.mode, self.queryFileFilter == request.selectedPaths,
+                  self.inspectionRadius == request.radius else { throw ServiceError.invalid }
+            try document.validate(request: request)
+            self.sourceInspectionSet = document
+            self.inspectionQueryCapture = capture; self.sourceInspectionRows = rows; self.stagedSourceRows = staged
+            self.inspectionQueryScope = request.project; self.inspectionQueryGeneration = self.generation
+            self.status = "All selected windows current-at-read; full approved freshness, not a filesystem lease or comprehension. No send or inference."
+            if self.lastError == .contextConflict { self.status += " " + ServiceError.contextConflict.localizedDescription }
+        }
+        // Keep the frozen selection visible for explicit Remove/Clear during
+        // the read; its Query authority remains revoked until whole adoption.
+        stagedSourceRows = staged
+        inspectionOperation = true
     }
     public func canInspectSource(_ anchor: Evidence) -> Bool {
         guard configured, manualActionsAvailable, !quitting, !policyDirty,
@@ -1046,6 +1147,7 @@ public final class CompanionModel: ObservableObject {
     public func inspectSource(_ anchor: Evidence) {
         guard canInspectSource(anchor), let captured = inspectionQueryScope,
               let request = try? SourceInspectionRequest(project: captured, anchor: anchor, radius: inspectionRadius) else { return }
+        let setCapture = inspectionQueryCapture, staged = stagedSourceRows
         // Reuse the normal owned read registry. No inference/export consent token,
         // preflight source read, automatic refresh grant or unbound fallback.
         disableAutomaticRefresh()
@@ -1068,6 +1170,7 @@ public final class CompanionModel: ObservableObject {
                   ProjectExportDocument.exact(current, captured) else { throw ServiceError.invalid }
             self.sourceInspection = try SourceInspectionDocument.decode(document.bytes, request: request)
             self.inspectionQueryScope = captured; self.inspectionQueryGeneration = self.generation
+            self.inspectionQueryCapture = setCapture; self.stagedSourceRows = staged
             self.status = "Source inspected · current-at-read · lexical only; neighbors are observed text, not indexed claims. No edit, copy, send or inference."
         }
         inspectionOperation = true
@@ -1844,6 +1947,7 @@ public final class CompanionModel: ObservableObject {
         coverageOperation = false; coverageReport = nil
         sourceQueryOperation = false
         inspectionOperation = false; sourceInspection = nil
+        clearSourceInspectionSet()
         inspectionQueryGeneration = nil; inspectionQueryScope = nil
         let uncertainExport = exportWriteStarted
         pendingProjectExport = nil; exportPicker = nil; exportActive = false; exportWriteStarted = false
@@ -1907,6 +2011,7 @@ public final class CompanionModel: ObservableObject {
         incrementalBuildReport = nil
         coverageReport = nil
         sourceInspection = nil; inspectionQueryScope = nil; inspectionQueryGeneration = nil
+        clearSourceInspectionSet(); sourceInspectionRows = []
         if !preserveHistory { clearHumanComparison(); humanHistoryGeneration &+= 1 }
         pendingProjectExport = nil; exportPicker = nil
         pendingRefinement = nil; refinementPreview = nil
@@ -1929,7 +2034,7 @@ public final class CompanionModel: ObservableObject {
     private func fail(_ error: ServiceError) {
         lastError = error; status = error.localizedDescription
     }
-    private func start(status: String = "Working — bounded local core operation", automatic: Bool = false, joinRefreshDriver: Bool = false, preserveHistory: Bool = false, preserveQuery: Bool = false, preserveConflict: Bool = false, work: @escaping @Sendable (any CoreService) async throws -> [Reply],
+    private func start(status: String = "Working — bounded local core operation", automatic: Bool = false, joinRefreshDriver: Bool = false, preserveHistory: Bool = false, preserveQuery: Bool = false, preserveConflict: Bool = false, inspectionSetRead: Bool = false, work: @escaping @Sendable (any CoreService) async throws -> [Reply],
                        apply: @escaping @MainActor ([Reply]) throws -> Void) {
         guard !quitting else { return }
         let retainedConflict = preserveConflict && lastError == .contextConflict
@@ -1983,6 +2088,7 @@ public final class CompanionModel: ObservableObject {
                 } else if !preserveQuery { self.clearResults(preserveHistory: preserveHistory) }
                 if preserveQuery {
                     self.sourceInspection = nil; self.inspectionQueryGeneration = nil; self.inspectionQueryScope = nil
+                    self.clearSourceInspectionSet()
                 }
                 self.inspectionOperation = false
                 if self.coverageOperation { self.coverageNeedsMetadata = true }
@@ -1997,7 +2103,7 @@ public final class CompanionModel: ObservableObject {
                     self.lastError = .contextConflict; self.status += " " + ServiceError.contextConflict.localizedDescription
                 }
                 if preserveQuery {
-                    self.status += preserveConflict
+                    self.status += inspectionSetRead ? " Selected inspection discarded wholly; explicitly Query again before Inspect. No automatic retry." : preserveConflict
                         ? " Coverage inspection discarded; refresh project metadata before coverage and Query again before Inspect source. No automatic retry."
                         : " Source inspection discarded; explicitly Query again before Inspect source. No automatic retry."
                 }
