@@ -70,7 +70,7 @@ struct RetainedReviewEvent: Decodable, Sendable {
                   let questions = value.material_questions, questions.count <= 16,
                   questions.allSatisfy({ prose($0, limit: 1024) }),
                   (value.event == "needsinput") == (!questions.isEmpty || consent.selection.results.isEmpty),
-                  value.coverage == consent.selection.coverage.description + (consent.selection.truncated == true ? "; bounded selection omits additional matches" : ""),
+                  value.coverage == consent.reviewCoverage,
                   let provider = value.provider,
                   let providerObject = object["provider"] as? [String: Any],
                   Set(providerObject.keys) == ["profile", "model", "endpoint", "locality", "max_calls", "max_tokens", "deadline_seconds", "output_byte_budget", "data_scope"],

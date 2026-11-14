@@ -8,6 +8,7 @@ public struct RetainedReviewBinding: Equatable, Sendable {
     public let project: Project
     public let original: String
     public let query: String
+    public let retrievalMode: SourceRetrievalMode
     public let settings: ProviderSettings
     public let generation: UInt64
     public let scopeRevision: UInt64
@@ -15,15 +16,28 @@ public struct RetainedReviewBinding: Equatable, Sendable {
 
     public init(consentID: UUID, project: Project, original: String, query: String,
                 settings: ProviderSettings, generation: UInt64, scopeRevision: UInt64,
-                configurationGeneration: UInt64) {
+                configurationGeneration: UInt64, retrievalMode: SourceRetrievalMode = .literal) {
         self.consentID = consentID; self.project = project; self.original = original; self.query = query
         self.settings = settings; self.generation = generation; self.scopeRevision = scopeRevision
         self.configurationGeneration = configurationGeneration
+        self.retrievalMode = retrievalMode
     }
     public init(consent: RefinementConsent, configurationGeneration: UInt64) {
         self.init(consentID: consent.id, project: consent.project, original: consent.original, query: consent.query,
                   settings: consent.settings, generation: consent.generation, scopeRevision: consent.scopeRevision,
-                  configurationGeneration: configurationGeneration)
+                  configurationGeneration: configurationGeneration, retrievalMode: consent.retrievalMode)
+    }
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        // Swift String equality normalizes canonical equivalents; core paths do
+        // not. Stable encoding preserves every scope string's original UTF-8 and
+        // ordered source policy, including opaque identity/snapshot metadata.
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+        guard let left = try? encoder.encode(lhs.project), let right = try? encoder.encode(rhs.project) else { return false }
+        return lhs.consentID == rhs.consentID && left == right &&
+        lhs.original.utf8.elementsEqual(rhs.original.utf8) && lhs.query.utf8.elementsEqual(rhs.query.utf8) &&
+        lhs.retrievalMode == rhs.retrievalMode && lhs.settings == rhs.settings &&
+        lhs.generation == rhs.generation && lhs.scopeRevision == rhs.scopeRevision &&
+        lhs.configurationGeneration == rhs.configurationGeneration
     }
     func matches(_ consent: RefinementConsent) -> Bool {
         self == Self(consent: consent, configurationGeneration: configurationGeneration) &&
@@ -73,6 +87,7 @@ public struct RetainedReviewLifetime: Sendable {
     /// Call and await BEFORE rebinding the common model. The returned completion
     /// is the quit/operation-registry join boundary, not merely cancel requested.
     public func synchronize(_ current: RetainedReviewBinding?) async {
+        if let binding, binding != current { usedConsentIDs.insert(binding.consentID) }
         generation &+= 1
         let ticket = generation
         let previous = process

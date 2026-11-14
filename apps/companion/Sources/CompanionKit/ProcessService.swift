@@ -257,6 +257,7 @@ public struct ProcessService: CoreService {
                     "--profile", consent.profile.id, "--model", consent.profile.model, "--endpoint", consent.profile.endpoint,
                     "--expected-root", consent.project.root, "--expected-root-identity", identity,
                     "--expected-incarnation", token, "--expected-snapshot", snapshot, "--confirm-local-inference"]
+            if consent.retrievalMode == .rankedTerms { args.append("--terms") }
             input = Data(consent.original.utf8) // Original ONLY on bounded stdin, never argv.
         case .searchHumanContext(let p, let query):
             guard InputPolicy.humanSearch(query) else { throw ServiceError.invalid }
