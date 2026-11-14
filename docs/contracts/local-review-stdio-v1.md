@@ -46,6 +46,11 @@ No inference after edit. Actions other than cancel are valid only after a review
 event has been published. Queue capacity is one; queue overflow fails closed.
 Cancel, EOF and invalid input signal the same `Control` immediately, including
 while the synchronous provider call is in progress. EOF never accepts anything.
+The invoking parent must keep its private stdin pipe open, read a review event,
+obtain an explicit human choice, then write the matching action. It must wait for
+terminal output/process exit and reap the child. A prequeued action transcript or
+closing stdin after capture is not a supported approval interaction. The parent
+owns force termination/reaping when its own I/O or UI is abandoned.
 
 ## Output and approval
 

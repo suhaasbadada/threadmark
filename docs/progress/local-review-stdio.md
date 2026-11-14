@@ -82,6 +82,13 @@ override. The process deadline is armed before even flag-error output, so blocke
 output on that path is bounded too. All review errors are closed JSON metadata;
 no diagnostic prose is printed to stderr.
 
+An output I/O failure permanently closes the output budget: no error JSON is
+appended after a possibly partial frame, and attempted bytes cannot evade session
+bounds. An actual owned broken-pipe fixture verifies prompt failure/reaping, no
+retry, no stderr diagnostics and no content persistence. The contract also makes
+parent pipe ownership explicit: keep stdin open through review, obtain human
+choice, and wait/reap; prequeued transcripts are not approval interactions.
+
 ## Base and verification
 
 Assigned checkout began at `661bdb3e11118efe979cc7adf06c39db723bf133`.

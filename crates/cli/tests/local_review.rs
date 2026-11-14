@@ -709,6 +709,49 @@ fn human_note_history_preserved_and_queue_cannot_approve_an_edited_preview() {
 }
 
 #[test]
+fn output_io_error_closes_without_retrying_or_persisting_content() {
+    let fixture = Fixture::new();
+    let (listener, endpoint) = listener();
+    let flags = fixture.flags(&endpoint);
+    let server = server(listener, false, false);
+    let mut command = fixture.command(&flags);
+    // Owned pipe with no reader makes even the first output write fail. No
+    // diagnostic frame may be appended after a failed/possibly partial frame.
+    let (reader, writer) = std::io::pipe().unwrap();
+    drop(reader);
+    command.stdout(writer);
+    let mut child = command.spawn().unwrap();
+    let mut input = child.stdin.take().unwrap();
+    input
+        .write_all(format!("{}\n", json!({"version":1,"original":"PRIVATE_ORIGINAL"})).as_bytes())
+        .unwrap();
+    let deadline = Instant::now() + Duration::from_secs(4);
+    let status = loop {
+        if let Some(status) = child.try_wait().unwrap() {
+            break status;
+        }
+        if Instant::now() >= deadline {
+            let _ = child.kill();
+            let _ = child.wait();
+            panic!("I/O failure did not terminate");
+        }
+        std::thread::sleep(Duration::from_millis(2));
+    };
+    assert!(!status.success());
+    let mut stderr = String::new();
+    child
+        .stderr
+        .take()
+        .unwrap()
+        .read_to_string(&mut stderr)
+        .unwrap();
+    assert!(stderr.is_empty());
+    drop(input);
+    one_call(server);
+    fixture.unchanged();
+}
+
+#[test]
 #[ignore = "real production 300-second process deadline; run explicitly"]
 fn actual_cli_idle_deadline_terminates_with_stdin_open() {
     let fixture = Fixture::new();

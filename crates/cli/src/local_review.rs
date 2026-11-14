@@ -27,10 +27,14 @@ impl Output {
         {
             return Err(Error::Overflow);
         }
-        std::io::stdout()
-            .lock()
-            .write_all(&line)
-            .map_err(|_| Error::Unavailable)?;
+        if std::io::stdout().lock().write_all(&line).is_err() {
+            // A partial frame cannot be repaired by appending an error object.
+            // Poison output permanently, retaining conservative bounds on all
+            // attempted bytes/frames even if the pipe later becomes writable.
+            self.frames = protocol::MAX_FRAMES;
+            self.bytes = protocol::TOTAL_BYTES;
+            return Err(Error::Unavailable);
+        }
         self.frames += 1;
         self.bytes += line.len();
         Ok(())
