@@ -1,4 +1,5 @@
-//! Opt-in registration-scoped human reads. No source-policy/currentness binding.
+//! Opt-in registration-scoped human and suppression metadata reads.
+//! No source-policy/currentness binding or source filesystem access.
 use super::*;
 
 /// Exact UTF-8 registration metadata, not credentials or source authorization.
@@ -75,7 +76,32 @@ impl Store {
         })
     }
 
-    // The callback is the private pre-human-data boundary: no Forget marker,
+    /// Inspect human suppression IDs only inside the captured registration.
+    pub fn forgotten_contexts_bound(
+        &self,
+        project: &str,
+        binding: &ContextReadBinding<'_>,
+        cancel: &AtomicBool,
+    ) -> Result<Value> {
+        self.read_human_bound(project, binding, cancel, |tx, _| {
+            Self::forgotten_contexts_in(tx, project)
+        })
+    }
+
+    /// Inspect source suppression paths, not source content or authorization.
+    /// Existing schema v4 is required; no implicit upgrade is performed.
+    pub fn forgotten_sources_bound(
+        &self,
+        project: &str,
+        binding: &ContextReadBinding<'_>,
+        cancel: &AtomicBool,
+    ) -> Result<Value> {
+        self.read_human_bound(project, binding, cancel, |tx, _| {
+            Self::forgotten_sources_in(tx, project)
+        })
+    }
+
+    // The callback is the private pre-data boundary: no Forget marker,
     // context row or search traversal is read before binding.require succeeds.
     // Callbacks reuse this transaction; they must not open a nested transaction.
     pub(super) fn read_human_bound(

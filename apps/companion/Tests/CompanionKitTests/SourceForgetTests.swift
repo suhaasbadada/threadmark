@@ -81,7 +81,9 @@ private actor SourceForgetCore: CoreService {
             let id = b.project
             return .context(ContextHistory(project: id, id: context, producer: "human-authored", authority: .string("human-declared"),
                 history: [.init(revision: 1, kind: "note", text: "Synthetic retained history", retired: false)]))
-        case .forgottenSources(let id):
+        case .forgottenSourcesBound(let binding):
+            try binding.validate()
+            let id = binding.project
             markerCalls += 1
             if mode == "legacy" || mode == "marker-failure" { throw ServiceError.failed }
             return .forgottenSources(ForgottenSources(project: mode == "marker-project" ? "beta" : id,

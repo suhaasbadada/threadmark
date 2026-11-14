@@ -114,7 +114,7 @@ private actor ExplicitFakeCoreService: CoreService {
         case .queryBound(let p, let q): return try await perform(.query(p.id, q))
         case .prepareContextBound(let p, let q, let original): return try await perform(.prepareContext(p.id, q, original))
         case .searchHumanContext, .refinePreview: throw ServiceError.unavailable
-        case .forgetContext, .forgottenContexts, .forgetSource, .forgottenSources: throw ServiceError.unavailable
+        case .forgetContext, .forgottenContexts, .forgottenContextsBound, .forgetSource, .forgottenSources, .forgottenSourcesBound: throw ServiceError.unavailable
         case .removeProject(let id, let root, let identity, let token):
             removalCalls += 1
             guard projects.contains(where: { $0.id == id && $0.root == root && $0.root_identity == .string(identity) && $0.incarnation == token }) else { throw ServiceError.scopeMismatch }

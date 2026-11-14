@@ -220,7 +220,13 @@ impl Store {
         identity(project)?;
         let tx = self.db.unchecked_transaction().map_err(unavailable)?;
         self.project(project)?;
-        let forgotten: Vec<_> = markers(&tx, project)?
+        let reply = Self::forgotten_sources_in(&tx, project)?;
+        tx.commit().map_err(unavailable)?;
+        Ok(reply)
+    }
+
+    pub(super) fn forgotten_sources_in(tx: &Connection, project: &str) -> Result<Value> {
+        let forgotten: Vec<_> = markers(tx, project)?
             .into_iter()
             .map(|path| json!({"path":path}))
             .collect();
@@ -228,7 +234,6 @@ impl Store {
         if serde_json::to_vec(&reply).map_err(unavailable)?.len() + 1 > MAX_TOTAL {
             return Err(invalid());
         }
-        tx.commit().map_err(unavailable)?;
         Ok(reply)
     }
 }

@@ -68,7 +68,9 @@ private actor ForgetCore: CoreService {
             let id = b.project
             return .context(ContextHistory(project: id, id: context, producer: "human-authored", authority: .string("human-declared"),
                 history: (1...revision).map { ContextRevision(revision: $0, kind: "note", text: "Synthetic human revision \($0)", retired: false) }))
-        case .forgottenContexts(let id):
+        case .forgottenContextsBound(let binding):
+            try binding.validate()
+            let id = binding.project
             if mode == "followup-failure" { throw ServiceError.failed }
             return .forgottenContexts(ForgottenContexts(project: mode == "marker-project" ? "beta" : id,
                 forgotten: mode == "marker-missing" ? [] : [.init(id: mode == "marker-invalid" ? "../bad" : "memo")]))
