@@ -1,5 +1,30 @@
 # Unit AB — native explicit source-anchor inspection
 
+## Primary integration and independent review
+
+Primary committed only the twelve owned files as `39159e5` and applied without
+conflicts as `8ace8ee`. CI now rebuilds/enables the inspection C fixture and runs
+its ordinary-import API gate. Exact combined tested runtime:
+**`789945f1d8bacd1ebd4955d92816b05423f7d32f`**. No lane baseline/site history replay.
+
+Joffrey independently reproduced the fingerprint and reviewed **CLEAR**. Rebuilt
+CLI and SDK-isolated inspection C fixture; strict Debug and Release inspection
+suites each **10 tests/two suites PASS**, including actual CLI and WAL database-
+byte/directory preservation. API compiler gates and whitespace **PASS**. He did
+not rerun full regression/lint/deny/secrets or GUI/AX/Swift 6.1 execution.
+
+Primary full workspace gate **PASS**, 294 Rust tests + two doctests; strict serial
+actual-CLI/retained/export/inspection-C Debug **224 tests/32 suites PASS**; targeted
+Release **10 tests/two suites PASS**. Both ordinary-import API gates, offline locked
+deny, staged secrets/whitespace, release bundle and Info.plist validation **PASS**.
+Long-deadline fixtures remained ignored. Exact publication-head CI remains later.
+
+PR #76 exact post-merge runs `43583739007` and `43583739026`, both targeting
+`099d54714c2d43a38cd6528a3a37f0efe135f357`, completed **PASS**. Native human-note
+comparison continues independently. Nine inherited progress edits, all worktrees
+and parent-owned reminders preserved. V1 short-right-window EOF attestation limit
+below remains explicit; no GUI/AX, live model, host delivery or phase closure claim.
+
 Requirements: **TM-01–TM-04, TM-07, TM-10**; partial **P2-A1/A3/A4/A6** and
 **P3-A3/A4/A5/A6**, building on **Z-A1–Z-A5** in the reviewed
 [source inspection contract](../contracts/source-anchor-inspection-v1.md).
