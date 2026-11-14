@@ -134,14 +134,16 @@ public struct IndexReport: Codable, Sendable {
     public let coverage: JSONValue
     public let empty: Bool
 }
-public struct QueryReport: Codable, Sendable {
+public struct QueryReport: Codable, Equatable, Sendable {
     public let project: String
     public let snapshot: JSONValue?
     public let currentness: String
     public let coverage: JSONValue
     public let results: [Evidence]
+    public var truncated: Bool? = nil
+    public var selection: String? = nil
 }
-public struct Evidence: Codable, Sendable {
+public struct Evidence: Codable, Equatable, Sendable {
     public let project: String
     public let path: String
     public let line: Int
@@ -291,6 +293,7 @@ public enum ServiceError: String, Error, Sendable, LocalizedError {
 }
 
 public enum Operation: Sendable {
+    case refinePreview(RefinementConsent)
     case searchHumanContext(String, String)
     case setSourcesBound(String, String, String, String, [String], [String])
     case writeContextBound(String, String, String, String, Bool, String, String, String)
@@ -307,6 +310,7 @@ public enum Operation: Sendable {
     case writeContext(String, String, String, String, update: Bool), retireContext(String, String)
 }
 public enum Reply: Sendable {
+    case refinementPreview(RefinementPreview)
     case humanContextSearch(HumanContextSearch)
     case forgottenSource(ForgottenSource), forgottenSources(ForgottenSources)
     case forgotten(ForgottenContext), forgottenContexts(ForgottenContexts)

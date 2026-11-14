@@ -106,7 +106,7 @@ struct ManagementView: View {
             }
             TabView(selection: $navigation.tab) {
                 ProjectsView(model: model).tabItem { Text("Projects") }.tag(0)
-                ContextView(model: model).tabItem { Text("Context") }.tag(1)
+                ContextView(model: model, providers: providers).tabItem { Text("Context") }.tag(1)
                 ConnectionsView(model: model, providers: providers).tabItem { Text("Connections") }.tag(2)
                 PrivacyView(model: model).tabItem { Text("Privacy / Settings") }.tag(3)
             }
@@ -285,6 +285,7 @@ struct ProjectsView: View {
 @MainActor
 struct ContextView: View {
     @ObservedObject var model: CompanionModel
+    @ObservedObject var providers: CompanionProviderSession
     @ViewState<String> private var search = ""
     @ViewState<String> private var id = ""
     @ViewState<String> private var kind = "note"
@@ -295,6 +296,9 @@ struct ContextView: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Explicit project: \(model.selectedID ?? "None")").font(.headline)
                 ContextPreparationView(model: model)
+                RefinementPreviewView(model: model, settings: providers.settings)
+                Divider()
+                HumanContextSearchView(model: model)
                 Divider()
                 Text("Human declarations are not observed source truth. Edits create revisions in core; retire preserves history. Conflicts are not silently resolved by this shell.")
                 TextField("Filter context IDs or kinds", text: $search)

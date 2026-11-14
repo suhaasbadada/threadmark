@@ -76,6 +76,10 @@ public struct ProcessService: CoreService {
               limits.inputBytes > 0, limits.inputBytes <= 4096 else { throw ServiceError.invalid }
         let cancellation = Cancellation()
         var operationLimits = limits
+        if case .refinePreview = operation {
+            operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192)
+            operationLimits.seconds = min(limits.seconds, 30)
+        }
         if case .searchHumanContext = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .query = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .prepareContext = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
@@ -95,6 +99,8 @@ public struct ProcessService: CoreService {
         do {
             let decoder = JSONDecoder()
             switch operation {
+            case .refinePreview(let consent):
+                return .refinementPreview(try RefinementPreview.decode(data, consent: consent))
             case .searchHumanContext(let project, _):
                 return .humanContextSearch(try HumanContextSearch.decode(data, project: project))
             case .forgetSource(let project, let path, _, _, _, _):
@@ -195,6 +201,16 @@ public struct ProcessService: CoreService {
         var args: [String]
         var input = Data()
         switch operation {
+        case .refinePreview(let consent):
+            try consent.validate()
+            guard case .string(let identity) = consent.project.root_identity,
+                  case .string(let snapshot) = consent.project.snapshot,
+                  let token = consent.project.incarnation else { throw ServiceError.invalid }
+            args = ["refine", "preview", try id(consent.project.id), consent.query,
+                    "--profile", consent.profile.id, "--model", consent.profile.model, "--endpoint", consent.profile.endpoint,
+                    "--expected-root", consent.project.root, "--expected-root-identity", identity,
+                    "--expected-incarnation", token, "--expected-snapshot", snapshot, "--confirm-local-inference"]
+            input = Data(consent.original.utf8) // Original ONLY on bounded stdin, never argv.
         case .searchHumanContext(let p, let query):
             guard InputPolicy.humanSearch(query) else { throw ServiceError.invalid }
             args = ["context", "search", try id(p), query]
