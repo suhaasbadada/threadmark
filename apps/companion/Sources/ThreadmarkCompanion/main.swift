@@ -192,6 +192,7 @@ struct ProjectsView: View {
                         Text("Snapshot \(report.snapshot.description) · \(report.files) files · \(report.anchors) anchors")
                         Text("Coverage: \(report.coverage.description)").textSelection(.enabled)
                     }
+                    CoverageControls(model: model)
                     Divider()
                     SourceRetrievalModePicker(model: model)
                     HStack {

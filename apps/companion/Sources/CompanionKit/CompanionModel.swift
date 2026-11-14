@@ -36,6 +36,17 @@ public final class CompanionModel: ObservableObject {
     private var humanHistoryGeneration: UInt64 = 0
     @Published public private(set) var evidence: QueryReport?
     @Published public private(set) var sourceInspection: SourceInspectionDocument?
+    @Published public private(set) var coverageReport: CoverageDocument?
+    private var coverageOperation = false
+    private var coverageNeedsMetadata = false
+    private let coverageOwner = UUID()
+    private struct CoverageAction: Sendable {
+        let request: CoverageRequest
+        let owner: UUID
+        let generation: UInt64
+        let configurationGeneration: UInt64
+        let scopeRevision: UInt64
+    }
     @Published public private(set) var inspectionRadius = 2
     private var inspectionQueryScope: Project?
     private var inspectionQueryGeneration: UInt64?
@@ -229,6 +240,7 @@ public final class CompanionModel: ObservableObject {
     }
     /// Opening/canceling this immutable approval performs no core operation.
     public func requestRemoval() {
+        if coverageOperation { cancel() }
         guard canRemoveProject, let project else { return }
         cancelProjectExport()
         if automaticTicket != nil { cancel() }
@@ -245,6 +257,7 @@ public final class CompanionModel: ObservableObject {
         return history.history.map(\.revision).sorted() == Array(1...history.history.count)
     }
     public func requestForget() {
+        if coverageOperation { cancel() }
         guard canForgetContext, let project, let history else { return }
         cancelProjectExport()
         disableAutomaticRefresh()
@@ -379,6 +392,7 @@ public final class CompanionModel: ObservableObject {
         return InputPolicy.sourceMarker(path)
     }
     public func requestSourceForget(_ path: String) {
+        if coverageOperation { cancel() }
         guard canForgetSource(path), let target = project else { return }
         cancelProjectExport()
         let markers = sourceMarkers, retainedHistory = history
@@ -567,6 +581,7 @@ public final class CompanionModel: ObservableObject {
                 self.clearResults(); self.humanHistoryScope = nil
             }
             self.project = project; self.sourceDraft = project.sources; self.policyDirty = false
+            self.coverageNeedsMetadata = false
             self.contexts = contexts.contexts
             self.forgetRequiresRefresh = false
             self.sourceRequiresRefresh = false
@@ -623,7 +638,7 @@ public final class CompanionModel: ObservableObject {
     public var manualActionsAvailable: Bool { !busy || automaticTicket != nil }
     public var canBuild: Bool { canRemoveProject && !policyDirty && !sourceRequiresRefresh && !sourceDraft.isEmpty && pendingSourceForget == nil }
     public func build() {
-        if inspectionOperation { cancel() }
+        if inspectionOperation || coverageOperation { cancel() }
         pendingSourceForget = nil
         guard !sourceRequiresRefresh else { fail(refreshRequiredError); return }
         guard let target = project, target.id == selectedID,
@@ -661,6 +676,7 @@ public final class CompanionModel: ObservableObject {
             guard fresh.sources == target.sources else { throw ServiceError.readRequiresRefresh }
             self.indexReport = report
             self.project = fresh
+            self.coverageNeedsMetadata = false
             self.status = report.empty ? "Partial — empty snapshot; inspect coverage" : "Build completed — inspect coverage; currentness not checked"
         }
     }
@@ -705,7 +721,7 @@ public final class CompanionModel: ObservableObject {
     }
     /// Called when the source query text changes; displayed rows are not fresh authority.
     public func sourceQueryChanged() {
-        if inspectionOperation || sourceQueryOperation { cancel() }
+        if inspectionOperation || sourceQueryOperation || coverageOperation { cancel() }
         inspectionQueryGeneration = nil; sourceInspection = nil
     }
     public func canInspectSource(_ anchor: Evidence) -> Bool {
@@ -748,6 +764,41 @@ public final class CompanionModel: ObservableObject {
             self.status = "Source inspected · current-at-read · lexical only; neighbors are observed text, not indexed claims. No edit, copy, send or inference."
         }
         inspectionOperation = true
+    }
+    /// No automatic caller: only the Projects button requests this full bound read.
+    public var canInspectCoverage: Bool {
+        guard configured, !quitting, !policyDirty, !sourceRequiresRefresh, !forgetRequiresRefresh, !coverageNeedsMetadata,
+              pendingRemoval == nil, pendingForget == nil, pendingSourceForget == nil,
+              let project, selectedID == project.id,
+              sourceDraft.count == project.sources.count,
+              zip(sourceDraft, project.sources).allSatisfy({ $0.utf8.elementsEqual($1.utf8) }) else { return false }
+        return (try? CoverageRequest(project: project)) != nil
+    }
+    public func inspectCoverage() {
+        guard canInspectCoverage, let captured = project,
+              let request = try? CoverageRequest(project: captured) else { return }
+        disableAutomaticRefresh()
+        let action = CoverageAction(request: request, owner: coverageOwner, generation: generation &+ 1,
+            configurationGeneration: configurationGeneration, scopeRevision: scopeRevision)
+        start(status: "Inspecting explicit approved-file lexical coverage — metadata only",
+              joinRefreshDriver: true, preserveHistory: true, preserveQuery: true, preserveConflict: true) { service in
+            try Task.checkCancellation()
+            // Never project-show before/after: normal metadata opening can normalize WAL.
+            let reply = try await service.perform(.coverageBound(action.request))
+            try Task.checkCancellation()
+            return [reply]
+        } apply: { replies in
+            guard case .coverage(let document) = replies[0], self.coverageOwner == action.owner,
+                  self.generation == action.generation, self.configurationGeneration == action.configurationGeneration,
+                  self.scopeRevision == action.scopeRevision, let current = self.project,
+                  ProjectExportDocument.exact(current, captured) else { throw ServiceError.invalid }
+            self.coverageReport = try CoverageDocument.decode(document.bytes, request: request)
+            self.coverageNeedsMetadata = false
+            // A metadata report never renews Query/Inspect-source eligibility.
+            self.status = "Coverage read · lexical only · current-at-read, not a filesystem lease. Build remains a separate explicit action."
+            if self.lastError == .contextConflict { self.status += " " + ServiceError.contextConflict.localizedDescription }
+        }
+        coverageOperation = true
     }
     private var humanHistoryScope: Project?
     public var humanComparisonRevisions: [ContextRevision] {
@@ -1335,10 +1386,13 @@ public final class CompanionModel: ObservableObject {
         cancelOperation()
         clearHumanComparison()
     }
-    private func cancelOperation() {
-        let preserveQuery = inspectionOperation
-        let preserveComparisonConflict = (comparisonActive || (humanSearchTicket != nil && humanSearchConflict)) && lastError == .contextConflict
+    private func cancelOperation(preservingReadState: Bool = false) {
+        let wasCoverage = coverageOperation || preservingReadState
+        let preserveQuery = inspectionOperation || coverageOperation || preservingReadState
+        let preserveComparisonConflict = (comparisonActive || coverageOperation || preservingReadState || (humanSearchTicket != nil && humanSearchConflict)) && lastError == .contextConflict
         humanSearchConflict = false
+        if coverageOperation { coverageNeedsMetadata = true }
+        coverageOperation = false; coverageReport = nil
         sourceQueryOperation = false
         inspectionOperation = false; sourceInspection = nil
         inspectionQueryGeneration = nil; inspectionQueryScope = nil
@@ -1386,7 +1440,9 @@ public final class CompanionModel: ObservableObject {
         if sourceRequiresRefresh { status = refreshRequiredError.localizedDescription }
         busy = false
         if preserveQuery, !sourceRequiresRefresh, !forgetRequiresRefresh {
-            status = "Source inspection canceled — owned teardown requested; prior query and human history retained. Explicitly Query again before Inspect source."
+            status = wasCoverage
+                ? "Coverage inspection canceled — prior query and human history retained. Refresh project metadata before coverage; Query again before Inspect source."
+                : "Source inspection canceled — owned teardown requested; prior query and human history retained. Explicitly Query again before Inspect source."
         }
         if cancelingSearch != nil { status = "Human search cancel requested — joining owned worker" }
         if uncertainExport {
@@ -1396,6 +1452,7 @@ public final class CompanionModel: ObservableObject {
         if preserveComparisonConflict { status = ServiceError.contextConflict.localizedDescription }
     }
     private func clearResults(preserveHistory: Bool = false) {
+        coverageReport = nil
         sourceInspection = nil; inspectionQueryScope = nil; inspectionQueryGeneration = nil
         if !preserveHistory { clearHumanComparison(); humanHistoryGeneration &+= 1 }
         pendingProjectExport = nil; exportPicker = nil
@@ -1417,15 +1474,16 @@ public final class CompanionModel: ObservableObject {
     private func fail(_ error: ServiceError) {
         lastError = error; status = error.localizedDescription
     }
-    private func start(status: String = "Working — bounded local core operation", automatic: Bool = false, joinRefreshDriver: Bool = false, preserveHistory: Bool = false, preserveQuery: Bool = false, work: @escaping @Sendable (any CoreService) async throws -> [Reply],
+    private func start(status: String = "Working — bounded local core operation", automatic: Bool = false, joinRefreshDriver: Bool = false, preserveHistory: Bool = false, preserveQuery: Bool = false, preserveConflict: Bool = false, work: @escaping @Sendable (any CoreService) async throws -> [Reply],
                        apply: @escaping @MainActor ([Reply]) throws -> Void) {
         guard !quitting else { return }
-        cancelOperation(); let ticket = generation; let service = service; let operationID = UUID()
+        let retainedConflict = preserveConflict && lastError == .contextConflict
+        cancelOperation(preservingReadState: preserveConflict); let ticket = generation; let service = service; let operationID = UUID()
         refinementOperation = preserveHistory
         automaticTicket = automatic ? ticket : nil
         let prior = Array(ownedOperations.values)
         for pending in prior { pending.cancel() }
-        busy = true; lastError = nil; self.status = status
+        busy = true; lastError = retainedConflict ? .contextConflict : nil; self.status = status
         job = Task { [weak self] in
             defer {
                 self?.ownedOperations.removeValue(forKey: operationID)
@@ -1448,7 +1506,7 @@ public final class CompanionModel: ObservableObject {
                 guard self.generation == ticket, !Task.isCancelled, !self.quitting else { return }
                 let replies = try await work(service)
                 guard self.generation == ticket, !Task.isCancelled, !self.quitting else { return }
-                try apply(replies); self.busy = false; self.job = nil; self.automaticTicket = nil; self.inspectionOperation = false
+                try apply(replies); self.busy = false; self.job = nil; self.automaticTicket = nil; self.inspectionOperation = false; self.coverageOperation = false
             } catch {
                 guard let self, self.generation == ticket, !self.quitting else { return }
                 if error as? ServiceError == .namespaceChanged {
@@ -1469,13 +1527,21 @@ public final class CompanionModel: ObservableObject {
                     self.sourceInspection = nil; self.inspectionQueryGeneration = nil; self.inspectionQueryScope = nil
                 }
                 self.inspectionOperation = false
+                if self.coverageOperation { self.coverageNeedsMetadata = true }
+                self.coverageOperation = false; self.coverageReport = nil
                 self.sourceQueryOperation = false
                 self.busy = false; self.job = nil
                 self.fail(error as? ServiceError ?? (error is CancellationError ? .canceled : .failed))
                 if self.humanSearchTicket == ticket, self.humanSearchConflict, error as? ServiceError != .namespaceChanged {
                     self.fail(.contextConflict)
+                } else if retainedConflict, error as? ServiceError != .namespaceChanged {
+                    self.lastError = .contextConflict; self.status += " " + ServiceError.contextConflict.localizedDescription
                 }
-                if preserveQuery { self.status += " Source inspection discarded; explicitly Query again before Inspect source. No automatic retry." }
+                if preserveQuery {
+                    self.status += preserveConflict
+                        ? " Coverage inspection discarded; refresh project metadata before coverage and Query again before Inspect source. No automatic retry."
+                        : " Source inspection discarded; explicitly Query again before Inspect source. No automatic retry."
+                }
                 self.automaticTicket = nil
                 if automatic {
                     self.disableAutomaticRefresh()

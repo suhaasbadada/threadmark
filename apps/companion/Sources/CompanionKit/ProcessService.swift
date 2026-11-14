@@ -76,6 +76,7 @@ public struct ProcessService: CoreService {
               limits.inputBytes > 0, limits.inputBytes <= 4096 else { throw ServiceError.invalid }
         let cancellation = Cancellation()
         var operationLimits = limits
+        if case .coverageBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 65536) }
         if case .inspectSourceAnchorBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .compareHumanContextBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 65536) }
         if case .refinePreview = operation {
@@ -122,6 +123,8 @@ public struct ProcessService: CoreService {
             switch responseOperation {
             case .searchHumanContextKindsBound(let request):
                 return .filteredHumanSearch(try FilteredHumanSearch.decode(data, request: request))
+            case .coverageBound(let request):
+                return .coverage(try CoverageDocument.decode(data, request: request))
             case .inspectSourceAnchorBound(let request):
                 return .sourceInspection(try SourceInspectionDocument.decode(data, request: request))
             case .compareHumanContextBound(let request):
@@ -260,6 +263,13 @@ public struct ProcessService: CoreService {
             let b = request.binding
             args = ["context", "search", b.project, request.query, "--kinds"] + request.kinds +
                 ["--expected-root", b.root, "--expected-root-identity", b.rootIdentity, "--expected-incarnation", b.incarnation]
+        case .coverageBound(let request):
+            try request.validate()
+            let p = request.project
+            guard case .string(let identity) = p.root_identity, let token = p.incarnation else { throw ServiceError.invalid }
+            args = ["project", "coverage", p.id, "--expected-root", p.root,
+                    "--expected-root-identity", identity, "--expected-incarnation", token,
+                    "--expected-snapshot", try ProjectExportDocument.snapshotArgument(p), "--expected-sources"] + p.sources
         case .inspectSourceAnchorBound(let request):
             try request.validate()
             let p = request.project, a = request.anchor
