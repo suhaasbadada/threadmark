@@ -10,7 +10,7 @@ public struct RefinementPreviewView: View {
             Text("Optional Refine · retained engine review").font(.headline)
             Text("Uses the original and evidence query above. Select and explicitly enable a local profile in Connections first. Remote inference is unsupported even for saved profiles.")
             Text("Generated prose is unverified. Review intent, negations and permissions. Explicit engine approval returns only an in-memory value; no copy, send or host admission. Refine retrieval is independent of Source Query/Context mode.").font(.caption)
-            Picker("Refine retrieval mode", selection: Binding(get: { model.refinementRetrievalMode }, set: model.setRefinementRetrievalMode)) {
+            Picker("Refine retrieval mode", selection: Binding(get: { model.refinementRetrievalMode }, set: { model.setRefinementRetrievalMode($0) })) {
                 ForEach(SourceRetrievalMode.allCases, id: \.self) { mode in Text(mode.label).tag(mode) }
             }.accessibilityIdentifier("refine-retrieval-mode")
             Text(model.refinementRetrievalMode.explanation).font(.caption)
