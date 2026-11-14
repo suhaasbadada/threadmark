@@ -1,4 +1,6 @@
 //! Synthetic actual CLI + SQLite + one owned loopback server, never a live model.
+#[path = "local_review/ranked_retrieval.rs"]
+mod ranked_retrieval;
 use serde_json::{Value, json};
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
@@ -127,6 +129,15 @@ impl Fixture {
     }
     fn child(&self, flags: &[String]) -> Session {
         Session::new(self.command(flags).spawn().unwrap())
+    }
+    fn retrieval_flags(&self, endpoint: &str, ranked: bool) -> Vec<String> {
+        let mut flags = self.flags(endpoint);
+        if ranked {
+            // No literal phrase match; ranked selection alone finds the source.
+            flags[3] = "synthetic blue".into();
+            flags.push("--terms".into());
+        }
+        flags
     }
     fn unchanged(&self) {
         assert_eq!(
@@ -396,10 +407,14 @@ fn retained_preview_edit_stale_reject_fresh_exact_handoff() {
 
 #[test]
 fn provider_failure_requires_explicit_original_and_questions_block_prepared() {
+    failure_and_questions(false);
+}
+
+fn failure_and_questions(ranked: bool) {
     for fail in [true, false] {
         let fixture = Fixture::new();
         let (listener, endpoint) = listener();
-        let mut child = fixture.child(&fixture.flags(&endpoint));
+        let mut child = fixture.child(&fixture.retrieval_flags(&endpoint, ranked));
         let server = server(listener, fail, !fail);
         child.capture();
         let review = child.event();
@@ -435,6 +450,10 @@ fn provider_failure_requires_explicit_original_and_questions_block_prepared() {
 
 #[test]
 fn changes_after_edit_invalidate_prepared_and_original_including_failure() {
+    changes_after_edit(false);
+}
+
+fn changes_after_edit(ranked: bool) {
     for scenario in [
         "source",
         "policy",
@@ -445,7 +464,7 @@ fn changes_after_edit_invalidate_prepared_and_original_including_failure() {
     ] {
         let fixture = Fixture::new();
         let (listener, endpoint) = listener();
-        let mut child = fixture.child(&fixture.flags(&endpoint));
+        let mut child = fixture.child(&fixture.retrieval_flags(&endpoint, ranked));
         let server = server(listener, scenario == "failure-source", false);
         child.capture();
         let review = child.event();
@@ -515,11 +534,15 @@ fn changes_after_edit_invalidate_prepared_and_original_including_failure() {
 
 #[test]
 fn cancel_and_eof_during_provider_or_idle_close_and_reap_without_late_results() {
+    cancel_and_eof(false);
+}
+
+fn cancel_and_eof(ranked: bool) {
     for during_call in [true, false] {
         for cancel in [true, false] {
             let fixture = Fixture::new();
             let (listener, endpoint) = listener();
-            let mut child = fixture.child(&fixture.flags(&endpoint));
+            let mut child = fixture.child(&fixture.retrieval_flags(&endpoint, ranked));
             child.capture();
             let (stream, _) = receive(&listener);
             if !during_call {

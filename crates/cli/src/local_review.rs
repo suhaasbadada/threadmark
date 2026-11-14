@@ -4,6 +4,7 @@ use std::path::Path;
 use std::process::ExitCode;
 use std::sync::{Arc, Mutex, mpsc};
 use std::time::{Duration, Instant};
+use threadmark_daemon::preparation::RetrievalMode;
 use threadmark_daemon::review_session::{self as protocol, Action, Control, Error, LocalReview};
 
 enum Input {
@@ -126,6 +127,7 @@ fn read_input_from(
 fn session(
     data_dir: &Path,
     options: threadmark_daemon::local_refinement::Options,
+    retrieval: RetrievalMode,
     control: &Control,
     rx: mpsc::Receiver<Input>,
     ready: &Mutex<bool>,
@@ -141,7 +143,8 @@ fn session(
     let Input::Original(original) = receive()? else {
         return Err(Error::Invalid);
     };
-    let mut review = LocalReview::start(data_dir, options, original, control.clone())?;
+    let mut review =
+        LocalReview::start_with_retrieval(data_dir, options, original, control.clone(), retrieval)?;
     control.checkpoint()?;
     let event = review.review()?;
     // Serialize initial publication with input admission: an immediate response
@@ -211,8 +214,7 @@ pub fn run(data_dir: &Path, raw_words: &[std::ffi::OsString]) -> ExitCode {
         })
         .flatten();
     let parsed = words.as_deref().and_then(super::local_refinement::parse);
-    // Retained protocol v1 is literal-only; never silently discard ranked mode.
-    let Some((options, threadmark_daemon::preparation::RetrievalMode::Literal)) = parsed else {
+    let Some((options, retrieval)) = parsed else {
         let _ = output.emit(&protocol::failure(Error::Invalid), true);
         return ExitCode::from(2);
     };
@@ -224,7 +226,15 @@ pub fn run(data_dir: &Path, raw_words: &[std::ffi::OsString]) -> ExitCode {
     let reader_stopped = stopped.clone();
     let _reader =
         std::thread::spawn(move || read_input(tx, reader_control, reader_ready, reader_stopped));
-    match session(data_dir, options, &control, rx, &ready, &mut output) {
+    match session(
+        data_dir,
+        options,
+        retrieval,
+        &control,
+        rx,
+        &ready,
+        &mut output,
+    ) {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
             let reason = stopped

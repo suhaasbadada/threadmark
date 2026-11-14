@@ -1,6 +1,6 @@
 //! Finite private-stdio review protocol v1, retaining the actual core-backed engine.
 use crate::local_refinement::Options;
-use crate::preparation::ReviewSession;
+use crate::preparation::{RetrievalMode, ReviewSession};
 use serde::{
     Deserialize, Deserializer,
     de::{MapAccess, Visitor, value::MapAccessDeserializer},
@@ -143,17 +143,37 @@ impl LocalReview {
         original: String,
         control: Control,
     ) -> Result<Self, Error> {
+        Self::start_with_retrieval(data_dir, options, original, control, RetrievalMode::Literal)
+    }
+
+    /// Explicit immutable retrieval opt-in; protocol frames and literal defaults
+    /// remain unchanged. Reject invalid terms before opening even an existing store.
+    pub fn start_with_retrieval(
+        data_dir: &Path,
+        options: Options,
+        original: String,
+        control: Control,
+        retrieval: RetrievalMode,
+    ) -> Result<Self, Error> {
         options.validate()?;
+        if retrieval == RetrievalMode::RankedTerms {
+            threadmark_core::knowledge::validate_query_terms(
+                &options.expected.project,
+                &options.query,
+            )
+            .map_err(|_| Error::Invalid)?;
+        }
         let mut capture = options.capture(original);
         capture.request_id = "local-refinement-review".into();
-        Request::new(capture.clone())?;
+        Request::new_with_retrieval(capture.clone(), retrieval)?;
         let store = Store::open_existing(data_dir).map_err(|_| Error::Unavailable)?;
-        let mut session = ReviewSession::capture_bound(
+        let mut session = ReviewSession::capture_bound_with_retrieval(
             &store,
             options.query.clone(),
             capture,
             control.clone(),
             &options.expected,
+            retrieval,
         )?;
         let core_binding = format!(
             "{:?}",
@@ -224,6 +244,7 @@ impl LocalReview {
             self.instance.clone(),
             self.revision.to_string(),
             format!("{:?}", self.session.request()),
+            format!("{:?}", self.session.request().retrieval_mode()),
             format!("{:?}", self.session.brief()),
             self.core_binding.clone(),
             format!("{:?}", self.options.expected),
