@@ -1,5 +1,40 @@
 # AP — native opt-in ranked human-note search
 
+## Primary integration and independent review
+
+Owned implementation committed as `0c0320e`, then applied on AN as
+**`1fbb169e9238756cadfcc587200a622827886b8c`**, exact integrated tested runtime.
+Shared conflicts retain both AN and AP cancellation/history/CAS hooks and both
+fixtures/API gates. Added two cross-feature successor cases and extended AP's
+local verification script to build/enable AN as well. No baseline merge replay.
+The integrated payload intentionally differs from the isolated child.
+
+Joffrey independently reviewed isolated AP **CLEAR**, reproduced its fingerprint,
+ran full strict Debug **309 tests/49 suites**, targeted AP **13 tests**, all nine
+then-existing API gates and whitespace. A separate fresh integration review was
+**CLEAR**, checking conflict unions and both new successor cases; independent
+existing-build AP/AN model/decoder tests passed, as did the AP hostile-frame case
+with its fixture explicitly enabled. No remote CI or GUI proof was claimed.
+
+Primary full offline workspace **419 tests/doctests PASS**; strict serial full
+Debug and Release each **323 tests/52 suites PASS**, actual CLI and all nine C
+families enabled, all ten ordinary-import API gates, bundle/plist, offline locked
+deny, secrets and whitespace **PASS**. Runtime did not change after these tests.
+Two inherited deadline fixtures remain ignored. Nine inherited progress edits
+and earlier local receipts remain unstaged/preserved; no worktree cleanup.
+
+AN's diagnosed CI deadline repair was normally merged as
+`04bfb4adcb3f51965ec50732d5e39f2255ea4a7e`. Exact diff from the tested runtime in
+`apps/companion` is empty; only CI's macOS timeout changes from 12 to 20 minutes
+(Linux stays 12), with all gates retained. Integrated AP non-progress binary-diff
+fingerprint relative to repaired AN `4754e9723abe36c1db55348814bf2e931413d61b`:
+**`4d83a935327ad487f214b0ecd594634e5f3f3c576964f98210359c0ec63cbb51`**
+(`git diff --binary BASE HEAD -- .github/workflows/ci.yml apps/companion`).
+Repaired AN runs `43606742532`/`43606742538` were confirmed at that repaired head,
+initially running; the old canceled 12-minute job is not green evidence. AP's
+publication CI is separate. Swift 6.1.2 whole-CI completion, GUI/AX/live quality/
+host delivery/phase closure remain open.
+
 ## Frozen scope and acceptance (before implementation)
 
 Requirements TM-01–TM-04, TM-07, TM-10; partial P2-A1/A3/A4/A5/A6,
