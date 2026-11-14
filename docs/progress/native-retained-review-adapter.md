@@ -208,3 +208,23 @@ For integration, apply only owned runtime commit `6821ed0` and its evidence-only
 follow-up. Do **not** replay lane base merges `25280fd`, `2f0fbb9`, `e0fa2a6`,
 `66f72b3` or `51bc602`; primary already owns those required bases. Keep this
 worktree intact. No push/PR/watch/scheduler/merge/host action was performed.
+# Primary combined integration
+
+Applied only the owned runtime and evidence commits onto the reviewed retained
+CLI/ranked/native-binding combination. Exact combined tested runtime:
+`9b32d1ee316aee88bec0be4ad5d22ddca773eebe` (evidence follow-up
+`3f51d6a4b5e2222755d2bdc86e53d1accf062690` changes only this document).
+
+Primary full workspace `scripts/check.py`, dependency policy, and strict actual-CLI
+Swift debug with rebuilt hostile C fixtures **PASS**: 147 Swift tests/18 suites.
+Joffrey independently reviewed the adapter **CLEAR** and passed its seven tests in
+both strict debug and serial release using lane-owned CLI/C fixtures. He did not
+rebuild those fixtures or rerun the full Rust suite; primary rebuilt the fixtures
+with command-local SDK isolation. The inherited 50ms HumanSearch readiness race is
+already fixed in primary; no failure waiver is needed.
+
+App wiring is still explicitly absent. Primary owns the model's idle-session
+registry, invalidation/join boundaries, editable review surface and final actual
+model acceptance. Adapter completion is not a usable mounted workflow, GUI/AX,
+live-model quality, host delivery, remote CI or phase closure. Nine inherited
+progress edits remain excluded. Existing lane worktree remains intact.
