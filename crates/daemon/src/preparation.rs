@@ -1,8 +1,10 @@
 //! Actual core-backed preparation. Context never invokes a provider; retained
 //! review sessions require explicit provider access and never perform delivery.
 
+pub(crate) mod ranked;
 mod session;
 pub use session::{CaptureBinding, ReviewSession};
+pub use threadmark_refinement::RetrievalMode;
 
 use serde_json::{Value, json};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -38,8 +40,12 @@ fn selection_bound(
     project: &threadmark_core::knowledge::Project,
     query: &str,
     cancel: &AtomicBool,
+    retrieval: RetrievalMode,
 ) -> Result<AuthorizedSnapshot, Error> {
-    let value = store.query_bound(project, query, cancel)?;
+    let value = match retrieval {
+        RetrievalMode::Literal => store.query_bound(project, query, cancel)?,
+        RetrievalMode::RankedTerms => store.query_terms_bound(project, query, cancel)?,
+    };
     selected_value(value, &project.id)
 }
 
@@ -50,6 +56,15 @@ fn selected_value(value: Value, project: &str) -> Result<AuthorizedSnapshot, Err
         .to_owned();
     if value["truncated"] == true {
         coverage.push_str("; bounded selection omits additional matches");
+    }
+    if value.get("terms").is_some() {
+        coverage = format!(
+            "ranked-terms; {}; selection={}",
+            coverage,
+            value["selection"]
+                .as_str()
+                .ok_or(Error::InvalidExtraction)?
+        );
     }
     if value["currentness"] != "current-at-read" {
         coverage.push_str("; source context stale or unindexed");
@@ -106,25 +121,45 @@ struct CoreAuthority<'a> {
     project: &'a str,
     query: &'a str,
     cancel: &'a AtomicBool,
-    expected: Option<&'a threadmark_core::knowledge::Project>,
+    expected: &'a threadmark_core::knowledge::Project,
+    retrieval: RetrievalMode,
 }
 impl EvidenceAuthority for CoreAuthority<'_> {
     fn current(
         &self,
         request: &Request,
     ) -> Result<AuthorizedSnapshot, threadmark_refinement::Error> {
-        if request.data().project != self.project {
+        if request.data().project != self.project || request.retrieval_mode() != self.retrieval {
             return Err(threadmark_refinement::Error::ScopeMismatch);
         }
-        let selected = match self.expected {
-            Some(expected) => selection_bound(self.store, expected, self.query, self.cancel),
-            None => selection(self.store, self.project, self.query, self.cancel),
-        };
-        selected.map_err(|error| match error {
+        context_selection(
+            self.store,
+            self.expected,
+            self.query,
+            self.cancel,
+            self.retrieval,
+        )
+        .map_err(|error| match error {
             Error::Canceled => threadmark_refinement::Error::Canceled,
             Error::ScopeMismatch => threadmark_refinement::Error::ScopeMismatch,
             _ => threadmark_refinement::Error::Unavailable,
         })
+    }
+}
+
+fn context_selection(
+    store: &Store,
+    expected: &threadmark_core::knowledge::Project,
+    query: &str,
+    cancel: &AtomicBool,
+    retrieval: RetrievalMode,
+) -> Result<AuthorizedSnapshot, Error> {
+    if retrieval == RetrievalMode::Literal && expected.incarnation.is_none() {
+        // Preserve the existing explicit legacy operator command; cached/new
+        // ranked selections always require an incarnation-bearing binding.
+        selection(store, &expected.id, query, cancel)
+    } else {
+        selection_bound(store, expected, query, cancel, retrieval)
     }
 }
 
@@ -138,7 +173,14 @@ pub fn context(
     original: String,
     cancel: &AtomicBool,
 ) -> Result<Value, Error> {
-    context_scoped(store, project, query, original, cancel, None)
+    context_with_retrieval(
+        store,
+        project,
+        query,
+        original,
+        cancel,
+        RetrievalMode::Literal,
+    )
 }
 
 /// Cached native Context selection, including every engine revalidation.
@@ -149,7 +191,57 @@ pub fn context_bound(
     original: String,
     cancel: &AtomicBool,
 ) -> Result<Value, Error> {
-    context_scoped(store, &expected.id, query, original, cancel, Some(expected))
+    context_bound_with_retrieval(
+        store,
+        expected,
+        query,
+        original,
+        cancel,
+        RetrievalMode::Literal,
+    )
+}
+
+/// Explicit algorithm selection with a complete pre-read cached-scope binding.
+pub fn context_bound_with_retrieval(
+    store: &Store,
+    expected: &threadmark_core::knowledge::Project,
+    query: &str,
+    original: String,
+    cancel: &AtomicBool,
+    retrieval: RetrievalMode,
+) -> Result<Value, Error> {
+    threadmark_core::knowledge::validate_query_binding(expected, query)?;
+    context_scoped(
+        store,
+        &expected.id,
+        query,
+        original,
+        cancel,
+        expected,
+        retrieval,
+    )
+}
+
+/// Explicit algorithm opt-in; literal response shape is unchanged. Ranked output
+/// discloses selection/coverage and never invokes a provider or delivers anything.
+pub fn context_with_retrieval(
+    store: &Store,
+    project: &str,
+    query: &str,
+    original: String,
+    cancel: &AtomicBool,
+    retrieval: RetrievalMode,
+) -> Result<Value, Error> {
+    if cancel.load(Ordering::SeqCst) {
+        return Err(Error::Canceled);
+    }
+    if retrieval == RetrievalMode::RankedTerms {
+        threadmark_core::knowledge::validate_query_terms(project, query)?;
+    }
+    let expected = store.project(project)?;
+    context_scoped(
+        store, project, query, original, cancel, &expected, retrieval,
+    )
 }
 
 fn context_scoped(
@@ -158,28 +250,33 @@ fn context_scoped(
     query: &str,
     original: String,
     cancel: &AtomicBool,
-    expected: Option<&threadmark_core::knowledge::Project>,
+    expected: &threadmark_core::knowledge::Project,
+    retrieval: RetrievalMode,
 ) -> Result<Value, Error> {
     if cancel.load(Ordering::SeqCst) {
         return Err(Error::Canceled);
     }
-    let selected = match expected {
-        Some(expected) => selection_bound(store, expected, query, cancel)?,
-        None => selection(store, project, query, cancel)?,
-    };
+    if retrieval == RetrievalMode::RankedTerms {
+        threadmark_core::knowledge::validate_query_terms(project, query)?;
+    }
+    let selected = context_selection(store, expected, query, cancel, retrieval)?;
+    let coverage = selected.coverage.clone();
     let needs_input = selected.snapshot.is_none() || selected.evidence.is_empty();
-    let request = Request::new(RequestData {
-        request_id: "local-context-preview".into(),
-        project: project.into(),
-        snapshot: selected.snapshot,
-        original,
-        constraints: vec![],
-        attachments: vec![],
-        destination: "local-review-only".into(),
-        mode: Mode::Context,
-        evidence: selected.evidence,
-        output_budget: 8192,
-    })
+    let request = Request::new_with_retrieval(
+        RequestData {
+            request_id: "local-context-preview".into(),
+            project: project.into(),
+            snapshot: selected.snapshot,
+            original,
+            constraints: vec![],
+            attachments: vec![],
+            destination: "local-review-only".into(),
+            mode: Mode::Context,
+            evidence: selected.evidence,
+            output_budget: 8192,
+        },
+        retrieval,
+    )
     .map_err(engine_error)?;
     let mut engine = Engine::new(
         request,
@@ -191,21 +288,28 @@ fn context_scoped(
         project,
         query,
         cancel,
+        retrieval,
     };
     engine.prepare(&authority, None).map_err(engine_error)?;
     let preview = engine.preview().map_err(engine_error)?;
     if cancel.load(Ordering::SeqCst) {
         return Err(Error::Canceled);
     }
-    let value = json!({
+    let mut value = json!({
         "project":project, "snapshot":engine.request().data().snapshot,
         "mode":"context-only", "state":if needs_input { "needs-input" } else { "ready-for-review" },
         "original":preview.original, "proposed":preview.proposed, "changed":preview.changed,
         "approval":"not-requested", "delivery":"not-attempted", "provider":"not-invoked",
     });
+    if retrieval == RetrievalMode::RankedTerms {
+        value["retrieval_mode"] = json!("ranked-terms");
+        value["coverage"] = json!(coverage);
+        value["evidence"] = ranked::evidence(engine.request());
+    }
     if serde_json::to_vec(&value)
         .map_err(|_| Error::Unavailable)?
         .len()
+        + usize::from(retrieval == RetrievalMode::RankedTerms)
         > 8192
     {
         return Err(Error::InvalidExtraction);

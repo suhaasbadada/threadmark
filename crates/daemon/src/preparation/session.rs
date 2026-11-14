@@ -1,4 +1,4 @@
-use super::selection_bound;
+use super::{RetrievalMode, selection_bound};
 use std::sync::atomic::AtomicBool;
 use threadmark_core::knowledge::{Project, Store};
 use threadmark_refinement::{
@@ -114,11 +114,15 @@ struct Authority<'a> {
     namespace: &'a Namespace,
     query: &'a str,
     control: &'a Control,
+    retrieval: RetrievalMode,
 }
 
 impl EvidenceAuthority for Authority<'_> {
     fn current(&self, request: &Request) -> Result<AuthorizedSnapshot, Error> {
         self.control.checkpoint()?;
+        if request.retrieval_mode() != self.retrieval {
+            return Err(Error::ScopeMismatch);
+        }
         self.namespace.check(self.store, &request.data().project)?;
         // Core query is independently bounded. The operation token is checked
         // before/after it; arbitrary provider calls must honor the same token.
@@ -127,6 +131,7 @@ impl EvidenceAuthority for Authority<'_> {
             &self.namespace.expected(&request.data().project),
             self.query,
             &AtomicBool::new(false),
+            self.retrieval,
         )
         .map_err(core_error)?;
         self.namespace.check(self.store, &request.data().project)?;
@@ -145,6 +150,7 @@ pub struct ReviewSession {
     query: String,
     control: Control,
     coverage: String,
+    retrieval: RetrievalMode,
 }
 
 impl ReviewSession {
@@ -157,7 +163,18 @@ impl ReviewSession {
         capture: RequestData,
         control: Control,
     ) -> Result<Self, Error> {
-        Self::capture_inner(store, query, capture, control, None)
+        Self::capture_with_retrieval(store, query, capture, control, RetrievalMode::Literal)
+    }
+
+    /// Explicit immutable retrieval opt-in. Existing capture remains literal.
+    pub fn capture_with_retrieval(
+        store: &Store,
+        query: String,
+        capture: RequestData,
+        control: Control,
+        retrieval: RetrievalMode,
+    ) -> Result<Self, Error> {
+        Self::capture_inner(store, query, capture, control, None, retrieval)
     }
 
     /// Check an operator's expected namespace before any source selection and
@@ -169,11 +186,30 @@ impl ReviewSession {
         control: Control,
         expected: &CaptureBinding,
     ) -> Result<Self, Error> {
+        Self::capture_bound_with_retrieval(
+            store,
+            query,
+            capture,
+            control,
+            expected,
+            RetrievalMode::Literal,
+        )
+    }
+
+    /// Exact pre-read namespace binding plus an explicit frozen selector.
+    pub fn capture_bound_with_retrieval(
+        store: &Store,
+        query: String,
+        capture: RequestData,
+        control: Control,
+        expected: &CaptureBinding,
+        retrieval: RetrievalMode,
+    ) -> Result<Self, Error> {
         expected.validate()?;
         if capture.project != expected.project {
             return Err(Error::ScopeMismatch);
         }
-        Self::capture_inner(store, query, capture, control, Some(expected))
+        Self::capture_inner(store, query, capture, control, Some(expected), retrieval)
     }
 
     fn capture_inner(
@@ -182,20 +218,21 @@ impl ReviewSession {
         mut capture: RequestData,
         control: Control,
         expected: Option<&CaptureBinding>,
+        retrieval: RetrievalMode,
     ) -> Result<Self, Error> {
         control.checkpoint()?;
         if capture.snapshot.is_some() || !capture.evidence.is_empty() {
             return Err(Error::Invalid);
         }
         // Validate intent/shape before reading any source content.
-        Request::new(capture.clone())?;
+        Request::new_with_retrieval(capture.clone(), retrieval)?;
         let project = store.project(&capture.project).map_err(core_error)?;
         if let Some(expected) = expected {
             expected.check(&project)?;
         }
         let namespace = Namespace::capture(&project)?;
         namespace.check(store, &capture.project)?;
-        let selected = selection_bound(store, &project, &query, &AtomicBool::new(false))
+        let selected = selection_bound(store, &project, &query, &AtomicBool::new(false), retrieval)
             .map_err(core_error)?;
         namespace.check(store, &capture.project)?;
         if let Some(expected) = expected {
@@ -207,13 +244,14 @@ impl ReviewSession {
         control.checkpoint()?;
         capture.snapshot = selected.snapshot;
         capture.evidence = selected.evidence;
-        let request = Request::new(capture)?;
+        let request = Request::new_with_retrieval(capture, retrieval)?;
         Ok(Self {
             engine: Engine::new(request, control.clone()),
             namespace,
             query,
             control,
             coverage: selected.coverage,
+            retrieval,
         })
     }
 
@@ -249,6 +287,7 @@ impl ReviewSession {
             namespace: &self.namespace,
             query: &self.query,
             control: &self.control,
+            retrieval: self.retrieval,
         };
         self.engine.prepare(&authority, access)
     }
@@ -270,6 +309,7 @@ impl ReviewSession {
             namespace: &self.namespace,
             query: &self.query,
             control: &self.control,
+            retrieval: self.retrieval,
         };
         let selected = authority.current(self.request())?;
         let request = self.request().data();
@@ -288,6 +328,7 @@ impl ReviewSession {
                 namespace: &self.namespace,
                 query: &self.query,
                 control: &self.control,
+                retrieval: self.retrieval,
             },
         )
     }
@@ -302,6 +343,7 @@ impl ReviewSession {
                 namespace: &self.namespace,
                 query: &self.query,
                 control: &self.control,
+                retrieval: self.retrieval,
             },
         )
     }

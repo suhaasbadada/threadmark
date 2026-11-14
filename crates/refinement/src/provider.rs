@@ -199,7 +199,7 @@ impl Provider for ConfiguredProvider<'_> {
         // Restrict generated fields. Immutable original, constraints, selected IDs,
         // limitations and source provenance stay in the engine's conservative seed.
         let data = request.data();
-        let context = json!({
+        let mut context = json!({
             "original": data.original,
             "constraints": data.constraints.iter().map(|c| json!({"id":c.id,"text":c.text})).collect::<Vec<_>>(),
             "attachments": data.attachments.iter().map(|a| json!({"reference":a.reference,"metadata":a.metadata})).collect::<Vec<_>>(),
@@ -207,6 +207,10 @@ impl Provider for ConfiguredProvider<'_> {
             "evidence": data.evidence.iter().map(|e| json!({"id":e.id,"path":e.path,"line":e.line,"text":e.text,"source_hash":e.source_hash,"producer":e.producer,"kind":e.kind,"coverage":e.coverage})).collect::<Vec<_>>(),
             "output_byte_budget": output_budget
         });
+        if request.retrieval_mode() == crate::RetrievalMode::RankedTerms {
+            context["retrieval_mode"] =
+                json!("ranked-terms; bounded any-term lexical selection, not semantic coverage");
+        }
         let body = serde_json::to_vec(&json!({
             "model": self.endpoint.identity.model, "stream": false, "max_tokens": 1024,
             "response_format":{"type":"json_object"},

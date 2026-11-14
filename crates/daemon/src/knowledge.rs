@@ -38,10 +38,14 @@ pub enum Command {
     QueryBound(threadmark_core::knowledge::Project, String),
     /// Bounded human-only active latest context search; never source evidence.
     SearchContext(String, String),
+    /// Explicit any-term lexical ranking; literal query/default preparation unchanged.
+    QueryTerms(String, String),
     /// Prepare a memory-only context preview (project, query, unchanged original).
     PrepareContext(String, String, String),
     /// Context selection and revalidation use the same captured project.
     PrepareContextBound(threadmark_core::knowledge::Project, String, String),
+    /// Explicit any-term ranked Context; existing literal command unchanged.
+    PrepareContextTerms(String, String, String),
     /// Create/revise human context (project, ID, kind, content, update).
     WriteContext(String, String, String, String, bool),
     /// Append a retirement revision.
@@ -89,6 +93,12 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         }
         Command::SearchContext(project, query) => {
             threadmark_core::knowledge::validate_human_search(project, query)?;
+        }
+        Command::QueryTerms(id, query) => {
+            threadmark_core::knowledge::validate_query_terms(id, query)?;
+        }
+        Command::PrepareContextTerms(id, query, _) => {
+            threadmark_core::knowledge::validate_query_terms(id, query)?;
         }
         Command::SourcesBound(id, root, identity, token, old, new) => {
             threadmark_core::knowledge::validate_sources_binding(
@@ -152,6 +162,8 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         Command::IndexBound(..)
             | Command::QueryBound(..)
             | Command::PrepareContextBound(..)
+            | Command::QueryTerms(..)
+            | Command::PrepareContextTerms(..)
             | Command::SourcesBound(..)
             | Command::WriteContextBound(..)
             | Command::RetireContextBound(..)
@@ -262,6 +274,17 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
             crate::preparation::context_bound(&store, &expected, &query, original, cancel)?
         }
         Command::SearchContext(project, query) => store.search_context(&project, &query, cancel)?,
+        Command::QueryTerms(id, text) => store.query_terms(&id, &text, cancel)?,
+        Command::PrepareContextTerms(id, query, original) => {
+            crate::preparation::context_with_retrieval(
+                &store,
+                &id,
+                &query,
+                original,
+                cancel,
+                crate::preparation::RetrievalMode::RankedTerms,
+            )?
+        }
         Command::PrepareContext(id, query, original) => {
             crate::preparation::context(&store, &id, &query, original, cancel)?
         }

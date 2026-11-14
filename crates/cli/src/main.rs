@@ -31,6 +31,12 @@ fn main() -> std::process::ExitCode {
 
 fn usage() -> std::process::ExitCode {
     eprintln!(
+        "optional ranked preparation: context prepare PROJECT QUERY --terms; refine preview PROJECT QUERY --terms (all inference confirmation/binding flags still required). Inspect query-terms PROJECT QUERY first; no automatic fallback or inference."
+    );
+    eprintln!(
+        "explicit lexical ranking: --data-dir EXISTING_STORE query-terms PROJECT QUERY (1..8 deduplicated Unicode-lowercase whitespace terms, <=64 UTF-8 bytes each; query <=256 bytes, no controls; any-term matches, distinct terms then occurrences descending, path/line ascending; no semantic search; literal query and Context/Refine defaults unchanged)"
+    );
+    eprintln!(
         "usage: threadmark --version | status | smoke; or --data-dir ABSOLUTE_NEW_PRIVATE_DIR project add ID ROOT [FILE ...] | project list | project show ID | project sources ID [FILE ...] | project remove ID --confirm-remove-local-data (local policy/evidence/context only; sources untouched; not Forget or forensic erasure) | index PROJECT | query PROJECT TEXT | context prepare PROJECT QUERY (original on stdin) | context add/update PROJECT ID KIND (stdin) | context retire/show PROJECT ID | context list PROJECT"
     );
     eprintln!(
@@ -292,7 +298,9 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
             };
             Command::QueryBound(expected, (*text).into())
         }
-        ["context", "prepare", id, query, binding @ ..] if !binding.is_empty() => {
+        ["context", "prepare", id, query, binding @ ..]
+            if !binding.is_empty() && binding != ["--terms"] =>
+        {
             let Some(expected) = read_binding(id, query, binding) else {
                 return usage();
             };
@@ -308,7 +316,16 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
         ["context", "search", project, query] => {
             Command::SearchContext((*project).into(), (*query).into())
         }
-        ["context", "prepare", project, query] => {
+        ["query-terms", id, text] => Command::QueryTerms((*id).into(), (*text).into()),
+        ["context", "prepare", project, query, flags @ ..] => {
+            let ranked = match flags {
+                [] => false,
+                ["--terms"] => true,
+                _ => return usage(),
+            };
+            if ranked && threadmark_core::knowledge::validate_query_terms(project, query).is_err() {
+                return usage();
+            }
             let mut bytes = Vec::new();
             if std::io::stdin().take(4097).read_to_end(&mut bytes).is_err() || bytes.len() > 4096 {
                 return failure();
@@ -316,7 +333,11 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
             let Ok(original) = String::from_utf8(bytes) else {
                 return failure();
             };
-            Command::PrepareContext((*project).into(), (*query).into(), original)
+            if ranked {
+                Command::PrepareContextTerms((*project).into(), (*query).into(), original)
+            } else {
+                Command::PrepareContext((*project).into(), (*query).into(), original)
+            }
         }
         [
             "context",
