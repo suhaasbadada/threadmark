@@ -34,6 +34,7 @@ mod ranked_query;
 mod schema;
 mod source_forget;
 mod source_inspection;
+mod source_inspection_set;
 pub use context_batch::{ContextBatchAction, ContextBatchEdit, ContextBatchStage};
 pub use context_comparison::validate_context_comparison;
 pub use context_revision::{ContextRevisionBinding, validate_context_kind, validate_context_text};
@@ -47,6 +48,7 @@ pub use ranked_query::validate_query_terms;
 pub use schema::UpgradeStage;
 pub use source_forget::{SourceForgetBinding, SourceForgetStage, validate_source_forget};
 pub use source_inspection::{SourceAnchorInspection, validate_source_inspection};
+pub use source_inspection_set::{SourceInspectionAnchor, SourceInspectionSet};
 #[cfg(test)]
 mod tests;
 

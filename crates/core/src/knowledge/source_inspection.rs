@@ -106,25 +106,7 @@ impl Store {
             return Err(Error::ScopeMismatch);
         }
         canceled(cancel)?;
-        let (source, source_text) = inputs
-            .iter()
-            .find(|(s, _)| s.path == anchor.path)
-            .ok_or(invalid())?;
-        let lines: Vec<_> = source_text.lines().collect();
-        if source.hash != hash || lines.get(anchor.line - 1).copied() != Some(text.as_str()) {
-            return Err(invalid());
-        }
-        let start = (anchor.line - 1).saturating_sub(anchor.radius);
-        let end = (anchor.line + anchor.radius).min(lines.len());
-        let window: Vec<_> = lines[start..end]
-            .iter()
-            .enumerate()
-            .map(|(i, text)| {
-                let line = start + i + 1;
-                json!({"line":line,"text":text,"is_anchor":line == anchor.line,
-                "kind":if line == anchor.line {"indexed-anchor"} else {"observed-source-text"}})
-            })
-            .collect();
+        let window = inspection_window(anchor, &inputs, &text, &hash)?;
         let reply = json!({"format":"threadmark-source-anchor-inspection","version":1,
             "project":p.id,"root_identity":p.root_identity,"incarnation":p.incarnation,
             "snapshot":p.snapshot,"path":anchor.path,"source_hash":hash,"producer":producer,
@@ -150,6 +132,35 @@ impl Store {
         canceled(cancel)?;
         Ok(reply)
     }
+}
+
+// Shared genuine current-source window construction; no storage or authorization.
+pub(super) fn inspection_window(
+    anchor: &SourceAnchorInspection,
+    inputs: &[(Source, String)],
+    text: &str,
+    hash: &str,
+) -> Result<Vec<Value>> {
+    let (source, source_text) = inputs
+        .iter()
+        .find(|(s, _)| s.path == anchor.path)
+        .ok_or(invalid())?;
+    let lines: Vec<_> = source_text.lines().collect();
+    if source.hash != hash || lines.get(anchor.line - 1).copied() != Some(text) {
+        return Err(invalid());
+    }
+    let start = (anchor.line - 1).saturating_sub(anchor.radius);
+    let end = (anchor.line + anchor.radius).min(lines.len());
+    let window: Vec<_> = lines[start..end]
+        .iter()
+        .enumerate()
+        .map(|(i, text)| {
+            let line = start + i + 1;
+            json!({"line":line,"text":text,"is_anchor":line == anchor.line,
+                "kind":if line == anchor.line {"indexed-anchor"} else {"observed-source-text"}})
+        })
+        .collect();
+    Ok(window)
 }
 
 #[cfg(test)]

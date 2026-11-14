@@ -127,6 +127,7 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
     // Bounded parser; untrusted arguments and errors are never echoed.
     // Inspection has 20 fixed arguments including --data-dir/STORE, plus the
     // complete approved policy of up to 64 files. Other grammars keep their cap.
+    // inspect-set has 16 fixed arguments and fits the unchanged 80-argument cap.
     let argument_limit = if args.get(2).is_some_and(|s| s == "query-files") {
         145 // fixed grammar plus 64 selected and 64 complete-policy paths
     } else if args.get(2).is_some_and(|s| s == "context")
@@ -405,6 +406,37 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
             (*identity).into(),
             files.iter().map(|s| (*s).into()).collect(),
         ),
+        [
+            "source",
+            "inspect-set",
+            id,
+            "--radius",
+            radius,
+            binding @ ..,
+        ] => {
+            use threadmark_core::knowledge::SourceInspectionSet;
+            let Some(expected) = read_binding(id, "inspect-set", binding) else {
+                return usage();
+            };
+            let Some(radius) = canonical_coordinate(radius) else {
+                return usage();
+            };
+            if SourceInspectionSet::validate_binding(&expected, radius).is_err() {
+                return usage();
+            }
+            let mut bytes = Vec::new();
+            if std::io::stdin()
+                .take(65_537)
+                .read_to_end(&mut bytes)
+                .is_err()
+            {
+                return failure();
+            }
+            let Ok(plan) = SourceInspectionSet::parse(expected, radius, &bytes) else {
+                return failure();
+            };
+            Command::InspectSourceSet(plan)
+        }
         [
             "source",
             "inspect",
