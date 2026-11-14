@@ -46,7 +46,7 @@ pub(super) fn markers(
 ) -> Result<std::collections::BTreeSet<String>> {
     match schema::version(db)? {
         1 => return Ok(Default::default()),
-        2 | 3 => (),
+        2..=4 => (),
         _ => return Err(Error::Unavailable),
     }
     let mut stmt = db

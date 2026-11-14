@@ -52,6 +52,9 @@ fn usage() -> std::process::ExitCode {
     eprintln!(
         "schema v3: store upgrade --to-version 3 --confirm-local-schema-upgrade --confirm-legacy-workers-stopped (existing store only; stop older workers first; operator attestation is not machine proof); native removal/index bindings additionally require --expected-incarnation TOKEN before --expected-sources"
     );
+    eprintln!(
+        "source forget PROJECT PATH --confirm-forget-source [--expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-sources FILE ...]; source forgotten PROJECT; requires existing schema v4; source files and human context untouched; no forensic erasure. Upgrade with store upgrade --to-version 4 --confirm-local-schema-upgrade --confirm-legacy-workers-stopped (stop all legacy workers first; not universal worker fencing)."
+    );
     std::process::ExitCode::from(2)
 }
 
@@ -80,6 +83,40 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
         .as_slice()
     {
         ["store", "upgrade", "--confirm-local-schema-upgrade"] => Command::UpgradeStore,
+        [
+            "store",
+            "upgrade",
+            "--to-version",
+            "4",
+            "--confirm-local-schema-upgrade",
+            "--confirm-legacy-workers-stopped",
+        ] => Command::UpgradeStoreV4,
+        ["source", "forget", project, path, "--confirm-forget-source"] => {
+            Command::ForgetSource((*project).into(), (*path).into())
+        }
+        [
+            "source",
+            "forget",
+            project,
+            path,
+            "--confirm-forget-source",
+            "--expected-root",
+            root,
+            "--expected-root-identity",
+            identity,
+            "--expected-incarnation",
+            token,
+            "--expected-sources",
+            files @ ..,
+        ] => Command::ForgetSourceBound(
+            (*project).into(),
+            (*path).into(),
+            (*root).into(),
+            (*identity).into(),
+            (*token).into(),
+            files.iter().map(|s| (*s).into()).collect(),
+        ),
+        ["source", "forgotten", project] => Command::ForgottenSources((*project).into()),
         [
             "store",
             "upgrade",

@@ -23,8 +23,10 @@ const FLAGS: OFlags = OFlags::RDONLY
 mod export;
 mod forget;
 mod schema;
+mod source_forget;
 pub use forget::{ForgetBinding, ForgetStage};
 pub use schema::UpgradeStage;
+pub use source_forget::{SourceForgetBinding, SourceForgetStage, validate_source_forget};
 #[cfg(test)]
 mod tests;
 
@@ -111,6 +113,10 @@ fn canceled(token: &AtomicBool) -> Result<()> {
 // Open each directory relative to the previous descriptor: no symlink race between
 // validation and opening, including intermediate directories and the approved root.
 fn directory(path: &Path) -> Result<File> {
+    // All source filesystem access starts here, including export's independent
+    // root recheck. Store-directory access uses the separate private-store path.
+    #[cfg(test)]
+    source_forget::observe_source_access();
     walk_directory(path, false)
 }
 
@@ -403,7 +409,7 @@ impl Store {
                 || u16::from_be_bytes([header[16], header[17]]) != 4096
                 || !matches!(
                     u32::from_be_bytes(header[60..64].try_into().map_err(unavailable)?),
-                    1..=3
+                    1..=4
                 )
                 || i64::from(u32::from_be_bytes(
                     header[68..72].try_into().map_err(unavailable)?,
@@ -433,6 +439,7 @@ impl Store {
                 CREATE INDEX context_project ON context(project,id,revision);").map_err(unavailable)?;
             schema::install_v2(&tx)?;
             schema::install_v3(&tx)?;
+            schema::install_v4(&tx)?;
             tx.commit().map_err(unavailable)?;
         }
         schema::validate(&db)?;
@@ -619,6 +626,10 @@ impl Store {
             tx.execute("DELETE FROM forgotten_context WHERE project=?1", [id])
                 .map_err(unavailable)?;
         }
+        if schema::version(&tx)? == 4 {
+            tx.execute("DELETE FROM forgotten_sources WHERE project=?1", [id])
+                .map_err(unavailable)?;
+        }
         tx.execute("DELETE FROM projects WHERE id=?1", [id])
             .map_err(unavailable)?;
         progress(RemovalStage::ReadyToCommit);
@@ -632,7 +643,10 @@ impl Store {
     pub fn project(&self, id: &str) -> Result<Project> {
         self.healthy()?;
         identity(id)?;
-        let sql = if schema::version(&self.db)? == 3 {
+        if schema::version(&self.db)? == 4 {
+            source_forget::validate_store(&self.db)?;
+        }
+        let sql = if schema::version(&self.db)? >= 3 {
             "SELECT root,root_identity,sources,snapshot,incarnation FROM projects JOIN project_incarnations ON project_incarnations.project=projects.id WHERE id=?1"
         } else {
             "SELECT root,root_identity,sources,snapshot,NULL FROM projects WHERE id=?1"
@@ -722,6 +736,7 @@ impl Store {
         validate_paths(&paths)?;
         let tx = self.db.transaction().map_err(unavailable)?;
         Self::require_project_root(&tx, project)?;
+        source_forget::require_allowed(&tx, id, &paths)?;
         tx.execute("DELETE FROM evidence WHERE project=?1", [id])
             .map_err(unavailable)?;
         tx.execute(
@@ -934,6 +949,10 @@ impl Store {
         let manifest: Vec<_> = inputs.iter().map(|(s, _)| s.clone()).collect();
         progress(IndexStage::Extracted);
         canceled(cancel)?;
+        let live = self.project(id)?;
+        if live.sources != p.sources || live.incarnation != p.incarnation {
+            return Err(Error::ScopeMismatch);
+        }
         let after: Vec<_> = Self::read_sources(&p, cancel)?
             .into_iter()
             .map(|(s, _)| s)

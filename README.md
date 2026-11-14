@@ -53,7 +53,7 @@ never a way to clear human history. `context forget PROJECT ID
 --confirm-forget-local-history` removes all revisions and suppresses same-ID
 recreation; `context forgotten PROJECT` lists non-content markers. This is not
 forensic erasure: SQLite free pages, journals, backups, earlier exports and displayed
-copies may retain bytes; source files are untouched. New stores use schema v3.
+copies may retain bytes; source files are untouched. New stores use schema v4.
 Existing v1 stores stay v1 until explicit `store upgrade
 --confirm-local-schema-upgrade` (existing store only); older binaries cannot open
 v2 and there is no automatic downgrade. See the [reviewed contract](docs/contracts/context-forget-v1.md).
@@ -65,8 +65,36 @@ is operator attestation, not a machine-verifiable stop or a fence for old worker
 V3 insert/delete triggers maintain fresh tokens even for legacy registration
 writers; only incarnation-aware operations reject stale captured work. Older
 binaries cannot open v3; no automatic downgrade. The default upgrade command
-keeps v1→v2 behavior and reports v3 unchanged. Export v1 is unchanged and carries
+keeps v1→v2 behavior and reports v3/v4 unchanged. Export v1 is unchanged and carries
 no incarnation/restore authority. See the [registration contract](docs/contracts/registration-incarnation-v1.md).
+
+`source forget PROJECT PATH --confirm-forget-source` revokes one approved relative
+file, installs a same-project suppression marker and invalidates the entire coherent
+source snapshot. Remaining approved files require a rebuild. It never opens or alters
+source files (including missing/unreadable files), and preserves all human history,
+including declarations mentioning that file. `source forgotten PROJECT` lists the
+bounded, path-ordered markers. There is no unforget; ordinary policy updates and
+rebuilds cannot reapprove marked paths. Explicit whole-project removal clears markers;
+re-registration is new authorization, not restoration of stored content.
+
+Source Forget requires existing private v4 storage. V1/v2/v3 stores never upgrade
+implicitly, including on export/index. To migrate, stop legacy companions and finish
+all pending workers, then explicitly run `store upgrade --to-version 4
+--confirm-local-schema-upgrade --confirm-legacy-workers-stopped`. Both flags are
+required; the latter is operator attestation, not universal old-worker fencing.
+V4 retains registration incarnations and human Forget guards, with additional policy,
+evidence-insert and project-removal SQL guards. Older binaries cannot open schema v4;
+no automatic downgrade. Native-safe callers must bind all of `--expected-root ROOT
+--expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-sources FILE ...`
+to the exact displayed policy. Unbound CLI repetition is idempotent; stale bound
+approval is rejected. No source Forget UI is implemented yet.
+
+Active source-derivative removal and same-scope suppression are not forensic erasure.
+SQLite free pages, journals, backups, earlier exports and displayed copies may retain
+bytes; no VACUUM or recall is attempted. Export v1 remains unchanged and does not
+preserve suppression markers or provide a restore capability. See the
+[source Forget contract](docs/contracts/source-forget-v1.md) (partial P2-A1/A3/A5/P3-A4;
+no phase closure or atomic external-metadata revocation lease is claimed).
 Indexing is manual lexical capture, not AST/semantic understanding or permission to execute.
 No model, network endpoint or host credentials are used.
 `context prepare` produces an in-memory original-versus-context preview through

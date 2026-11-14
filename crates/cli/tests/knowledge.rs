@@ -18,6 +18,162 @@ const FORGET: [&str; 5] = [
 const UPGRADE: [&str; 3] = ["store", "upgrade", "--confirm-local-schema-upgrade"];
 
 #[test]
+fn source_forget_confirmation_and_complete_bindings_precede_any_store_creation() {
+    let f = Fixture::new();
+    let prefix = [
+        "source",
+        "forget",
+        "a",
+        "code.rs",
+        "--confirm-forget-source",
+    ];
+    for args in [
+        vec!["source", "forget", "a", "code.rs"],
+        vec![
+            "source",
+            "forget",
+            "../bad",
+            "code.rs",
+            "--confirm-forget-source",
+        ],
+        vec![
+            "source",
+            "forget",
+            "a",
+            "../bad.rs",
+            "--confirm-forget-source",
+        ],
+        vec![
+            "store",
+            "upgrade",
+            "--to-version",
+            "4",
+            "--confirm-local-schema-upgrade",
+        ],
+        vec![
+            "store",
+            "upgrade",
+            "--to-version",
+            "4",
+            "--confirm-legacy-workers-stopped",
+        ],
+    ] {
+        let out = f.run(&args, None);
+        assert!(!out.status.success() && out.stdout.is_empty());
+        assert!(!f.0.join("store").exists());
+    }
+    let pairs = [
+        ("--expected-root", "/synthetic"),
+        ("--expected-root-identity", "1:2"),
+        ("--expected-incarnation", "0123456789abcdef0123456789abcdef"),
+        ("--expected-sources", "code.rs"),
+    ];
+    for mask in 1..16 {
+        let mut args = prefix.to_vec();
+        for (i, (key, value)) in pairs.iter().enumerate() {
+            if mask & (1 << i) != 0 {
+                args.extend([*key, *value]);
+            }
+        }
+        let out = f.run(&args, None);
+        assert!(!out.status.success() && out.stdout.is_empty());
+        assert!(!f.0.join("store").exists());
+    }
+    for bad in ["", "../bad.rs", "a\u{0}b.rs", "bad.exe"] {
+        // NUL cannot be passed through exec; core validation has its own NUL fixture.
+        if bad.contains('\0') {
+            continue;
+        }
+        let mut args = prefix.to_vec();
+        args[3] = bad;
+        let out = f.run(&args, None);
+        assert!(!out.status.success() && out.stdout.is_empty());
+        assert!(!f.0.join("store").exists());
+    }
+}
+
+#[test]
+fn source_forget_real_cli_suppresses_rebuild_query_prepare_export_and_native_stale_approval() {
+    let f = Fixture::new();
+    let source = f.0.join("source");
+    std::fs::write(source.join("code.rs"), "fn alpha() {} // synthetic\n").unwrap();
+    f.ok(
+        &["project", "add", "a", source.to_str().unwrap(), "code.rs"],
+        None,
+    );
+    f.ok(&["index", "a"], None);
+    f.ok(
+        &["context", "add", "a", "memo", "note"],
+        Some(b"synthetic human code.rs mention"),
+    );
+    let p = f.ok(&["project", "show", "a"], None);
+    let args = [
+        "source",
+        "forget",
+        "a",
+        "code.rs",
+        "--confirm-forget-source",
+        "--expected-root",
+        p["root"].as_str().unwrap(),
+        "--expected-root-identity",
+        p["root_identity"].as_str().unwrap(),
+        "--expected-incarnation",
+        p["incarnation"].as_str().unwrap(),
+        "--expected-sources",
+        "code.rs",
+    ];
+    let receipt = f.ok(&args, None);
+    assert_eq!(receipt["human_context"], "unchanged");
+    assert_eq!(receipt["snapshot"], "invalidated");
+    assert!(!f.run(&args, None).status.success());
+    assert!(
+        !f.run(&["project", "sources", "a", "code.rs"], None)
+            .status
+            .success()
+    );
+    assert_eq!(
+        f.ok(&["source", "forgotten", "a"], None)["forgotten"][0]["path"],
+        "code.rs"
+    );
+    let mut repeated = receipt;
+    repeated["snapshot"] = serde_json::json!("unchanged");
+    assert_eq!(
+        f.ok(
+            &[
+                "source",
+                "forget",
+                "a",
+                "code.rs",
+                "--confirm-forget-source"
+            ],
+            None
+        ),
+        repeated
+    );
+    f.ok(&["index", "a"], None);
+    assert_eq!(
+        f.ok(&["query", "a", "synthetic"], None)["results"],
+        serde_json::json!([])
+    );
+    let preview = f.ok(
+        &["context", "prepare", "a", "synthetic"],
+        Some(b"synthetic original"),
+    );
+    assert!(
+        !serde_json::to_string(&preview)
+            .unwrap()
+            .contains("fn alpha")
+    );
+    let archive = f.ok(&EXPORT, None);
+    assert_eq!(archive["evidence"], serde_json::json!([]));
+    assert_eq!(
+        archive["human_history"][0]["text"],
+        "synthetic human code.rs mention"
+    );
+    assert!(source.join("code.rs").is_file());
+}
+
+#[test]
 fn bound_forget_binding_shapes_and_revisions_fail_before_store_creation() {
     let f = Fixture::new();
     let pairs = [
@@ -184,8 +340,8 @@ fn cli_same_directory_reregistration_rejects_native_old_bindings() {
         assert!(!out.status.success() && out.stdout.is_empty());
         assert_eq!(std::fs::read(&db).unwrap(), before);
     }
-    assert_eq!(f.ok(&UPGRADE_V3, None)["schema_version"], 3);
-    assert_eq!(f.ok(&UPGRADE, None)["schema_version"], 3);
+    assert_eq!(f.ok(&UPGRADE_V3, None)["schema_version"], 4);
+    assert_eq!(f.ok(&UPGRADE, None)["schema_version"], 4);
     assert_eq!(
         f.ok(&["context", "show", "a", "memo"], None)["history"][0]["revision"],
         1
@@ -387,6 +543,34 @@ db.close()
     assert_eq!(f.ok(&EXPORT, None), before);
     assert_eq!(f.ok(&UPGRADE, None)["upgraded"], false);
     assert_eq!(f.ok(&FORGET, None)["removed_revisions"], 1);
+    let source_forget = [
+        "source",
+        "forget",
+        "a",
+        "main.rs",
+        "--confirm-forget-source",
+    ];
+    assert!(!f.run(&source_forget, None).status.success());
+    assert_eq!(
+        f.ok(
+            &[
+                "store",
+                "upgrade",
+                "--to-version",
+                "4",
+                "--confirm-local-schema-upgrade",
+                "--confirm-legacy-workers-stopped"
+            ],
+            None
+        ),
+        serde_json::json!({"schema_version":4,"upgraded":true,"compatibility":"Older binaries cannot open schema v4; no automatic downgrade."})
+    );
+    assert_eq!(
+        f.ok(&["context", "forgotten", "a"], None)["forgotten"][0]["id"],
+        "memo"
+    );
+    assert_eq!(f.ok(&source_forget, None)["forgotten"], true);
+    assert_eq!(f.ok(&UPGRADE, None)["schema_version"], 4);
 }
 
 #[test]
