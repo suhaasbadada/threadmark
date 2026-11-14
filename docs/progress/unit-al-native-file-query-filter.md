@@ -1,5 +1,42 @@
 # Unit AL — native Query-only file filter
 
+## Primary integration and independent review
+
+Child owned implementation committed as `88bf853`; primary applied only its diff
+as `99ccfff3daff6a0d2b697ac96be60400bad4e47a` on AJ merge
+`bed1d5d43442b94a581b6f694c37eeadf806b736`. Shared conflicts were resolved by
+retaining both batch and filtered-query cancellation/preservation hooks, command/
+decode/budget arms, fixture variables/builds and API gates. No baseline/site merge
+was replayed; nine inherited progress edits remain untouched.
+
+Exact integrated tested runtime **`b00912a71cdc6c8a8021591bf449e945f7e44a4d`**
+adds integration-only batch tests: inert filter edits revoke old review without
+I/O/draft/base/conflict loss, and a filtered-query successor joins a cancellation-
+ignoring preclaim batch while preserving its unknown outcome and retained intent.
+Payload fingerprint (lexical changed non-progress paths versus AJ merge, path/NUL/
+bytes/NUL): **`a150aec7c9c0e791831ea83c03cfbacb6b4db8ce42998670284c2387860980e6`**.
+This intentionally differs from the isolated child due to AJ conflict unions and
+the new cross-feature tests; no claim of byte-identical integration is made.
+
+Joffrey independently reviewed isolated AL **CLEAR**, verified its original
+fingerprint and reran full strict Debug **284 tests/45 suites**, all fixtures,
+new API gate and whitespace. A separate fresh integration review was **CLEAR**;
+it checked the exact conflict unions and new tests, independently reran targeted
+Debug/Release **20 tests each**, and inspected full integrated logs. Its targeted
+run skipped two actual-CLI cases without environment; primary's full runs enabled
+the actual CLI and all seven C-fixture families.
+
+Primary full offline workspace **387 Rust tests + two doctests PASS**; strict
+serial full Debug and Release each **296 Swift tests/47 suites PASS**, all eight
+API gates, offline locked deny, secrets/whitespace and bundle/plist **PASS**.
+An initial new-test compile error from a combined actor-isolated assertion was
+fixed by separate awaited assertions before these passing gates. Two inherited
+deadline fixtures remain ignored. Publication-head CI is separate and pending.
+No GUI/AX, live provider, host delivery or phase closure claim.
+
+AJ #86 exact post-merge runs `43598044374` and `43598044381` both completed
+**PASS** at `bed1d5d43442b94a581b6f694c37eeadf806b736`, independently of PR-head CI.
+
 Requirements TM-01–TM-04, TM-07, TM-10; partial P2-A1–A6 and P3-A3/A4/A5/A6.
 Phase 2/3 remain open. Reviewed AK v1 is unchanged. Acceptance IDs frozen before
 tests: **AL-A1** mounted inert registered-policy choices/default/empty guard;
