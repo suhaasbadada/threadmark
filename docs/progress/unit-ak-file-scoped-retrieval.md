@@ -1,5 +1,34 @@
 # Unit AK — explicit file-scoped lexical retrieval
 
+## Primary integration and independent review
+
+Primary committed only the nine owned files as `3c21448` and applied cleanly as
+**`f827a3dc2618894c50894713f5203da14358a48d`**, exact integrated tested runtime.
+No prepared baseline/site merge replay. Joffrey independently reproduced payload
+fingerprint and reviewed **CLEAR**; ran 12 core and seven actual CLI/daemon tests,
+full offline workspace pipeline (**387 Rust + two doctests**), offline locked deny,
+secrets and staged/unstaged whitespace **PASS**. He did not review native lanes
+or remote CI and made no changes.
+
+Primary full workspace **387 Rust tests + two doctests PASS**; strict serial
+actual-CLI/all-C-fixture full Debug and Release each **272 tests/43 suites PASS**;
+all six API gates, offline locked deny, staged secrets/whitespace, release bundle
+and Info.plist **PASS**. Two unchanged long deadlines ignored. Full-policy source
+freshness still applies to unselected files; no Context/Refine consent widening
+or source-I/O/privacy/performance claim. Publication CI remains a separate gate.
+
+PR #84 original `e00dd28` failed macOS test compilation; retained diagnosis and
+expression-only repair are in AH progress, not waived/retried. Repaired full head
+`a68009c45e62e18724eae361b2f27618e4633638` passed all five checks (CI
+`43594791000`, integrated `43594790988`), including native compilation. Fresh
+exact-head/main/check/review/approval/discussion/rules gates preceded merge
+`bac9a538f06608f75dd0719db10905ffe93a3e13`; watch removed. Separate exact
+post-merge CI remains unverified. PR #83 exact post-merge `43593507484`/
+`43593507504`, both `8ca233f076ca030b985bdfdb90be56362f8b95dd`, completed **PASS**.
+AJ native atomic-note review/apply continues independently. Nine inherited progress
+edits/worktrees/parent reminders preserved; no GUI/AX/live-quality/host-delivery/
+deployment/phase closure claim.
+
 Requirements **TM-01–TM-04, TM-07, TM-10**, partial **P2-A1/A2/A3/A4/A5/A6**.
 Contract: `docs/contracts/file-scoped-retrieval-v1.md`, stable **AK-A1–AK-A6**
 defined before implementation. No phase closure or product-wide filtered consent.
