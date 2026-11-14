@@ -1,5 +1,22 @@
 # Unit X — explicit scoped native local project export
 
+## Publication outcome
+
+PR #74 passed all five checks at full head
+`36c77901da58e57f361baadd45a87ed599722bc4` (CI `43580799332`, integrated
+`43580799189`). Primary read macOS job `132404923998`'s completed trace:
+214 Swift tests passed, including hostile export transport and delayed pre-claim
+cancellation, followed by ordinary-import API gate and bundle/Info.plist checks.
+Fresh main/exact-head/check/review/approval/discussion/rules verification found
+no blocker. Merged as **`9ced15c40ea2a24dedefefc6cb5b5abba25bfa67`**; watch removed.
+Separate exact post-merge CI remains unverified. No GUI/AX or real-user export
+is inferred from CI, build or merge. Source-anchor inspection is independently
+active; no duplicate worker or reminder was started for this publication.
+
+PR #73 separate post-merge runs `43580739611` and `43580739638`, both targeting
+`11a56089b61560f0120f585dead00c667f4e5923`, completed **PASS**. Nine inherited
+progress edits, worktrees and parent-owned continuation reminders preserved.
+
 ## Integrated acceptance and publication preparation
 
 Primary committed the repaired 13-file unit as `ea05bfa` and applied only owned
