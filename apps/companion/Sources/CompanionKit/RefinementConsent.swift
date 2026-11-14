@@ -12,7 +12,7 @@ public struct RefinementConsent: Identifiable, Equatable, Sendable {
     let generation: UInt64
     let scopeRevision: UInt64
 
-    public static let disclosure = "One local HTTP inference call; up to 1024 generated tokens, 8192 output bytes and 30 seconds. Only this original request and the selected source evidence below, no attachments or whole-project upload. A local server may forward data elsewhere: loopback is NOT a sandbox or network-isolation guarantee. Preview only: no approval, clipboard, host draft or Send."
+    public static let disclosure = "One local HTTP inference call; up to 1024 generated tokens, 8192 output bytes and 30 seconds. Only this original request and the selected source evidence below, no attachments or whole-project upload. A local server may forward data elsewhere: loopback is NOT a sandbox or network-isolation guarantee. This consent is not approval. Retained review requires a separate explicit choice and returns only an in-memory engine value; no clipboard, host draft, Send or admission."
 
     func validate() throws {
         guard try settings.selectedProfile() == profile, profile.locality == .local,
