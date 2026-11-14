@@ -1,5 +1,35 @@
 # Unit AJ — native explicit session-only atomic note batch
 
+## Primary integration and independent review
+
+Primary committed only thirteen owned files as `aa2ea40` and applied cleanly as
+**`b1cb313a7452c99b728e5ebf693c23071ff57f85`**, exact integrated tested runtime.
+No baseline/site merge replay. Whole-file payload was reverified after integration,
+identical to `5f667d8a3e7752a5759aa35708f2d950e5127bd33a4fc94dbaa7f93a93e3dae5`.
+The later AH compiler-expression repair remains intact outside this payload.
+
+Joffrey independently reviewed **CLEAR**, reproduced both fingerprints, passed
+11 batch tests/two suites with actual CLI counts 2–8 and C fixture, 87 preservation/
+lifecycle tests/21 suites, batch ordinary-import API gate and whitespace. He did
+not rerun full Rust/Release/bundle/deny/secrets, GUI or remote older-compiler CI.
+
+Primary full workspace **387 Rust tests + two doctests PASS**; strict serial
+actual-CLI/all-C full Debug and Release each **283 tests/45 suites PASS**; all seven
+API gates, offline locked deny, staged secrets/whitespace, bundle/Info.plist **PASS**.
+Two unchanged deadlines ignored. Exact publication-head CI remains separate.
+One-use execution, no partial native fallback, persistent uncertainty and
+saved-versus-refresh-failed distinctions remain independently reviewed boundaries.
+
+File-scoped retrieval PR #85 passed all five checks at
+`927aac48a0625be7d41bac38bd7846e13d511832` (CI `43596045208`, integrated
+`43596044964`); fresh exact-head/main/check/review/approval/discussion/rules gates
+preceded merge `5d554e9886e9cd9d90d4ca931f01f81d6ce03b43`. Watch removed;
+separate post-merge CI remains unverified. #84 exact post-merge `43595937593`/
+`43595937603`, both `bac9a538f06608f75dd0719db10905ffe93a3e13`, completed **PASS**.
+AL Query-only native filters continue independently. Nine inherited progress edits,
+worktrees and parent reminders preserved. No GUI/AX/live-quality/host-delivery/
+deployment/phase closure claim.
+
 Implementation sub-agent Bob. **TM-01–TM-04, TM-07, TM-10**; partial
 **P2-A1/A3/A5/A6, P3-A4/A5/A6**. Phase 2/3 remain open. Uses the unchanged
 [AI atomic batch contract](../contracts/human-context-batch-edit-v1.md),
