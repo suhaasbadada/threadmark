@@ -1,5 +1,37 @@
 # Unit AC — native explicit human revision comparison
 
+## Primary integration and independent review
+
+Primary committed only the sixteen owned files as `f20011a`, applied as `1a129df`.
+Three conflicts retained both AB/AC operation/reply/transport branches and merged
+the cancellation/history fences: inspection query preservation and comparison
+history/CAS-status preservation both remain. No baseline/site merge replay.
+The new ordinary-import comparison gate now runs in CI alongside existing API gates.
+
+Exact combined tested runtime **`e16c1cdc81a266ef760bd51a0b7e015917d0d12a`**:
+full workspace gate **294 Rust tests + two doctests PASS**; strict serial actual-
+CLI/retained/export/inspection-C Debug and full Release each **239 tests/36 suites
+PASS**. All three API gates, offline locked deny, staged secrets/whitespace,
+release bundle and Info.plist validation **PASS**. Long deadlines stayed ignored.
+These full-run invocation flags and SHA are primary-attributed execution evidence.
+
+Joffrey independently reviewed isolated AC **CLEAR**, reproduced both fingerprints,
+passed 138 tests/16 suites plus separate 15 comparison tests/four suites and API
+gates. Then independently reviewed the exact combined runtime **CLEAR**, passed
+42 overlap tests/nine suites, a strict 15-test invocation, all three API gates,
+offline deny and whitespace. He inspected but did not rerun primary's complete
+Debug/Release/Rust/bundle logs; those logs alone do not attest invocation or SHA.
+Mutation ordering, late-publication fences, source-Forget human comparison
+preservation, stale CAS/editor/base wiring and both transport caps remain intact.
+
+PR #77 passed all five checks at `392e7d52e209d482658258352de53c8aef9ec176`
+(CI `43585260442`, integrated `43585260403`); fresh exact-head/main/check/review/
+approval/discussion/rules gates preceded merge
+`04d4e58548c768b8b193f2b66c549002cce722cb`. Watch removed; separate exact post-
+merge CI remains unverified. AD core coverage report continues independently.
+Nine inherited progress edits/worktrees/parent reminders preserved. Exact AC
+publication CI, GUI/AX, Swift 6.1, live quality, host delivery/phase closure remain open.
+
 Requirements: TM-01–TM-04, TM-07, TM-10; partial **P2-A1/A3/A5/A6,
 P3-A4/A6**. [Phase 2](../spec/phase-2-knowledge-core.md) and
 [Phase 3](../spec/phase-3-background-experience.md) remain open.
