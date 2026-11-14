@@ -28,6 +28,7 @@ mod human_search;
 mod ranked_query;
 mod schema;
 mod source_forget;
+mod source_inspection;
 pub use context_revision::{ContextRevisionBinding, validate_context_kind, validate_context_text};
 pub use forget::{ForgetBinding, ForgetStage};
 pub use human_read::ContextReadBinding;
@@ -35,6 +36,7 @@ pub use human_search::validate_human_search;
 pub use ranked_query::validate_query_terms;
 pub use schema::UpgradeStage;
 pub use source_forget::{SourceForgetBinding, SourceForgetStage, validate_source_forget};
+pub use source_inspection::{SourceAnchorInspection, validate_source_inspection};
 #[cfg(test)]
 mod tests;
 
@@ -368,15 +370,21 @@ impl Store {
     /// Open an explicit store directory. New directories are 0700 and database 0600.
     /// Existing stores must already be private, owned, regular, and schema-compatible.
     pub fn open(path: &Path) -> Result<Self> {
-        Self::open_with_creation(path, true)
+        Self::open_with_creation(path, true, false)
     }
 
     /// Open only a recognized existing private store, never create a directory or DB.
     pub fn open_existing(path: &Path) -> Result<Self> {
-        Self::open_with_creation(path, false)
+        Self::open_with_creation(path, false, false)
     }
 
-    fn open_with_creation(path: &Path, allow_creation: bool) -> Result<Self> {
+    /// Open an existing store read-only for source inspection. Reject WAL before
+    /// SQLite opens the database; never normalize its journal mode or create it.
+    pub fn open_existing_for_inspection(path: &Path) -> Result<Self> {
+        Self::open_with_creation(path, false, true)
+    }
+
+    fn open_with_creation(path: &Path, allow_creation: bool, inspection: bool) -> Result<Self> {
         if !path.is_absolute() {
             return Err(Error::ScopeMismatch);
         }
@@ -460,6 +468,7 @@ impl Store {
             let mut header = [0_u8; 100];
             file.read_exact(&mut header).map_err(unavailable)?;
             if &header[..16] != b"SQLite format 3\0"
+                || (inspection && (header[18] != 1 || header[19] != 1))
                 || u16::from_be_bytes([header[16], header[17]]) != 4096
                 || !matches!(
                     u32::from_be_bytes(header[60..64].try_into().map_err(unavailable)?),
@@ -472,9 +481,14 @@ impl Store {
                 return Err(Error::Unavailable);
             }
         }
+        let access = if inspection {
+            rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY
+        } else {
+            rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE
+        };
         let mut db = Connection::open_with_flags(
             &db_path,
-            rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE
+            access
                 | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX
                 | rusqlite::OpenFlags::SQLITE_OPEN_NOFOLLOW,
         )
@@ -497,7 +511,18 @@ impl Store {
             tx.commit().map_err(unavailable)?;
         }
         schema::validate(&db)?;
-        db.execute_batch("PRAGMA trusted_schema=OFF; PRAGMA foreign_keys=ON; PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL; PRAGMA max_page_count=32768;").map_err(unavailable)?;
+        if inspection {
+            let mode: String = db
+                .pragma_query_value(None, "journal_mode", |r| r.get(0))
+                .map_err(unavailable)?;
+            if !mode.eq_ignore_ascii_case("delete") {
+                return Err(Error::Unavailable);
+            }
+            db.execute_batch("PRAGMA trusted_schema=OFF; PRAGMA foreign_keys=ON;")
+                .map_err(unavailable)?;
+        } else {
+            db.execute_batch("PRAGMA trusted_schema=OFF; PRAGMA foreign_keys=ON; PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL; PRAGMA max_page_count=32768;").map_err(unavailable)?;
+        }
         Ok(Self {
             db,
             root: path.into(),

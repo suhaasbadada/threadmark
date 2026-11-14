@@ -83,6 +83,9 @@ fn usage() -> std::process::ExitCode {
     eprintln!(
         "cached source reads: query PROJECT TEXT, query-terms PROJECT TEXT or context prepare PROJECT QUERY [--terms] (original only on bounded stdin), followed by --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-snapshot HASH|none --expected-sources [FILE ...] (exact list last, at most 64; all flags required together; current registration alone authorizes source reads, not these metadata values)"
     );
+    eprintln!(
+        "source inspect PROJECT PATH LINE --radius 0..3 --expected-source-hash HASH --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-snapshot HASH --expected-sources [FILE ...] (exact binding required; existing store only; indexed center and at most seven whole source lines, 8192 JSON bytes including newline; no stdin or indexing)"
+    );
     std::process::ExitCode::from(2)
 }
 
@@ -101,7 +104,16 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
         return local_review::run(data_dir, &args[2..]);
     }
     // Bounded parser; untrusted arguments and errors are never echoed.
-    if args.len() > 80 {
+    // Inspection has 20 fixed arguments including --data-dir/STORE, plus the
+    // complete approved policy of up to 64 files. Other grammars keep their cap.
+    let argument_limit = if args.get(2).is_some_and(|s| s == "source")
+        && args.get(3).is_some_and(|s| s == "inspect")
+    {
+        84
+    } else {
+        80
+    };
+    if args.len() > argument_limit {
         return usage();
     }
     let Some(words) = args[2..]
@@ -357,6 +369,38 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
             (*identity).into(),
             files.iter().map(|s| (*s).into()).collect(),
         ),
+        [
+            "source",
+            "inspect",
+            id,
+            path,
+            line,
+            "--radius",
+            radius,
+            "--expected-source-hash",
+            hash,
+            binding @ ..,
+        ] => {
+            let Some(expected) = read_binding(id, "inspect", binding) else {
+                return usage();
+            };
+            let Some(line) = canonical_coordinate(line) else {
+                return usage();
+            };
+            let Some(radius) = canonical_coordinate(radius) else {
+                return usage();
+            };
+            let anchor = threadmark_core::knowledge::SourceAnchorInspection {
+                path: (*path).into(),
+                line,
+                radius,
+                source_hash: (*hash).into(),
+            };
+            if threadmark_core::knowledge::validate_source_inspection(&expected, &anchor).is_err() {
+                return usage();
+            }
+            Command::InspectSourceAnchor(expected, anchor)
+        }
         ["query", id, text] => Command::Query((*id).into(), (*text).into()),
         ["query-terms", id, text, binding @ ..] if !binding.is_empty() => {
             let Some(expected) = read_binding(id, text, binding) else {
@@ -722,4 +766,15 @@ fn read_binding(
     };
     threadmark_core::knowledge::validate_query_binding(&expected, query).ok()?;
     Some(expected)
+}
+
+fn canonical_coordinate(text: &str) -> Option<usize> {
+    if text.is_empty()
+        || text.len() > 4
+        || !text.bytes().all(|b| b.is_ascii_digit())
+        || (text.len() > 1 && text.starts_with('0'))
+    {
+        return None;
+    }
+    text.parse().ok()
 }
