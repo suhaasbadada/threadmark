@@ -38,6 +38,14 @@ public struct ProviderConfigurationView: View {
                 ForEach(settings.profiles) { profile in Text(profile.id).tag(Optional(profile.id)) }
             }
             .onChange(of: settings.selectedProfileID) { _ in settings.enabled = false }
+            if let selected = settings.profiles.first(where: { $0.id == settings.selectedProfileID }) {
+                Text("Selected: \(selected.id) · \(selected.model) · \(selected.endpoint) · \(selected.locality.rawValue)")
+                    .textSelection(.enabled)
+                Button("Edit selected profile in form") {
+                    profileID = selected.id; endpoint = selected.endpoint; model = selected.model; locality = selected.locality
+                }
+            }
+            Text("Supported transport: numeric-loopback HTTP only. Remote profiles can be saved, but remote inference is not ready. Enabling a profile is not a transport test or request consent.")
             Button(settings.enabled ? "Disable inference" : "Explicitly enable selected profile") {
                 if settings.enabled { settings.enabled = false; status = "Inference disabled."; return }
                 var candidate = settings

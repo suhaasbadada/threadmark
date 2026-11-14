@@ -15,6 +15,7 @@ final class WindowNavigation: ObservableObject {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let model = CompanionModel()
+    private lazy var providers = CompanionProviderSession { [weak self] in self?.model.dismissPreview() }
     let launch: LaunchConfiguration
     private var item: NSStatusItem!
     private var window: NSWindow?
@@ -68,7 +69,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             window.title = "Threadmark — Manage"
             window.contentMinSize = NSSize(width: 640, height: 520)
             window.isReleasedWhenClosed = false; window.delegate = self
-            window.contentView = NSHostingView(rootView: ManagementView(model: model, navigation: navigation))
+            window.contentView = NSHostingView(rootView: ManagementView(model: model, navigation: navigation, providers: providers))
             window.center(); self.window = window
         }
         model.showManagement(); window?.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true)
@@ -93,6 +94,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 struct ManagementView: View {
     @ObservedObject var model: CompanionModel
     @ObservedObject var navigation: WindowNavigation
+    @ObservedObject var providers: CompanionProviderSession
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Local understanding, not another coding environment").font(.headline)
@@ -105,7 +107,7 @@ struct ManagementView: View {
             TabView(selection: $navigation.tab) {
                 ProjectsView(model: model).tabItem { Text("Projects") }.tag(0)
                 ContextView(model: model).tabItem { Text("Context") }.tag(1)
-                ConnectionsView(model: model).tabItem { Text("Connections") }.tag(2)
+                ConnectionsView(model: model, providers: providers).tabItem { Text("Connections") }.tag(2)
                 PrivacyView(model: model).tabItem { Text("Privacy / Settings") }.tag(3)
             }
             HStack {
@@ -408,6 +410,7 @@ struct ContextPreparationView: View {
 @MainActor
 struct ConnectionsView: View {
     @ObservedObject var model: CompanionModel
+    @ObservedObject var providers: CompanionProviderSession
     @ViewState<URL?> private var binary: URL?
     @ViewState<URL?> private var existingStore: URL?
     @ViewState<URL?> private var parent: URL?
@@ -447,8 +450,24 @@ struct ConnectionsView: View {
             }.disabled(binary == nil || dataDirectory == nil || !model.manualActionsAvailable)
             Text("\(model.configured ? "Configured (not certified)" : "Unavailable") · configuration is memory-only; executable runs only for explicit actions or separately opted-in file-event/periodic lexical refresh.")
             Divider()
-            Text("Inference profiles: unavailable / disabled").font(.headline)
-            Text("No provider client, credentials, consent or budget transport is implemented. Semantic work cannot start.")
+            ProviderConfigurationView(settings: providers.binding)
+            HStack {
+                Button("Save private profile file…") {
+                    let panel = NSSavePanel(); panel.nameFieldStringValue = "provider-profile.json"
+                    panel.title = "Save NEW nonsecret profile in an owned private (0700) folder"
+                    panel.canCreateDirectories = false
+                    providers.save(to: panel.runModal() == .OK ? panel.url : nil)
+                }.accessibilityIdentifier("provider-profile-file-save")
+                Button("Load private profile file…") {
+                    let panel = NSOpenPanel(); panel.canChooseDirectories = false; panel.canChooseFiles = true
+                    panel.allowsMultipleSelection = false; panel.resolvesAliases = false
+                    providers.load(from: panel.runModal() == .OK ? panel.url : nil)
+                }.accessibilityIdentifier("provider-profile-file-load")
+            }
+            Text(providers.status).accessibilityIdentifier("provider-profile-file-status")
+            Text("Changing, enabling, disabling or loading settings clears the current preview and cancels owned work through the existing app cancellation boundary. Original request and note editor text remain intact; automatic lexical refresh must be approved again if canceled.").font(.caption)
+            Text("Save writes only nonsecret profiles/selection, never drafts or consent, at most 64 KiB. Use a new filename in an existing owned 0700 folder (no ACLs); files must be owned regular 0600 files, without ACLs, links or symlink parents. Existing destinations are never overwritten. Load accepts only Threadmark's canonical JSON format and always leaves inference off. No automatic loading or global configuration.").font(.caption)
+            Text("Transport capability: numeric-loopback HTTP only. Remote HTTPS profiles may be saved but remote inference is NOT ready. App Refine/runtime consent integration remains unavailable here; settings never call a model or send a request.").font(.caption)
             Text("Coding-client adapters: unavailable / not certified").font(.headline)
             Text("No host is installed, modified, launched, or connected. No send operation exists. Version, trust test and uninstall: not applicable.")
             Spacer()
@@ -468,7 +487,7 @@ struct PrivacyView: View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Privacy and background behavior").font(.headline)
             Text("Local storage is owned by core in your explicitly selected data directory. Source scope is an exact file allowlist; source files are never changed by this shell. IDs are not credentials.")
-            Text("Search results, note drafts, configuration and previews remain in process memory. No shell content archive, telemetry, OS notifications or provider calls. Core history retention is separate; Retire preserves history.")
+            Text("Search results, note drafts and previews remain in process memory. Nonsecret provider profiles are saved only to an explicitly chosen private app profile file; loading never enables inference. No shell content archive, telemetry, OS notifications or provider calls. Core history retention is separate; Retire preserves history.")
             Text(model.notificationPolicy)
             Button(model.paused ? "Resume automatic scheduling" : "Pause automatic scheduling", action: model.togglePause)
             Text("File-event + periodic lexical refresh is off by default. Projects offers exact-scope session-only consent to file metadata watches and automatic approved-content reconciliation, with a 60-second fallback for missed/busy events. Pause closes watches, stops debounce/timer and cancels automatic work; Resume never grants consent. Manual Build remains available while paused. Disable, scope/configuration changes and Quit stop automatic work. Closing Manage does not stop opted-in refresh. No directory discovery or automatic inference.")
