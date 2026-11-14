@@ -215,9 +215,11 @@ struct RetainedModelTests {
         model?.togglePause()
         #expect(model?.retainedActionsAvailable == true)
         let lifetime = try #require(model?.retainedReview.ownedLifetime)
-        weak let weakModel = model
+        // A weak capture works on both older Swift (which rejects weak let)
+        // and newer Swift (which warns about an unmutated local weak var).
+        let weakModel = { [weak model] in model }
         model = nil
-        #expect(weakModel == nil)
+        #expect(weakModel() == nil)
         await lifetime.join()
         #expect(reaped(pid) && peer.count == 1)
     }
