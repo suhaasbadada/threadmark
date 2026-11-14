@@ -89,6 +89,9 @@ fn usage() -> std::process::ExitCode {
     eprintln!(
         "source inspect PROJECT PATH LINE --radius 0..3 --expected-source-hash HASH --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-snapshot HASH --expected-sources [FILE ...] (exact binding required; existing store only; indexed center and at most seven whole source lines, 8192 JSON bytes including newline; no stdin or indexing)"
     );
+    eprintln!(
+        "project coverage PROJECT --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-snapshot HASH|none --expected-sources [FILE ...] (required once, exact order; metadata-only lexical status of explicit approved files, not semantic completeness; existing read-only DELETE store, no stdin or Build; 65536 JSON bytes including newline)"
+    );
     std::process::ExitCode::from(2)
 }
 
@@ -403,6 +406,12 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
                 return usage();
             }
             Command::InspectSourceAnchor(expected, anchor)
+        }
+        ["project", "coverage", id, binding @ ..] => {
+            let Some(expected) = read_binding(id, "coverage", binding) else {
+                return usage();
+            };
+            Command::CoverageReport(expected)
         }
         ["query", id, text] => Command::Query((*id).into(), (*text).into()),
         ["query-terms", id, text, binding @ ..] if !binding.is_empty() => {

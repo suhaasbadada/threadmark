@@ -20,6 +20,8 @@ pub enum Command {
     Projects,
     /// Inspect one project's source policy.
     Project(String),
+    /// Explicit complete-bound metadata-only lexical coverage; never Build.
+    CoverageReport(threadmark_core::knowledge::Project),
     /// Explicit caller-approved sensitive local-content export, never delivery.
     ExportProject(String),
     /// Explicitly approved local export guarded by complete captured metadata.
@@ -189,6 +191,9 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         Command::InspectSourceAnchor(expected, anchor) => {
             threadmark_core::knowledge::validate_source_inspection(expected, anchor)?;
         }
+        Command::CoverageReport(expected) => {
+            threadmark_core::knowledge::validate_coverage_binding(expected)?;
+        }
         Command::QueryBound(expected, query) | Command::PrepareContextBound(expected, query, _) => {
             threadmark_core::knowledge::validate_query_binding(expected, query)?;
         }
@@ -256,7 +261,10 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         }
         .validate(project, path)?;
     }
-    let mut store = if matches!(&command, Command::InspectSourceAnchor(..)) {
+    let mut store = if matches!(
+        &command,
+        Command::InspectSourceAnchor(..) | Command::CoverageReport(..)
+    ) {
         Store::open_existing_for_inspection(data_dir)?
     } else if let Command::ExportProject(id) = &command {
         threadmark_core::knowledge::validate_export_project(id)?;
@@ -490,6 +498,7 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         }
         Command::Query(id, text) => store.query(&id, &text, cancel)?,
         Command::QueryBound(expected, text) => store.query_bound(&expected, &text, cancel)?,
+        Command::CoverageReport(expected) => store.coverage_report(&expected, cancel)?,
         Command::InspectSourceAnchor(expected, anchor) => {
             store.inspect_source_anchor(&expected, &anchor, cancel)?
         }
