@@ -16,27 +16,48 @@ public struct ProviderProfile: Codable, Equatable, Sendable, Identifiable {
     public func validate() throws {
         guard Self.identifier(id), Self.identifier(model), endpoint.utf8.count <= 2048,
               endpoint.utf8.allSatisfy({ $0 > 32 && $0 < 127 }), !endpoint.contains("%"),
-              let parts = URLComponents(string: endpoint), let host = parts.host,
-              parts.user == nil, parts.password == nil, parts.query == nil,
-              parts.fragment == nil, !parts.path.isEmpty,
-              parts.path.utf8.allSatisfy({ Self.pathByte($0) }),
-              parts.port.map({ (1...65535).contains($0) }) ?? true,
-              !host.isEmpty, host.utf8.allSatisfy({ Self.hostByte($0) })
+              endpoint.hasPrefix(locality == .local ? "http://" : "https://")
         else { throw ProviderSettingsError.invalid }
-        let loopback = host == "127.0.0.1" || host == "[::1]" || host == "::1"
-        guard (locality == .local && loopback && parts.scheme == "http")
-                || (locality == .remote && !loopback && parts.scheme == "https")
+        let rest = endpoint.dropFirst(locality == .local ? 7 : 8)
+        guard let slash = rest.firstIndex(of: "/") else { throw ProviderSettingsError.invalid }
+        let authority = String(rest[..<slash])
+        guard !authority.isEmpty, authority.utf8.allSatisfy({ Self.hostByte($0) }),
+              rest[slash...].utf8.allSatisfy({ Self.pathByte($0) })
         else { throw ProviderSettingsError.invalid }
+        let host: String
+        let port: String?
+        if authority.hasPrefix("[::1]") {
+            host = "[::1]"
+            let suffix = authority.dropFirst(5)
+            guard suffix.isEmpty || suffix.hasPrefix(":") else { throw ProviderSettingsError.invalid }
+            port = suffix.isEmpty ? nil : String(suffix.dropFirst())
+        } else if let colon = authority.firstIndex(of: ":") {
+            host = String(authority[..<colon]); port = String(authority[authority.index(after: colon)...])
+        } else { host = authority; port = nil }
+        if let port {
+            guard !port.isEmpty, port.utf8.allSatisfy({ (48...57).contains($0) }),
+                  let number = UInt16(port), number > 0 else { throw ProviderSettingsError.invalid }
+        }
+        let loopback = host == "127.0.0.1" || host == "[::1]"
+        guard !host.isEmpty, (locality == .local) == loopback else { throw ProviderSettingsError.invalid }
         if !loopback {
             let host = host.lowercased()
             let labels = host.split(separator: ".", omittingEmptySubsequences: false)
             guard host.utf8.count <= 253, host != "localhost", !host.hasSuffix(".localhost"),
-                  !host.hasPrefix("127."), host != "0.0.0.0", host != "255.255.255.255",
+                  host.utf8.allSatisfy({ $0.isASCIIAlphaNumeric || $0 == 45 || $0 == 46 }),
                   labels.allSatisfy({ label in
                       !label.isEmpty && label.utf8.count <= 63
                           && label.utf8.first!.isASCIIAlphaNumeric && label.utf8.last!.isASCIIAlphaNumeric
                   })
             else { throw ProviderSettingsError.invalid }
+            let octets = labels.compactMap { label -> UInt8? in
+                guard label == "0" || !label.hasPrefix("0"), label.utf8.allSatisfy({ (48...57).contains($0) }) else { return nil }
+                return UInt8(label)
+            }
+            if octets.count == 4 {
+                guard octets[0] != 127, !(224...239).contains(octets[0]),
+                      octets != [0, 0, 0, 0], octets != [255, 255, 255, 255] else { throw ProviderSettingsError.invalid }
+            }
         }
     }
 
