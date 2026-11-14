@@ -89,6 +89,15 @@ private actor ExplicitFakeCoreService: CoreService {
         calls += 1
         if let error = nextFailure { nextFailure = nil; throw error }
         switch operation {
+        case .contextsBound(let b):
+            try b.validate()
+            guard projects.contains(where: { (try? HumanContextReadBinding(project: $0)) == b }) else { throw ServiceError.scopeMismatch }
+            return .contexts(metadata(b.project))
+        case .contextBound(let b, let id):
+            try b.validate()
+            guard projects.contains(where: { (try? HumanContextReadBinding(project: $0)) == b }) else { throw ServiceError.scopeMismatch }
+            return try await perform(.context(b.project, id))
+        case .searchHumanContextBound: throw ServiceError.unavailable
         case .updateContextRevisionBound(let binding, let kind, let text):
             try binding.validate()
             guard projects.contains(where: { $0.id == binding.project && $0.root == binding.root &&
@@ -779,13 +788,14 @@ struct ModelTests {
     }
     @Test func quitSuppressesQueuedRefreshAfterMutationTeardown() async {
         let (model, service) = await selected()
+        let captured = model.project
         await service.holdNextSources()
         model.stageSources(["old.rs"]); model.applySources(); await service.waitForSources()
         model.refreshSelected()
         let stopping = Task { await model.shutdown() }
         for _ in 0..<16 { await Task.yield() }
         await service.finishSources(); await stopping.value
-        #expect(model.quitting && model.project == nil && !model.busy)
+        #expect(model.quitting && model.project == captured && !model.busy)
         // Only the canceled mutation's own follow-up read is allowed; the
         // queued replacement refresh must never enter the service after Quit.
         #expect(await service.sourceEvents == ["show", "show", "begin:old.rs", "commit:old.rs", "show"])
@@ -977,6 +987,20 @@ struct AdapterTests {
             guard case .context(let context) = try await adapter.perform(.context("alpha", "memo")) else { Issue.record("Wrong reply"); return }
             #expect(context.history.count == 2 && context.history.last?.kind == "decision")
             _ = try await adapter.perform(.retireContext("alpha", "memo"))
+        }
+    }
+    @Test func humanBoundListHistoryClosedArgvAndNoStdin() async throws {
+        let project = Project(id: "alpha", root: "/synthetic/alpha", sources: ["ignored.rs"], snapshot: .string("ignored"), rootIdentity: .string("r1"), incarnation: "0123456789abcdef0123456789abcdef")
+        let binding = try HumanContextReadBinding(project: project)
+        try await withAdapter("human-bound-list") { adapter in
+            guard case .contexts(let list) = try await adapter.perform(.contextsBound(binding)) else { throw ServiceError.invalid }
+            #expect(list.project == "alpha" && list.contexts.isEmpty)
+        }
+        try await withAdapter("human-bound-history") { adapter in
+            guard case .context(let history) = try await adapter.perform(.contextBound(binding, "memo")) else { throw ServiceError.invalid }
+            #expect(history.history.last?.retired == true)
+            await #expect(throws: ServiceError.invalid) { try await adapter.perform(.contextBound(binding, "../bad")) }
+            await #expect(throws: ServiceError.invalid) { try await adapter.perform(.searchHumanContextBound(binding, "\n")) }
         }
     }
     @Test func retrievalOutputBudget() async throws {

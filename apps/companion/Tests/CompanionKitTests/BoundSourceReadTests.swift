@@ -61,7 +61,7 @@ private actor LegacySourceCore: CoreService {
     func perform(_ operation: CompanionKit.Operation) async throws -> Reply {
         switch operation {
         case .project(let id): return .project(Project(id: id, root: "/synthetic/legacy", sources: ["a.rs"], rootIdentity: .string("r1")))
-        case .contexts(let id): return .contexts(ContextList(project: id, contexts: []))
+        case .contextsBound(let b): return .contexts(ContextList(project: b.project, contexts: []))
         case .query, .queryBound, .prepareContext, .prepareContextBound, .refinePreview, .index, .indexBound:
             sourceReads += 1; throw ServiceError.invalid
         default: throw ServiceError.unavailable

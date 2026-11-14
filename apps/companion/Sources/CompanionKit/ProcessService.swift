@@ -81,6 +81,7 @@ public struct ProcessService: CoreService {
             operationLimits.seconds = min(limits.seconds, 30)
         }
         if case .searchHumanContext = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
+        if case .searchHumanContextBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .query = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .queryBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .queryTermsBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
@@ -106,6 +107,9 @@ public struct ProcessService: CoreService {
             let decoder = JSONDecoder()
             let responseOperation: Operation
             switch operation {
+            case .contextsBound(let b): responseOperation = .contexts(b.project)
+            case .contextBound(let b, let id): responseOperation = .context(b.project, id)
+            case .searchHumanContextBound(let b, let q): responseOperation = .searchHumanContext(b.project, q)
             case .queryBound(let p, let q), .queryTermsBound(let p, let q): responseOperation = .query(p.id, q)
             case .prepareContextBound(let p, let q, let original), .prepareContextTermsBound(let p, let q, let original): responseOperation = .prepareContext(p.id, q, original)
             default: responseOperation = operation
@@ -114,7 +118,12 @@ public struct ProcessService: CoreService {
             case .refinePreview(let consent):
                 return .refinementPreview(try RefinementPreview.decode(data, consent: consent))
             case .searchHumanContext(let project, _):
-                return .humanContextSearch(try HumanContextSearch.decode(data, project: project))
+                let result = try HumanContextSearch.decode(data, project: project)
+                if case .searchHumanContextBound(let binding, _) = operation {
+                    guard result.root_identity.utf8.elementsEqual(binding.rootIdentity.utf8),
+                          result.incarnation?.utf8.elementsEqual(binding.incarnation.utf8) == true else { throw ServiceError.namespaceChanged }
+                }
+                return .humanContextSearch(result)
             case .forgetSource(let project, let path, _, _, _, _):
                 guard data.count <= 1024 else { throw ServiceError.outputLimit }
                 guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -233,6 +242,17 @@ public struct ProcessService: CoreService {
         var args: [String]
         var input = Data()
         switch operation {
+        case .contextsBound(let binding), .contextBound(let binding, _), .searchHumanContextBound(let binding, _):
+            try binding.validate()
+            switch operation {
+            case .contextBound(_, let context): args = ["context", "show", binding.project, try id(context)]
+            case .searchHumanContextBound(_, let query):
+                guard InputPolicy.humanSearch(query) else { throw ServiceError.invalid }
+                args = ["context", "search", binding.project, query]
+            default: args = ["context", "list", binding.project]
+            }
+            args += ["--expected-root", binding.root, "--expected-root-identity", binding.rootIdentity,
+                     "--expected-incarnation", binding.incarnation]
         case .queryBound(let p, let query), .prepareContextBound(let p, let query, _),
              .queryTermsBound(let p, let query), .prepareContextTermsBound(let p, let query, _):
             guard InputPolicy.identifier(p.id), case .string(let identity) = p.root_identity,

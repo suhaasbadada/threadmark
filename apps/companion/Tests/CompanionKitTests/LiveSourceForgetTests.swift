@@ -156,7 +156,9 @@ struct LiveSourceForgetTests {
         _ = try await adapter.perform(.setSources("peer", ["a.rs"]))
         // Same-root ID reuse and replacement-root reuse cannot consume an old prompt.
         for root in [replacement.path, newRoot.path] {
-            model.refreshSelected(); await model.waitForOperation(); model.inspectForgottenSources(); await model.waitForOperation()
+            // Explicitly select the peer registration, not an ID-only cached
+            // Refresh that could silently adopt a replacement namespace.
+            model.select("peer"); await model.waitForOperation(); model.inspectForgottenSources(); await model.waitForOperation()
             model.requestSourceForget("a.rs"); let stale = try #require(model.pendingSourceForget)
             guard case .string(let rootIdentity) = stale.project.root_identity, let incarnation = stale.project.incarnation else { throw ServiceError.invalid }
             _ = try await adapter.perform(.removeProject("peer", stale.project.root, rootIdentity, incarnation))

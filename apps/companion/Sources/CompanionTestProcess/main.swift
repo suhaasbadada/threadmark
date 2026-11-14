@@ -4,6 +4,14 @@ import Darwin
 
 let args = Array(CommandLine.arguments.dropFirst())
 let mode = args.count > 1 ? URL(fileURLWithPath: args[1]).lastPathComponent : "invalid"
+if mode == "human-bound-list" || mode == "human-bound-history" {
+    let prefix = mode == "human-bound-list" ? ["context", "list", "alpha"] : ["context", "show", "alpha", "memo"]
+    guard Array(args.dropFirst(2)) == prefix + ["--expected-root", "/synthetic/alpha", "--expected-root-identity", "r1",
+        "--expected-incarnation", "0123456789abcdef0123456789abcdef"],
+        FileHandle.standardInput.readDataToEndOfFile().isEmpty else { exit(1) }
+    print(mode == "human-bound-list" ? #"{"project":"alpha","contexts":[]}"# : #"{"project":"alpha","id":"memo","producer":"human-authored","authority":"human-declared","history":[{"revision":1,"kind":"note","text":"Synthetic human text","retired":true}]}"#)
+    exit(0)
+}
 if mode.hasPrefix("mutation-bound-") {
     let binding = ["--expected-root", "/synthetic/alpha", "--expected-root-identity", "r1", "--expected-incarnation", "0123456789abcdef0123456789abcdef"]
     let command = Array(args.dropFirst(2))

@@ -192,6 +192,28 @@ public struct ContextHistory: Codable, Sendable {
                   $0.text.utf8.count <= 4096 && !$0.text.contains("\0") }) else { throw ServiceError.invalid }
     }
 }
+/// Exact cached registration metadata, not credentials or source-policy authority.
+/// Excludes source policy/snapshot and performs no filesystem lookup.
+public struct HumanContextReadBinding: Equatable, Sendable {
+    public let project: String
+    public let root: String
+    public let rootIdentity: String
+    public let incarnation: String
+
+    public init(project: Project) throws {
+        guard case .string(let identity) = project.root_identity, let token = project.incarnation else { throw ServiceError.invalid }
+        self.project = project.id; root = project.root; rootIdentity = identity; incarnation = token
+        try validate()
+    }
+    public func validate() throws {
+        guard InputPolicy.identifier(project), InputPolicy.removal(root: root, identity: rootIdentity),
+              InputPolicy.incarnation(incarnation) else { throw ServiceError.invalid }
+    }
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.project.utf8.elementsEqual(rhs.project.utf8) && lhs.root.utf8.elementsEqual(rhs.root.utf8) &&
+        lhs.rootIdentity.utf8.elementsEqual(rhs.rootIdentity.utf8) && lhs.incarnation.utf8.elementsEqual(rhs.incarnation.utf8)
+    }
+}
 /// Captured when an existing human note is opened for editing, never refreshed
 /// implicitly from a newer list/history. Metadata, not authorization.
 public struct HumanContextRevisionBinding: Equatable, Sendable {
@@ -267,7 +289,7 @@ public struct HumanContextSearch: Codable, Sendable {
         try validate(project: scope.id)
         guard case .string(let identity) = scope.root_identity,
               let token = scope.incarnation, InputPolicy.incarnation(token),
-              root_identity == identity, incarnation == token else { throw ServiceError.namespaceChanged }
+              root_identity.utf8.elementsEqual(identity.utf8), incarnation?.utf8.elementsEqual(token.utf8) == true else { throw ServiceError.namespaceChanged }
     }
     static func decode(_ data: Data, project: String) throws -> Self {
         guard data.count <= 8192 else { throw ServiceError.outputLimit }
@@ -315,9 +337,10 @@ public struct ContextPreview: Codable, Equatable, Sendable {
 }
 
 public enum ServiceError: String, Error, Sendable, LocalizedError {
-    case invalid, unavailable, canceled, scopeMismatch, stale, timedOut, outputLimit, failed, removalUncertain, forgetUncertain, sourceForgetUncertain, sourceInspectionUnavailable, namespaceChanged, mutationUncertain, readRequiresRefresh, contextConflict
+    case invalid, unavailable, canceled, scopeMismatch, stale, timedOut, outputLimit, failed, removalUncertain, forgetUncertain, sourceForgetUncertain, sourceInspectionUnavailable, namespaceChanged, mutationUncertain, readRequiresRefresh, contextConflict, humanReadRequiresRefresh
     public var errorDescription: String? {
         switch self {
+        case .humanReadRequiresRefresh: "Human reads require validated schema v3/v4 registration metadata. Loaded history and editor retained; no unbound read fallback. Stop older workers and explicitly upgrade with store upgrade --to-version 3 --confirm-local-schema-upgrade --confirm-legacy-workers-stopped, then Refresh."
         case .contextConflict: "Human history no longer matches the captured edit revision, or matching history was not loaded. Unsaved editor and loaded history retained; mutation outcome not confirmed. Inspect/reload history explicitly, compare your draft, then choose Edit again before saving. No automatic retry or conflict resolution."
         case .readRequiresRefresh: "Requires Refresh — cached source policy/snapshot unavailable or changed. Human drafts retained. Native source operations require schema v3/v4; explicitly upgrade legacy storage after stopping older workers."
         case .invalid: "Invalid input or core response. Review the selected configuration."
@@ -339,6 +362,9 @@ public enum ServiceError: String, Error, Sendable, LocalizedError {
 }
 
 public enum Operation: Sendable {
+    case contextsBound(HumanContextReadBinding)
+    case contextBound(HumanContextReadBinding, String)
+    case searchHumanContextBound(HumanContextReadBinding, String)
     case updateContextRevisionBound(HumanContextRevisionBinding, String, String)
     case retireContextRevisionBound(HumanContextRevisionBinding)
     case queryBound(Project, String)

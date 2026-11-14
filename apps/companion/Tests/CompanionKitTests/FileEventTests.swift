@@ -28,7 +28,7 @@ actor WatchCoreService: CoreService {
     }
     func finish() { held = false; release?.resume(); release = nil }
     func perform(_ operation: CompanionKit.Operation) async throws -> Reply {
-        if case .contexts(let id) = operation { return .contexts(ContextList(project: id, contexts: [])) }
+        if case .contextsBound(let b) = operation { return .contexts(ContextList(project: b.project, contexts: [])) }
         guard case .project(let id) = operation, id == requestedID else { throw ServiceError.invalid }
         calls += 1
         guard !unavailable else { throw ServiceError.unavailable }

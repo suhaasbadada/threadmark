@@ -35,11 +35,11 @@ private actor SearchCore: CoreService {
     func perform(_ operation: CompanionKit.Operation) async throws -> Reply {
         switch operation {
         case .project: return .project(project)
-        case .contexts: return .contexts(ContextList(project: "alpha", contexts: []))
-        case .context(_, let id):
+        case .contextsBound: return .contexts(ContextList(project: "alpha", contexts: []))
+        case .contextBound(_, let id):
             return .context(ContextHistory(project: "alpha", id: id, producer: "human-authored", authority: .string("human-declared"),
                 history: [ContextRevision(revision: 1, kind: "note", text: "Synthetic needle", retired: false)]))
-        case .searchHumanContext:
+        case .searchHumanContextBound:
             calls += 1; didStart = true; started?.resume(); started = nil
             if mode == "hold" { await withCheckedContinuation { held = $0 } }
             if mode == "error" { throw ServiceError.failed }
@@ -120,12 +120,14 @@ struct HumanSearchTests {
         #expect(selected.humanSearch?.results.first?.id == "memo")
         #expect(selected.originalDraft == "Synthetic unsaved original" && selected.contextEditorRevision == editor)
         selected.inspectHumanSearchEntry("memo"); await selected.waitForOperation()
+        let base = try #require(selected.humanContextRevisionBinding("memo"))
         #expect(selected.history?.id == "memo" && selected.contextEditorRevision == editor)
         #expect(selected.originalDraft == "Synthetic unsaved original")
         for mode in ["error", "unknown"] {
             await core.setMode(mode); selected.searchHumanContext("needle"); await selected.waitForOperation()
             #expect(selected.humanSearch == nil && selected.lastError != nil)
             #expect(selected.originalDraft == "Synthetic unsaved original" && selected.contextEditorRevision == editor)
+            #expect(selected.history?.id == "memo" && selected.humanContextRevisionBinding("memo") == base)
         }
         await core.setMode("valid"); selected.searchHumanContext("needle"); await selected.waitForOperation()
         #expect(selected.humanSearch != nil)
@@ -186,14 +188,17 @@ struct HumanSearchTests {
         await model.shutdown()
     }
 
-    @Test func actualProcessArgvEmptyStdinEnvironmentAndFailures() async throws {
+    @Test(arguments: [false, true]) func actualProcessArgvEmptyStdinEnvironmentAndFailures(bound: Bool) async throws {
         let fixture = try ApprovedWatchFixture(); defer { fixture.remove() }
         let executable = fixture.root.appendingPathComponent("search-fixture.py")
         let payload = try JSONSerialization.data(withJSONObject: searchPayload(), options: [.sortedKeys])
+        let binding = try HumanContextReadBinding(project: Project(id: "alpha", root: "/synthetic/alpha", sources: [], rootIdentity: .string("r1"), incarnation: syntheticIncarnation))
+        let operation: CompanionKit.Operation = bound ? .searchHumanContextBound(binding, " needle ") : .searchHumanContext("alpha", " needle ")
+        let flags = bound ? ", '--expected-root', '/synthetic/alpha', '--expected-root-identity', 'r1', '--expected-incarnation', '0123456789abcdef0123456789abcdef'" : ""
         let body = """
         #!/usr/bin/python3
         import os, sys
-        assert sys.argv[1:] == ['--data-dir', os.getcwd(), 'context', 'search', 'alpha', ' needle ']
+        assert sys.argv[1:] == ['--data-dir', os.getcwd(), 'context', 'search', 'alpha', ' needle '\(flags)]
         assert sys.stdin.buffer.read() == b''
         # Apple's /usr/bin/python3 shim adds only toolchain metadata after spawn.
         assert set(os.environ) <= {'LANG', 'LC_ALL', 'LC_CTYPE', 'CPATH', 'LIBRARY_PATH', 'MANPATH', 'SDKROOT', '__CF_USER_TEXT_ENCODING'}
@@ -202,24 +207,24 @@ struct HumanSearchTests {
         try Data(body.utf8).write(to: executable)
         try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
         let service = ProcessService(executable: executable, dataDirectory: fixture.root)
-        guard case .humanContextSearch(let result) = try await service.perform(.searchHumanContext("alpha", " needle ")) else { throw ServiceError.invalid }
+        guard case .humanContextSearch(let result) = try await service.perform(operation) else { throw ServiceError.invalid }
         #expect(result.results.first?.text == "Synthetic needle")
         for output in ["{}", "unknown", String(repeating: "x", count: 8193)] {
             try Data(("#!/usr/bin/python3\nimport sys\nsys.stdout.write(" + String(reflecting: output) + ")\n").utf8).write(to: executable)
-            await #expect(throws: (any Error).self) { try await service.perform(.searchHumanContext("alpha", "needle")) }
+            await #expect(throws: (any Error).self) { try await service.perform(operation) }
         }
         // Publish a complete marker atomically; Python startup is not bounded to 50 ms.
         try Data("#!/usr/bin/python3\nimport os,time\nwith open('child.pid.tmp','w') as marker: marker.write(str(os.getpid()))\nos.replace('child.pid.tmp','child.pid')\ntime.sleep(30)\n".utf8).write(to: executable)
         let marker = fixture.root.appendingPathComponent("child.pid")
         var limits = ProcessLimits(); limits.seconds = 3
         await #expect(throws: ServiceError.timedOut) {
-            try await ProcessService(executable: executable, dataDirectory: fixture.root, limits: limits).perform(.searchHumanContext("alpha", "needle"))
+            try await ProcessService(executable: executable, dataDirectory: fixture.root, limits: limits).perform(operation)
         }
         let timedOutPID = try #require(Int32(String(contentsOf: marker, encoding: .utf8)))
         try #require(timedOutPID > 0)
         #expect(kill(timedOutPID, 0) == -1 && errno == ESRCH)
         try FileManager.default.removeItem(at: marker)
-        let task = Task { try await service.perform(.searchHumanContext("alpha", "needle")) }
+        let task = Task { try await service.perform(operation) }
         defer { task.cancel() }
         for _ in 0..<500 {
             if FileManager.default.fileExists(atPath: marker.path) { break }

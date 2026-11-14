@@ -137,10 +137,45 @@ public final class CompanionModel: ObservableObject {
         current.id == captured.id && current.root == captured.root &&
         current.root_identity == captured.root_identity && current.incarnation == captured.incarnation
     }
+    nonisolated private static func sameHumanNamespace(_ current: Project, _ captured: Project) -> Bool {
+        guard let a = try? HumanContextReadBinding(project: current),
+              let b = try? HumanContextReadBinding(project: captured) else { return false }
+        return a == b
+    }
+    nonisolated private static func checkHumanNamespace(_ service: any CoreService, _ captured: Project) async throws -> Project {
+        guard case .project(let current) = try await service.perform(.project(captured.id)),
+              sameHumanNamespace(current, captured) else { throw ServiceError.namespaceChanged }
+        return current
+    }
     nonisolated private static func checkNamespace(_ service: any CoreService, _ captured: Project) async throws -> Project {
         guard case .project(let current) = try await service.perform(.project(captured.id)),
               sameNamespace(current, captured) else { throw ServiceError.namespaceChanged }
         return current
+    }
+    /// Core admits the exact captured registration before human SQL; these
+    /// checks additionally fence native publication and classify replacement.
+    nonisolated private static func checkedHumanRead(_ service: any CoreService, _ operation: Operation, _ captured: Project, prechecked: Bool = false) async throws -> Reply {
+        let binding = try HumanContextReadBinding(project: captured) // Legacy fails before service I/O.
+        switch operation {
+        case .contextsBound(let supplied), .contextBound(let supplied, _), .searchHumanContextBound(let supplied, _):
+            guard supplied == binding else { throw ServiceError.invalid }
+        default: throw ServiceError.invalid // No trusted-operator fallback in this boundary.
+        }
+        do {
+            try Task.checkCancellation()
+            if !prechecked { _ = try await checkHumanNamespace(service, captured) }
+            try Task.checkCancellation()
+            let reply = try await service.perform(operation)
+            try Task.checkCancellation()
+            _ = try await checkHumanNamespace(service, captured)
+            try Task.checkCancellation()
+            return reply
+        } catch {
+            if error as? ServiceError == .namespaceChanged || error is CancellationError || error as? ServiceError == .canceled { throw error }
+            if let reply = try? await service.perform(.project(captured.id)), case .project(let current) = reply,
+               !sameHumanNamespace(current, captured) { throw ServiceError.namespaceChanged }
+            throw error
+        }
     }
     nonisolated private static func checkedSourceRead(_ service: any CoreService, _ operation: Operation, _ captured: Project) async throws -> Reply {
         guard captured.incarnation.map(InputPolicy.incarnation) == true else { throw ServiceError.readRequiresRefresh }
@@ -281,7 +316,7 @@ public final class CompanionModel: ObservableObject {
                 try Task.checkCancellation()
                 let before = try await service.perform(.project(target.id))
                 guard case .project(let project) = before, Self.sameForgetScope(project, target) else { throw ServiceError.scopeMismatch }
-                let contexts = try await service.perform(.contexts(target.id))
+                let contexts = try await Self.checkedHumanRead(service, .contextsBound(HumanContextReadBinding(project: target)), target)
                 let markers = try await service.perform(.forgottenContexts(target.id))
                 let after = try await service.perform(.project(target.id))
                 guard case .project(let project) = after, Self.sameForgetScope(project, target) else { throw ServiceError.scopeMismatch }
@@ -348,17 +383,47 @@ public final class CompanionModel: ObservableObject {
         refresh(id)
     }
     public func refreshSelected() {
-        guard let id = selectedID else { return }; invalidate(clearProject: true); refresh(id)
+        guard let id = selectedID else { return }
+        if let target = project, target.id == id {
+            disableAutomaticRefresh()
+            refresh(id, captured: target)
+        } else {
+            invalidate(clearProject: true); refresh(id)
+        }
     }
-    private func refresh(_ id: String) {
-        start { service in
-            guard case .project(let captured) = try await service.perform(.project(id)), captured.id == id else { throw ServiceError.namespaceChanged }
-            let contexts = try await service.perform(.contexts(id))
-            _ = try await Self.checkNamespace(service, captured)
+    private func refresh(_ id: String, captured target: Project? = nil) {
+        start(preserveHistory: true) { service in
+            let captured: Project
+            if let target {
+                // Refresh may refresh source metadata, never silently adopt a
+                // replacement registration known only by the same local ID.
+                if target.incarnation == nil {
+                    guard case .project(let current) = try await service.perform(.project(id)),
+                          current.root.utf8.elementsEqual(target.root.utf8), current.root_identity == target.root_identity,
+                          current.incarnation == nil else { throw ServiceError.namespaceChanged }
+                    captured = current
+                } else { captured = try await Self.checkHumanNamespace(service, target) }
+            } else {
+                guard case .project(let current) = try await service.perform(.project(id)), current.id == id else { throw ServiceError.namespaceChanged }
+                captured = current
+            }
+            // Metadata-only legacy selection permits explicit upgrade guidance,
+            // never a legacy LIST/HISTORY/SEARCH command or an inferred binding.
+            if (try? HumanContextReadBinding(project: captured)) == nil {
+                return [.project(captured), .contexts(ContextList(project: id, contexts: []))]
+            }
+            let contexts = try await Self.checkedHumanRead(service, .contextsBound(HumanContextReadBinding(project: captured)), captured, prechecked: true)
             return [.project(captured), contexts]
         } apply: { replies in
             guard case .project(let project) = replies[0], project.id == id,
                   case .contexts(let contexts) = replies[1], contexts.project == id else { throw ServiceError.scopeMismatch }
+            if target != nil {
+                // Preserve drafts/history until successful explicit Refresh, not
+                // while an uncertain same-namespace read is still outstanding.
+                self.contextEditorRevision &+= 1
+                self.originalDraft = ""; self.preparationQuery = ""
+                self.clearResults(); self.humanHistoryScope = nil
+            }
             self.project = project; self.sourceDraft = project.sources; self.policyDirty = false
             self.contexts = contexts.contexts
             self.forgetRequiresRefresh = false
@@ -367,7 +432,9 @@ public final class CompanionModel: ObservableObject {
             self.status = project.snapshot == nil || project.snapshot == .null
                 ? "Not built — explicit Build required" : "Snapshot recorded — currentness not checked"
             if project.incarnation == nil {
-                self.status = "Schema v3 required for native cached mutations. Stop older workers, then explicitly run store upgrade --to-version 3 --confirm-local-schema-upgrade --confirm-legacy-workers-stopped (or --to-version 4 for source Forget). No unbound native mutation fallback."
+                self.status = "Schema v3 required for native cached human reads and mutations. Stop older workers, then explicitly run store upgrade --to-version 3 --confirm-local-schema-upgrade --confirm-legacy-workers-stopped (or --to-version 4 for source Forget). No unbound native read or mutation fallback."
+            } else if (try? HumanContextReadBinding(project: project)) == nil {
+                self.status = ServiceError.humanReadRequiresRefresh.localizedDescription
             }
         }
     }
@@ -487,15 +554,14 @@ public final class CompanionModel: ObservableObject {
     /// Returns the revision currently displayed, not a fresh revision fetched at Save.
     public func humanContextRevisionBinding(_ contextID: String) -> HumanContextRevisionBinding? {
         guard let project, project.id == selectedID, let scope = humanHistoryScope,
-              Self.sameNamespace(project, scope), let history, history.id == contextID else { return nil }
+              Self.sameHumanNamespace(project, scope), let history, history.id == contextID else { return nil }
         return try? HumanContextRevisionBinding(project: scope, history: history)
     }
     public func openContext(_ contextID: String) {
         guard let target = project, target.id == selectedID, !sourceRequiresRefresh else { return }
+        guard let binding = try? HumanContextReadBinding(project: target) else { fail(.humanReadRequiresRefresh); return }
         start(preserveHistory: true) { service in
-            _ = try await Self.checkNamespace(service, target)
-            let reply = try await service.perform(.context(target.id, contextID))
-            _ = try await Self.checkNamespace(service, target)
+            let reply = try await Self.checkedHumanRead(service, .contextBound(binding, contextID), target)
             return [reply]
         } apply: { replies in
             guard case .context(let result) = replies[0], result.project == target.id, result.id == contextID else { throw ServiceError.scopeMismatch }
@@ -510,10 +576,8 @@ public final class CompanionModel: ObservableObject {
     public func searchHumanContext(_ query: String) {
         humanSearchQueryChanged()
         guard canSearchHumanContext, let target = project, InputPolicy.humanSearch(query) else { fail(.invalid); return }
-        start(status: "Searching human-authored context — no source reads or inference") { service in
-            _ = try await Self.checkNamespace(service, target)
-            let reply = try await service.perform(.searchHumanContext(target.id, query))
-            _ = try await Self.checkNamespace(service, target)
+        start(status: "Searching human-authored context — no source reads or inference", preserveHistory: true) { service in
+            let reply = try await Self.checkedHumanRead(service, .searchHumanContextBound(HumanContextReadBinding(project: target), query), target)
             return [reply]
         } apply: { replies in
             guard case .humanContextSearch(let result) = replies[0] else { throw ServiceError.invalid }
@@ -529,7 +593,7 @@ public final class CompanionModel: ObservableObject {
     }
     /// Loads the existing history pane; never copies text into an editor or approves a rule.
     public func inspectHumanSearchEntry(_ id: String) {
-        guard !busy, let scope = humanSearchScope, let project, Self.sameNamespace(project, scope),
+        guard !busy, let scope = humanSearchScope, let project, Self.sameHumanNamespace(project, scope),
               humanSearch?.results.contains(where: { $0.id == id }) == true else { return }
         openContext(id)
     }
@@ -782,8 +846,9 @@ public final class CompanionModel: ObservableObject {
                 _ = try await service.perform(operation)
                 acknowledged = true
                 try Task.checkCancellation()
-                let list = try await service.perform(.contexts(projectID))
-                let history = try await service.perform(.context(projectID, contextID))
+                let binding = try HumanContextReadBinding(project: target)
+                let list = try await Self.checkedHumanRead(service, .contextsBound(binding), target)
+                let history = try await Self.checkedHumanRead(service, .contextBound(binding, contextID), target)
                 guard case .contexts(let metadata) = list, metadata.project == projectID,
                       case .context(let loaded) = history else { throw ServiceError.invalid }
                 try loaded.validate(project: projectID, id: contextID)
@@ -799,7 +864,8 @@ public final class CompanionModel: ObservableObject {
                 // Only classify a rejected mutation with corroborating metadata.
                 // Timeout/cancel, receipt failures and post-commit read failures stay uncertain.
                 if !acknowledged, error as? ServiceError == .failed, let expected,
-                   let reply = try? await service.perform(.contexts(projectID)), case .contexts(let list) = reply,
+                   let binding = try? HumanContextReadBinding(project: target),
+                   let reply = try? await Self.checkedHumanRead(service, .contextsBound(binding), target), case .contexts(let list) = reply,
                    list.project == projectID,
                    list.contexts.contains(where: { $0.id == contextID && ($0.revision > expected.revision && $0.revision <= 32) }) {
                     do {
