@@ -16,7 +16,9 @@ jobs:
   rust:
     name: Rust (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 12
+    # macOS runs strict Debug and Release suites, API gates and the bundle build.
+    # The measured combined gate exceeded 12 minutes; keep Linux's existing bound.
+    timeout-minutes: ${{ matrix.os == 'macos-15' && 20 || 12 }}
     strategy:
       fail-fast: false
       matrix:

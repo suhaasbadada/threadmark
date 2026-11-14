@@ -2,6 +2,24 @@
 
 ## Primary integration and independent review
 
+### macOS CI deadline repair
+
+Publication head `db4c1cbf390d66236e02793ff04482f006b1a854`, CI `43604701177`,
+macOS job `132476724243` concluded canceled with the authoritative annotation
+**"The job has exceeded the maximum execution time of 12m0s"**. It is a blocker,
+not green or a transient failure being blindly retried. The retained job trace
+shows strict Debug **309 tests PASS**, strict Release **309 tests PASS**, all nine
+API gates PASS, and the final bundle product linked before the outer deadline;
+final bundle/plist completion was not certified. Linux and security passed;
+integrated run `43604701219` passed separately at that head.
+
+The AN checkout normally merged its publication head; exact full-tree equality
+with that head was verified before this repair. Runtime/test payload is unchanged.
+Only the macOS matrix timeout is raised to a bounded **20 minutes**; Linux stays
+at 12. Debug, Release, every fixture/API gate, bundle and plist remain mandatory.
+No explicit operator cancellation was overridden or job retried. A new push/run
+must be verified at its new full head before any success or merge claim.
+
 Owned child implementation committed as `c5c3d25`, then cleanly applied on
 merged AO as **`5f0ad07c5087de62cd7bcc3a1db958abc10771da`**, exact integrated tested
 runtime. Only the owned diff was applied; no baseline/site merge replay, conflict
