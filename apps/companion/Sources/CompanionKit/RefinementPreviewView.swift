@@ -7,9 +7,14 @@ public struct RefinementPreviewView: View {
     public init(model: CompanionModel, settings: ProviderSettings) { self.model = model; self.settings = settings }
     public var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Optional Refine · retained literal engine review").font(.headline)
+            Text("Optional Refine · retained engine review").font(.headline)
             Text("Uses the original and evidence query above. Select and explicitly enable a local profile in Connections first. Remote inference is unsupported even for saved profiles.")
-            Text("Generated prose is unverified. Review intent, negations and permissions. Explicit engine approval returns only an in-memory value; no copy, send or host admission. Refine remains literal regardless of Source Query/Context mode.").font(.caption)
+            Text("Generated prose is unverified. Review intent, negations and permissions. Explicit engine approval returns only an in-memory value; no copy, send or host admission. Refine retrieval is independent of Source Query/Context mode.").font(.caption)
+            Picker("Refine retrieval mode", selection: Binding(get: { model.refinementRetrievalMode }, set: { model.setRefinementRetrievalMode($0) })) {
+                ForEach(SourceRetrievalMode.allCases, id: \.self) { mode in Text(mode.label).tag(mode) }
+            }.accessibilityIdentifier("refine-retrieval-mode")
+            Text(model.refinementRetrievalMode.explanation).font(.caption)
+            Text("Changing mode cancels pending/preparing/idle Refine and requires fresh inspection and consent, even when changed back. At most 8 source lines and 8192 serialized selection bytes; lexical evidence is not semantic understanding.").font(.caption)
             HStack {
                 Button("Inspect data for Refine…") { model.requestRefinement(settings: settings) }
                     .disabled(!model.canPrepareContext)
@@ -41,10 +46,12 @@ public struct RefinementPreviewView: View {
                     Text("Root identity: \(consent.project.root_identity?.description ?? "unavailable") · incarnation: \(consent.project.incarnation ?? "unavailable")").textSelection(.enabled)
                     Text("Snapshot: \(consent.project.snapshot?.description ?? "unavailable")").textSelection(.enabled)
                     Text(verbatim: "Query: " + consent.query).textSelection(.enabled)
+                    Text("Refine retrieval: \(consent.retrievalMode.label)").font(.headline)
+                    Text(consent.retrievalMode.explanation).font(.caption)
                     Text("Exact original sent").font(.headline)
                     Text(verbatim: consent.original).textSelection(.enabled)
                     Text("Exact selected SOURCE evidence · untrusted quotations, not human policy").font(.headline)
-                    Text(consent.selection.coverage.description)
+                    Text(consent.reviewCoverage)
                     if consent.selection.results.isEmpty { Text("No matching source evidence; no project expertise is implied.") }
                     ForEach(Array(consent.selection.results.enumerated()), id: \.offset) { _, evidence in
                         Text("\(evidence.path):\(evidence.line) · \(evidence.producer) · \(evidence.currentness) · hash \(evidence.source_hash)").font(.caption).textSelection(.enabled)
@@ -70,8 +77,9 @@ private struct RetainedEngineReviewView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text(stateLabel).font(.headline).accessibilityIdentifier("retained-review-state")
             if let consent = review.consent {
-                Text("Project: \(consent.project.id) · literal selection · snapshot \(consent.project.snapshot?.description ?? "none")").font(.caption)
-                Text("Coverage at preparation: \(consent.selection.coverage.description)").font(.caption)
+                Text("Project: \(consent.project.id) · \(consent.retrievalMode.label) · snapshot \(consent.project.snapshot?.description ?? "none")").font(.caption)
+                Text(consent.retrievalMode.explanation).font(.caption)
+                Text("Coverage at preparation: \(consent.reviewCoverage)").font(.caption)
             }
             if case .approvedValue(let value) = review.state {
                 ReviewTextDiffView(comparison: ReviewTextDiff(original: review.original, proposed: value.text),

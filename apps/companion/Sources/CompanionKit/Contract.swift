@@ -134,13 +134,13 @@ public struct IndexReport: Codable, Sendable {
     public let coverage: JSONValue
     public let empty: Bool
 }
-/// Explicit source Query/Context selection only; Refine remains literal.
+/// Lexical retrieval choice; Source Query/Context and Refine select independently.
 public enum SourceRetrievalMode: String, CaseIterable, Sendable {
     case literal, rankedTerms
     public var label: String { self == .literal ? "Literal (default)" : "Ranked lexical terms (opt-in)" }
     public var explanation: String {
         self == .literal ? "Literal substring matching; no semantic search."
-            : "Any of 1–8 Unicode-lowercase whitespace terms, at most 64 UTF-8 bytes each; ranked by distinct terms then occurrences, path/line ties. No stemming, normalization or semantic completeness. Refine remains literal."
+            : "Any of 1–8 Unicode-lowercase whitespace terms, at most 64 UTF-8 bytes each; ranked by distinct terms then occurrences, path/line ties. No stemming, normalization or semantic completeness. Source Query/Context and Refine select independently."
     }
 }
 public struct QueryReport: Codable, Equatable, Sendable {
