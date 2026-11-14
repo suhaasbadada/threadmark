@@ -62,6 +62,19 @@ private actor RefinementCore: CoreService {
 
 @Suite("Native refinement consent and strict preview")
 struct RefinementTests {
+    @Test func slashHeavyValidPreviewKeepsRustEnvelopeBudget() throws {
+        let consent = try syntheticConsent()
+        var payload = previewPayload(consent)
+        let proposed = String(repeating: "/", count: 6000)
+        payload["proposed"] = proposed
+        let data = try JSONSerialization.data(withJSONObject: payload, options: [.withoutEscapingSlashes])
+        #expect(data.count + 1 <= 8192)
+        let preview = try JSONDecoder().decode(RefinementPreview.self, from: data)
+        #expect(try JSONEncoder().encode(preview).count + 1 > 8192) // Old, incompatible slash escaping.
+        #expect(try RefinementPreview.decode(data, consent: consent).proposed == proposed)
+        #expect(throws: (any Error).self) { try RefinementPreview.decode(data + Data(repeating: 32, count: 8193), consent: consent) }
+    }
+
     @Test func closedSchemaIdentityOriginalQuestionsAndDuplicateKeys() throws {
         let consent = try syntheticConsent(), valid = previewPayload(consent)
         let data = try JSONSerialization.data(withJSONObject: valid)

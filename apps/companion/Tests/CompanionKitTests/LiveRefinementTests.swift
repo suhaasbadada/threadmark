@@ -118,6 +118,33 @@ private final class RefinementHTTPFixture: @unchecked Sendable {
 @Suite("Actual CLI SQLite local refinement HTTP preview")
 struct LiveRefinementTests {
     @Test(.enabled(if: ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"] != nil))
+    @MainActor func actualSlashHeavySelectionFitsConsentWithoutInference() async throws {
+        let binary = try #require(ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"])
+        let fixture = try ApprovedWatchFixture(); defer { fixture.remove() }
+        let line = "synthetic" + String(repeating: "/", count: 991)
+        try fixture.rewrite(Array(repeating: line, count: 8).joined(separator: "\n") + "\n")
+        let peer = try RefinementHTTPFixture(mode: "valid"); defer { #expect(peer.stop()) }
+        let adapter = ProcessService(executable: URL(fileURLWithPath: binary),
+            dataDirectory: try StoreSelection.newDirectory(parent: fixture.root, name: "slash-store"))
+        let model = CompanionModel(service: adapter, configured: true)
+        model.addProject(id: "alpha", root: fixture.root.path, sources: ["a.rs"]); await model.waitForOperation()
+        model.build(); await model.waitForOperation()
+        let original = "Inspect synthetic; do NOT deploy."
+        model.editPreparation(query: "synthetic", original: original)
+        model.requestRefinement(settings: try refinementSettings(peer.endpoint)); await model.waitForOperation()
+        let consent = try #require(model.pendingRefinement)
+        #expect(!consent.selection.results.isEmpty)
+        #expect(try JSONEncoder().encode(consent.selection).count > 8192)
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.withoutEscapingSlashes]
+        #expect(try encoder.encode(consent.selection).count + 1 <= 8192)
+        try consent.validate()
+        #expect(peer.connectionCount() == 0)
+        model.cancelRefinement(); await model.waitForOperation()
+        #expect(model.originalDraft == original && model.refinementPreview == nil && peer.connectionCount() == 0)
+        await model.shutdown()
+    }
+
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"] != nil))
     @MainActor func actualOwnedChildTimeoutCancelAndProfileChangeJoinWithoutAdoption() async throws {
         let binary = try #require(ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"])
         for action in ["timeout", "cancel", "profile"] {

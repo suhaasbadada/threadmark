@@ -28,7 +28,8 @@ public struct RefinementConsent: Identifiable, Equatable, Sendable {
                   $0.kind == "observed-source-line" && $0.currentness == "current-at-read" &&
                   $0.producer == "lexical-lines-v1" && Self.hash($0.source_hash)
               }) else { throw ServiceError.invalid }
-        guard try JSONEncoder().encode(selection).count <= 8192 else { throw ServiceError.outputLimit }
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.withoutEscapingSlashes]
+        guard try encoder.encode(selection).count + 1 <= 8192 else { throw ServiceError.outputLimit }
     }
     private static func hash(_ value: String) -> Bool {
         value.utf8.count == 64 && value.utf8.allSatisfy { (48...57).contains($0) || (97...102).contains($0) }
@@ -84,7 +85,8 @@ public struct RefinementPreview: Codable, Equatable, Sendable {
               provider.data_scope == "request-and-selected-evidence", provider.max_calls == 1,
               provider.max_tokens == 1024, provider.deadline_seconds == 30,
               provider.output_byte_budget == 8192 else { throw ServiceError.invalid }
-        guard try JSONEncoder().encode(self).count + 1 <= 8192 else { throw ServiceError.outputLimit }
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.withoutEscapingSlashes]
+        guard try encoder.encode(self).count + 1 <= 8192 else { throw ServiceError.outputLimit }
     }
 
     static func decode(_ data: Data, consent: RefinementConsent) throws -> Self {
