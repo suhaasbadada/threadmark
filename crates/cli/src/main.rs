@@ -59,6 +59,9 @@ fn usage() -> std::process::ExitCode {
         "local sensitive-content export: --data-dir EXISTING_STORE project export PROJECT --confirm-export-local-content (stdout only; no delivery)"
     );
     eprintln!(
+        "context export-revisions PROJECT --confirm-export-local-content --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN (closed selection JSON on stdin <=4096 UTF-8 bytes; 1..8 explicit stored revisions; sensitive local stdout only, not current policy or native file permission)"
+    );
+    eprintln!(
         "cached export: append --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-snapshot HASH|none --expected-sources [FILE ...] to the confirmed export command (all required once, exact order, list last, max 64; stale-approval guards, not credentials; JSON v1 unchanged)"
     );
     eprintln!(
@@ -160,6 +163,27 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
         .collect::<Vec<_>>()
         .as_slice()
     {
+        [
+            "context",
+            "export-revisions",
+            project,
+            "--confirm-export-local-content",
+            flags @ ..,
+        ] => {
+            let Some(binding) = human_read_binding(project, flags) else {
+                return usage();
+            };
+            let mut input = Vec::new();
+            if std::io::stdin().take(4097).read_to_end(&mut input).is_err() {
+                return usage();
+            }
+            let Ok(plan) = threadmark_core::knowledge::ExportHumanRevisionsPlan::from_json(
+                project, &binding, &input,
+            ) else {
+                return usage();
+            };
+            Command::ExportHumanRevisions(plan)
+        }
         ["store", "upgrade", "--confirm-local-schema-upgrade"] => Command::UpgradeStore,
         [
             "store",
