@@ -41,7 +41,10 @@ struct LiveProjectExportTests {
         #expect(!String(decoding: bytes, as: UTF8.self).contains(root.path))
         #expect(try Data(contentsOf: root.appendingPathComponent("a.rs")) == source)
         for change in ["snapshot", "policy", "nonce", "root"] {
-            m.refreshSelected(); await m.waitForOperation()
+            // Each independent peer-change probe starts with explicit selection.
+            // V's cached Refresh must not adopt the prior probe's replacement
+            // registration by local ID alone.
+            m.select("alpha"); await m.waitForOperation()
             m.requestProjectExport(); let old = try #require(m.pendingProjectExport)
             _ = try #require(m.confirmProjectExport(old))
             if change == "snapshot" {
