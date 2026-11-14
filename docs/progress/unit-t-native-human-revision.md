@@ -1,5 +1,35 @@
 # Unit T — native human expected-revision editing and retirement
 
+## Primary integration and independent review
+
+Primary committed only the twelve owned files as `93789f9` in the completed lane
+and applied them without conflicts as
+`e962fab8fd4b87b0b533587936386a426620922e`, the exact combined tested runtime.
+Concurrent Refine-mode methods, explicit picker-closure compiler repair and
+source scope/disclosures are preserved. No baseline/site merges were replayed.
+
+Joffrey independently reviewed the exact inventory/fingerprint **CLEAR** and
+passed 85 actual-CLI strict Debug tests across eight suites, including peer CAS
+conflicts, cancellation, recovery and registration replacement. Original lane
+release and broader checks remain separately attributed. Primary combined full
+workspace gate (237 Rust/two doctests), strict serial actual-CLI/C-fixture native
+suite (188 tests/26 suites), model API compiler gate, dependency policy, staged
+secrets and whitespace **PASS**. This integrated debug result does not claim a
+new complete release or GUI walkthrough.
+
+PR #68's required macOS compiler failure was repaired rather than retried/waived.
+All five checks passed at `83adf45781763d329ce8eaa06bd9f20eb02efee4` (CI
+`43573087490`, integrated `43573087428`), including the Swift 6.1.2 build that
+previously crashed. Fresh main/exact-head/check/review/approval/discussion/rules
+gates preceded merge `5cf014511d28888958353aeb195f018f347ae3de`. Its separate
+post-merge CI and this unit's publication CI remain later gates. PR #67's exact
+post-merge runs `43572536206`/`43572536219` passed.
+
+Unit U's stored human-read bindings are separately completed and await review;
+native reads are not claimed migrated here. Nine inherited progress edits, all
+worktrees and parent reminders remain intact. No GUI/AX/live-quality/host-delivery
+or phase closure is claimed.
+
 Requirements: TM-01–TM-04, TM-07, TM-10; partial P2-A1/P2-A3/P2-A5/P3-A4.
 Contract: [human expected revision v1](../contracts/human-context-revision-v1.md).
 Specs: [Phase 2](../spec/phase-2-knowledge-core.md),
