@@ -32,6 +32,9 @@ fn main() -> std::process::ExitCode {
 
 fn usage() -> std::process::ExitCode {
     eprintln!(
+        "explicit ranked human notes: context search-terms PROJECT QUERY --kinds KIND... --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN (1-5 unique kinds; 1-8 lowercase whitespace terms, max 64 bytes/term and 256 bytes/query; mandatory binding, existing storage only; not source evidence)"
+    );
+    eprintln!(
         "optional ranked preparation: context prepare PROJECT QUERY --terms; refine preview PROJECT QUERY --terms (all inference confirmation/binding flags still required). Inspect query-terms PROJECT QUERY first; no automatic fallback or inference."
     );
     eprintln!(
@@ -556,6 +559,32 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
             } else {
                 Command::PrepareContextBound(expected, (*query).into(), original)
             }
+        }
+        [
+            "context",
+            "search-terms",
+            project,
+            query,
+            "--kinds",
+            rest @ ..,
+        ] => {
+            let Some(end) = rest.iter().position(|s| s.starts_with("--")) else {
+                return usage();
+            };
+            let kinds: Vec<String> = rest[..end].iter().map(|s| (*s).into()).collect();
+            let Ok(plan) = threadmark_core::knowledge::HumanRankedQuery::new(query, &kinds) else {
+                return usage();
+            };
+            let Some(bound) = human_read_binding(project, &rest[end..]) else {
+                return usage();
+            };
+            Command::SearchContextTermsBound(
+                (*project).into(),
+                plan,
+                bound.root.into(),
+                bound.root_identity.into(),
+                bound.incarnation.into(),
+            )
         }
         ["context", "search", project, query, flags @ ..] => {
             if let Some(rest) = flags.strip_prefix(&["--kinds"]) {
