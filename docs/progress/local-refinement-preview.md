@@ -168,3 +168,11 @@ daemon and actual CLI tests. Primary full verification passed 163 Rust tests/two
 doctests, 118 strict Swift tests against rebuilt core, dependency policy, staged
 secrets and whitespace. Native refinement remains a separate ongoing lane; exact
 integrated-head publication/CI and GUI/live-model/host gates remain open.
+
+Final integrated runtime `d877d6b91b75125fb14710ade4258c0576deba97` incorporates
+PR #54's exact merge `9daf74e9823e8037963b3ba46e28af2ff406584f` without changing
+the tested runtime tree. Primary repeated the full workspace gate (163 Rust tests
+plus two doctests), all 118 strict-concurrency Swift tests against rebuilt core,
+dependency policy, staged secrets and whitespace. Publication adds this evidence
+only. Exact remote head/CI remains required; native consent/preview is completed
+in another isolated lane but is not included or certified by this CLI-only unit.
