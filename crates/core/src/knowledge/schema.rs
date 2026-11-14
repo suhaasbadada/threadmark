@@ -53,6 +53,34 @@ const V3: [(&str, &str); 3] = [
     ),
 ];
 
+const V4: [(&str, &str); 4] = [
+    (
+        "forgotten_sources",
+        "CREATE TABLE forgotten_sources(project TEXT NOT NULL, path TEXT NOT NULL, PRIMARY KEY(project,path))",
+    ),
+    (
+        "threadmark_source_policy_guard",
+        "CREATE TRIGGER threadmark_source_policy_guard BEFORE UPDATE OF sources ON projects WHEN EXISTS(SELECT 1 FROM forgotten_sources f JOIN json_each(NEW.sources) s ON s.value=f.path WHERE f.project=NEW.id) BEGIN SELECT RAISE(ABORT,'threadmark forgotten source'); END",
+    ),
+    (
+        "threadmark_source_evidence_guard",
+        "CREATE TRIGGER threadmark_source_evidence_guard BEFORE INSERT ON evidence WHEN EXISTS(SELECT 1 FROM forgotten_sources WHERE project=NEW.project AND path=NEW.path) BEGIN SELECT RAISE(ABORT,'threadmark forgotten source'); END",
+    ),
+    (
+        "threadmark_source_project_delete_guard",
+        "CREATE TRIGGER threadmark_source_project_delete_guard BEFORE DELETE ON projects WHEN EXISTS(SELECT 1 FROM forgotten_sources WHERE project=OLD.id) BEGIN SELECT RAISE(ABORT,'threadmark source markers remain'); END",
+    ),
+];
+
+pub(super) fn install_v4(db: &Connection) -> Result<()> {
+    for (_, sql) in V4 {
+        db.execute_batch(sql).map_err(unavailable)?;
+    }
+    db.pragma_update(None, "user_version", 4)
+        .map_err(unavailable)?;
+    validate(db).map(|_| ())
+}
+
 pub(super) fn install_v3(db: &Connection) -> Result<()> {
     for (_, sql) in V3 {
         db.execute_batch(sql).map_err(unavailable)?;
@@ -131,11 +159,11 @@ pub(super) fn validate(db: &Connection) -> Result<i64> {
     let page: i64 = db
         .pragma_query_value(None, "page_size", |r| r.get(0))
         .map_err(unavailable)?;
-    if app != APP_ID || page != 4096 || !matches!(version, 1..=3) {
+    if app != APP_ID || page != 4096 || !matches!(version, 1..=4) {
         return Err(Error::Unavailable);
     }
     let mut stmt = db
-        .prepare("SELECT name,sql FROM sqlite_schema WHERE sql IS NOT NULL ORDER BY name LIMIT 12")
+        .prepare("SELECT name,sql FROM sqlite_schema WHERE sql IS NOT NULL ORDER BY name LIMIT 16")
         .map_err(unavailable)?;
     let rows = stmt
         .query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))
@@ -143,7 +171,8 @@ pub(super) fn validate(db: &Connection) -> Result<i64> {
     let expected: Vec<_> = BASE
         .iter()
         .chain(V2.iter().take(if version >= 2 { 4 } else { 0 }))
-        .chain(V3.iter().take(if version == 3 { 3 } else { 0 }))
+        .chain(V3.iter().take(if version >= 3 { 3 } else { 0 }))
+        .chain(V4.iter().take(if version == 4 { 4 } else { 0 }))
         .collect();
     let mut count = 0;
     for row in rows {
@@ -163,7 +192,7 @@ pub(super) fn validate(db: &Connection) -> Result<i64> {
     // SQLite owns only these implicit uniqueness indexes. NULL SQL must not
     // become a loophole for admitting arbitrary extra schema objects.
     let mut stmt = db
-        .prepare("SELECT type,name,tbl_name FROM sqlite_schema WHERE sql IS NULL LIMIT 8")
+        .prepare("SELECT type,name,tbl_name FROM sqlite_schema WHERE sql IS NULL LIMIT 9")
         .map_err(unavailable)?;
     let rows = stmt
         .query_map([], |r| {
@@ -184,8 +213,9 @@ pub(super) fn validate(db: &Connection) -> Result<i64> {
             "sqlite_autoindex_forgotten_context_1" => version >= 2 && table == "forgotten_context",
             "sqlite_autoindex_project_incarnations_1"
             | "sqlite_autoindex_project_incarnations_2" => {
-                version == 3 && table == "project_incarnations"
+                version >= 3 && table == "project_incarnations"
             }
+            "sqlite_autoindex_forgotten_sources_1" => version == 4 && table == "forgotten_sources",
             _ => false,
         };
         if kind != "index" || !valid || !implicit.insert(name) {
@@ -194,6 +224,7 @@ pub(super) fn validate(db: &Connection) -> Result<i64> {
     }
     if implicit.len()
         != match version {
+            4 => 8,
             3 => 7,
             2 => 5,
             _ => 4,
@@ -201,11 +232,14 @@ pub(super) fn validate(db: &Connection) -> Result<i64> {
     {
         return Err(Error::Unavailable);
     }
-    if version == 3 {
+    if version >= 3 {
         let invalid: bool = db.query_row("SELECT EXISTS(SELECT 1 FROM projects p LEFT JOIN project_incarnations i ON i.project=p.id WHERE i.project IS NULL) OR EXISTS(SELECT 1 FROM project_incarnations i LEFT JOIN projects p ON p.id=i.project WHERE p.id IS NULL OR typeof(i.incarnation)!='text' OR length(CAST(i.incarnation AS BLOB))!=32 OR instr(i.incarnation,char(0))>0 OR i.incarnation GLOB '*[^0-9a-f]*')", [], |r| r.get(0)).map_err(unavailable)?;
         if invalid {
             return Err(Error::Unavailable);
         }
+    }
+    if version == 4 {
+        super::source_forget::validate_store(db)?;
     }
     Ok(version)
 }
@@ -254,7 +288,7 @@ impl Store {
         cancel: &AtomicBool,
         mut progress: impl FnMut(UpgradeStage),
     ) -> Result<Value> {
-        if !matches!(target, 2 | 3) {
+        if !matches!(target, 2..=4) {
             return Err(invalid());
         }
         canceled(cancel)?;
@@ -269,8 +303,11 @@ impl Store {
         if old == 1 {
             install_v2(&tx)?;
         }
-        if target == 3 && old < 3 {
+        if target >= 3 && old < 3 {
             install_v3(&tx)?;
+        }
+        if target == 4 && old < 4 {
+            install_v4(&tx)?;
         }
         let actual = version(&tx)?;
         progress(UpgradeStage::ReadyToCommit);

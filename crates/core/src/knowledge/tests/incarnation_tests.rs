@@ -69,7 +69,7 @@ fn killed_v3_migration_preserves_both_prior_schemas_and_content() {
 #[test]
 fn fresh_v3_token_persists_edits_and_legacy_insert_delete_renews_it() {
     let (f, mut s) = removal_fixture();
-    assert_eq!(schema::validate(&s.db).unwrap(), 3);
+    assert_eq!(schema::validate(&s.db).unwrap(), 4);
     let original = s.project("a").unwrap().incarnation.unwrap();
     validate_incarnation(&original).unwrap();
     index(&mut s);
@@ -83,7 +83,7 @@ fn fresh_v3_token_persists_edits_and_legacy_insert_delete_renews_it() {
     let receipt = s.upgrade(&token()).unwrap();
     assert_eq!(
         receipt,
-        json!({"schema_version":3,"upgraded":false,"compatibility":"Older binaries cannot open schema v3; no automatic downgrade."})
+        json!({"schema_version":4,"upgraded":false,"compatibility":"Older binaries cannot open schema v4; no automatic downgrade."})
     );
     let legacy = Connection::open(f.0.join("private-store/knowledge.sqlite")).unwrap();
     legacy

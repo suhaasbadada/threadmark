@@ -74,3 +74,17 @@ only **after** asserting owner destruction/timer invalidation accommodates both
 toolchains without weakening the lifecycle assertion. All 82 strict Swift tests
 then passed against the actual core. Production runtime is unchanged. A new exact-
 head remote run remains required; the failed run is not retried or waived.
+
+## Publication outcome
+
+PR [#49](https://github.com/suhaasbadada/threadmark/pull/49) subsequently passed
+all five checks on repaired head `e3c04b93f1f12f3b0bd30b9cf3d96e2f4bed9a7e`:
+CI [43540075001](https://github.com/suhaasbadada/threadmark/actions/runs/43540075001)
+and integrated [43540075119](https://github.com/suhaasbadada/threadmark/actions/runs/43540075119).
+Fresh exact-head/main/discussion/rules checks found no blocker; independent runtime
+review, authority repair and compatible lifecycle test acceptance above applied.
+It merged at `2026-11-14T01:25:31Z` as
+`13a867c9b492c811d7177e8f18884ffa8cbece01`; the PR watch was removed.
+Post-merge CI [43540511453](https://github.com/suhaasbadada/threadmark/actions/runs/43540511453)
+and integrated [43540511415](https://github.com/suhaasbadada/threadmark/actions/runs/43540511415)
+both passed on that exact merge. No private user watching was enabled.

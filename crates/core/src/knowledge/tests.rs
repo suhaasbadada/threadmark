@@ -7,6 +7,7 @@ mod bound_forget_tests;
 mod export_tests;
 mod forget_tests;
 mod incarnation_tests;
+mod source_forget_tests;
 
 struct Fixture(PathBuf);
 impl Fixture {
@@ -794,7 +795,7 @@ fn sql_failure_after_delete_rolls_back_and_forward_schema_is_read_only_rejected(
     assert_eq!(matches(&s, "blue"), 1);
     s.db.execute_batch("DROP TRIGGER synthetic_fail").unwrap();
     index(&mut s);
-    s.db.pragma_update(None, "user_version", 4).unwrap();
+    s.db.pragma_update(None, "user_version", 5).unwrap();
     drop(s);
     let path = f.0.join("private-store/knowledge.sqlite");
     let bytes = std::fs::read(&path).unwrap();
@@ -912,7 +913,7 @@ fn transaction_child() {
         s.db.pragma_update(None, "application_id", 0).unwrap();
     }
     if std::env::var_os("THREADMARK_SYNTHETIC_FORWARD_HEADER").is_some() {
-        s.db.pragma_update(None, "user_version", 4).unwrap();
+        s.db.pragma_update(None, "user_version", 5).unwrap();
     }
     let tx = s.db.transaction().unwrap();
     tx.execute("DELETE FROM evidence WHERE project='a'", [])

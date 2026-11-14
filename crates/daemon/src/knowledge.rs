@@ -46,6 +46,14 @@ pub enum Command {
     UpgradeStore,
     /// Operator attests that all legacy workers have stopped before this migration.
     UpgradeStoreV3,
+    /// Operator-attested source suppression migration.
+    UpgradeStoreV4,
+    /// Confirmed source authorization revocation.
+    ForgetSource(String, String),
+    /// Exact root, identity, incarnation and complete displayed source policy.
+    ForgetSourceBound(String, String, String, String, String, Vec<String>),
+    /// Inspect source suppression paths only.
+    ForgottenSources(String),
     /// Confirmed removal of all human revisions and same-scope suppression.
     ForgetContext(String, String),
     /// Exact root, identity, incarnation and latest-revision approval.
@@ -83,6 +91,23 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         }
         .validate(project, id)?;
     }
+    if let Command::ForgetSource(project, path) = &command {
+        threadmark_core::knowledge::validate_source_forget(project, path)?;
+    }
+    if let Command::ForgottenSources(project) = &command {
+        threadmark_core::knowledge::validate_export_project(project)?;
+    }
+    if let Command::ForgetSourceBound(project, path, root, root_identity, incarnation, sources) =
+        &command
+    {
+        threadmark_core::knowledge::SourceForgetBinding {
+            root,
+            root_identity,
+            incarnation,
+            sources,
+        }
+        .validate(project, path)?;
+    }
     let mut store = if let Command::ExportProject(id) = &command {
         threadmark_core::knowledge::validate_export_project(id)?;
         Store::open_existing(data_dir)?
@@ -93,6 +118,10 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
             | Command::RemoveProjectIncarnationBound(..)
             | Command::UpgradeStore
             | Command::UpgradeStoreV3
+            | Command::UpgradeStoreV4
+            | Command::ForgetSource(..)
+            | Command::ForgetSourceBound(..)
+            | Command::ForgottenSources(..)
             | Command::ForgetContext(..)
             | Command::ForgetContextBound(..)
             | Command::ForgottenContexts(..)
@@ -108,6 +137,25 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         // authoritative committed Forget/upgrade into a misleading cancel error.
         Command::UpgradeStore => return store.upgrade(cancel),
         Command::UpgradeStoreV3 => return store.upgrade_to_v3(cancel),
+        Command::UpgradeStoreV4 => return store.upgrade_to_with_progress(4, cancel, |_| {}),
+        Command::ForgetSource(project, path) => {
+            return store.forget_source(&project, &path, cancel);
+        }
+        Command::ForgetSourceBound(project, path, root, root_identity, incarnation, sources) => {
+            return store.forget_source_with_progress(
+                &project,
+                &path,
+                Some(&threadmark_core::knowledge::SourceForgetBinding {
+                    root: &root,
+                    root_identity: &root_identity,
+                    incarnation: &incarnation,
+                    sources: &sources,
+                }),
+                cancel,
+                |_| {},
+            );
+        }
+        Command::ForgottenSources(project) => store.forgotten_sources(&project)?,
         Command::ForgetContext(project, id) => return store.forget_context(&project, &id, cancel),
         Command::ForgetContextBound(project, id, root, identity, token, revision) => {
             return store.forget_context_bound(
