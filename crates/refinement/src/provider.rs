@@ -5,6 +5,8 @@ use crate::*;
 use serde_json::{Value, json};
 use std::time::{Duration, Instant};
 
+mod strict_json;
+
 /// Maximum JSON request bytes after escaping all selected data.
 pub const MAX_PROVIDER_INPUT: usize = 32768;
 /// Maximum HTTP response body bytes, before parsing JSON.
@@ -225,7 +227,7 @@ impl Provider for ConfiguredProvider<'_> {
         if bytes.len() > MAX_PROVIDER_RESPONSE {
             return Err(Error::Overflow);
         }
-        let response: Value = serde_json::from_slice(&bytes).map_err(|_| Error::ProviderFailed)?;
+        let response: Value = strict_json::parse(&bytes)?;
         let choices = response["choices"]
             .as_array()
             .filter(|v| v.len() == 1)
@@ -242,7 +244,7 @@ impl Provider for ConfiguredProvider<'_> {
         if content.len() > output_budget {
             return Err(Error::Overflow);
         }
-        let proposal: Value = serde_json::from_str(content).map_err(|_| Error::ProviderFailed)?;
+        let proposal: Value = strict_json::parse(content.as_bytes())?;
         let object = proposal
             .as_object()
             .filter(|o| {

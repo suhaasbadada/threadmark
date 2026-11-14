@@ -384,6 +384,7 @@ dependencies = [
 name = "threadmark-refinement"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "serde_json",
 ]
 

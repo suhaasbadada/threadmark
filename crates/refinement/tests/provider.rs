@@ -481,3 +481,73 @@ fn injected_transport_cannot_bypass_response_bound_or_late_result_gate() {
         assert_eq!(engine.request(), &request);
     }
 }
+
+#[test]
+fn duplicate_proposal_and_response_members_cannot_erase_material_questions() {
+    struct Injected(Vec<u8>);
+    impl JsonTransport for Injected {
+        fn post(&self, _: &Endpoint, _: &[u8], _: &Control, _: usize) -> Result<Vec<u8>, Error> {
+            Ok(self.0.clone())
+        }
+    }
+    let duplicate_questions = r#"{"objective":"Fix it","output_expectations":"Patch","unknowns":[],"questions":["Which permissions are authorized?"],"questions":[]}"#;
+    let escaped_duplicate = r#"{"objective":"Fix it","output_expectations":"Patch","unknowns":[],"questions":["Which permissions are authorized?"],"que\u0073tions":[]}"#;
+    let duplicate_objective = r#"{"objective":"Do not deploy","objective":"Deploy","output_expectations":"Patch","unknowns":[],"questions":[]}"#;
+    let valid = String::from_utf8(response(proposal())).unwrap();
+    let mut cases: Vec<Vec<u8>> = [duplicate_questions, escaped_duplicate, duplicate_objective]
+        .into_iter()
+        .map(|content| serde_json::to_vec(&json!({"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":content}}]})).unwrap())
+        .collect();
+    let choices: Value = serde_json::from_str(&valid).unwrap();
+    cases.push(format!(r#"{{"choices":[],"choices":{}}}"#, choices["choices"]).into_bytes());
+    cases.push(
+        valid
+            .replace(
+                "\"finish_reason\":\"stop\"",
+                "\"finish_reason\":\"length\",\"finish_reason\":\"stop\"",
+            )
+            .into_bytes(),
+    );
+    cases.push(
+        valid
+            .replace(
+                "\"role\":\"assistant\"",
+                "\"role\":\"tool\",\"role\":\"assistant\"",
+            )
+            .into_bytes(),
+    );
+    cases.push(
+        valid
+            .replace(
+                "\"content\":",
+                "\"content\":\"rejected first candidate\",\"content\":",
+            )
+            .into_bytes(),
+    );
+    for bytes in cases {
+        let config = settings("http://127.0.0.1:1234/v1".into(), Locality::Local);
+        let transport = Injected(bytes);
+        let provider = ConfiguredProvider::new(&config, &transport).unwrap();
+        let request = capture();
+        let control = Control::new(Instant::now() + Duration::from_secs(2));
+        let consent = consent(&provider, &request, &control);
+        let mut engine = Engine::new(request.clone(), control);
+        assert_eq!(
+            engine.prepare(
+                &Authority,
+                Some(ProviderAccess {
+                    provider: &provider,
+                    consent: &consent
+                })
+            ),
+            Err(Error::ProviderFailed)
+        );
+        assert_eq!(engine.state(), PreparationState::Failed);
+        assert!(engine.brief().is_none());
+        assert_eq!(
+            engine.approve(ReviewChoice::UsePrepared, &Authority),
+            Err(Error::ReviewRequired)
+        );
+        assert_eq!(engine.request(), &request);
+    }
+}

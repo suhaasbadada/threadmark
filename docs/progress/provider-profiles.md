@@ -158,3 +158,26 @@ not committed/public evidence artifacts. No runtime changes followed verificatio
 No remote CI or independent review was run by this lane. The coordinator must run
 those gates against the actual integrated head, including its shared authority
 recheck, persisted nonsecret settings, mounted UI and retained approval flow.
+
+## Coordinator integration and duplicate-member repair
+
+The coordinator integrated this lane onto the actual-core retained ReviewSession
+implementation. Joffrey's independent review found a P2 decoder ambiguity:
+decoding provider JSON directly to `Value` overwrote duplicate object members,
+allowing a later empty `questions` to erase a material clarification. The primary
+repaired both outer response and inner proposal admission with Serde's JSON
+deserializer and a recursive duplicate-rejecting visitor. Decoded escaped aliases
+also collide; no handwritten JSON grammar or content-bearing diagnostics were added.
+
+The repair reuses workspace-pinned `serde =1.0.229`; Cargo generated only the new
+refinement-to-serde edge, with no new package/version/checksum. Existing serde_json
+grammar, trailing-input checks and recursion limit remain in force. Byte limits
+precede both parsers. Seven injected duplicate cases now fail without a brief or
+prepared approval and preserve the exact original. Outer choices, finish reason,
+role and content cannot be silently overwritten either.
+
+Joffrey independently closed the P2 finding and passed 25 engine tests, nine
+provider tests (including synthetic loopback HTTP) and the doctest. The coordinator
+passed the full workspace gate (152 Rust tests plus two doctests), all 108 strict
+Swift tests against the rebuilt core, dependency policy, secrets and whitespace.
+Publication/exact integrated-head CI and native wiring remain subsequent gates.
