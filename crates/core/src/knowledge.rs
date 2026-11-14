@@ -1088,17 +1088,60 @@ impl Store {
     /// Any stale/unreadable source suppresses the entire old snapshot conservatively.
     /// Output is JSON-escaped and capped at 8192 encoded bytes / eight anchors.
     pub fn query(&self, id: &str, text: &str, cancel: &AtomicBool) -> Result<Value> {
+        self.query_scoped(id, text, cancel, None, || {})
+    }
+
+    /// Read only the exact expected registration, policy and stored snapshot.
+    /// Binding checks use the same captured project passed to source traversal,
+    /// not an earlier preflight whose ID could be reloaded into another scope.
+    /// Expected metadata is stale-approval protection, never credentials or a
+    /// grant of source access. Legacy registrations cannot authorize cached reads.
+    pub fn query_bound(
+        &self,
+        expected: &Project,
+        text: &str,
+        cancel: &AtomicBool,
+    ) -> Result<Value> {
+        validate_paths(&expected.sources)?;
+        self.query_scoped(&expected.id, text, cancel, Some(expected), || {})
+    }
+
+    fn query_scoped(
+        &self,
+        id: &str,
+        text: &str,
+        cancel: &AtomicBool,
+        expected: Option<&Project>,
+        before_sources: impl FnOnce(),
+    ) -> Result<Value> {
         canceled(cancel)?;
         if text.is_empty() || text.len() > 256 {
             return Err(invalid());
         }
-        let p = self.project(id)?;
+        let p = if let Some(expected) = expected {
+            let p = self.bound_project(
+                id,
+                &expected.root,
+                &expected.root_identity,
+                expected
+                    .incarnation
+                    .as_deref()
+                    .ok_or(Error::ScopeMismatch)?,
+            )?;
+            if p.sources != expected.sources || p.snapshot != expected.snapshot {
+                return Err(Error::ScopeMismatch);
+            }
+            p
+        } else {
+            self.project(id)?
+        };
         let stored: Option<String> = self
             .db
             .query_row("SELECT manifest FROM projects WHERE id=?1", [id], |r| {
                 r.get(0)
             })
             .map_err(unavailable)?;
+        before_sources();
         let current_inputs = match (stored, Self::read_sources(&p, cancel)) {
             (Some(encoded), Ok(inputs)) if encoded.len() <= 32768 => {
                 let expected: Vec<Source> = serde_json::from_str(&encoded).map_err(unavailable)?;

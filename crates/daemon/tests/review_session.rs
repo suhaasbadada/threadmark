@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 use threadmark_core::knowledge::{LexicalLines, Store};
-use threadmark_daemon::preparation::ReviewSession;
+use threadmark_daemon::preparation::{CaptureBinding, ReviewSession};
 use threadmark_refinement::*;
 
 static NEXT: AtomicU64 = AtomicU64::new(0);
@@ -445,4 +445,136 @@ fn actual_sqlite_and_configured_loopback_provider_keep_review_and_delivery_separ
     let value = session.handoff(&store, &approval).unwrap();
     assert_eq!(value.delivery, Delivery::NotAttempted);
     assert_eq!(value.destination, "local-review-only");
+}
+
+#[test]
+fn bound_capture_checks_expected_namespace_before_selection_and_current_snapshot_after() {
+    let fixture = Fixture::new();
+    let store = fixture.store();
+    let project = store.project("synthetic").unwrap();
+    let expected = CaptureBinding {
+        project: project.id,
+        root: project.root,
+        root_identity: project.root_identity,
+        incarnation: project.incarnation.unwrap(),
+        snapshot: project.snapshot.unwrap(),
+    };
+    let control = Control::new(Instant::now() + Duration::from_secs(5));
+    let session = ReviewSession::capture_bound(
+        &store,
+        "synthetic_blue".into(),
+        capture(Mode::Refine),
+        control.clone(),
+        &expected,
+    )
+    .unwrap();
+    assert_eq!(
+        session.request().data().snapshot.as_ref(),
+        Some(&expected.snapshot)
+    );
+    assert_eq!(session.request().data().evidence.len(), 1);
+    assert!(session.coverage().contains("lexical"));
+    // An invalid query would fail inside core selection with Unavailable. A
+    // namespace mismatch must win first, proving this isn't a post-DTO check.
+    for field in ["project", "root", "identity", "incarnation", "snapshot"] {
+        let mut wrong = expected.clone();
+        match field {
+            "project" => wrong.project = "other".into(),
+            "root" => wrong.root = "/synthetic-other".into(),
+            "identity" => wrong.root_identity = "other".into(),
+            "incarnation" => wrong.incarnation = "0".repeat(32),
+            "snapshot" => wrong.snapshot = "0".repeat(64),
+            _ => unreachable!(),
+        }
+        assert!(matches!(
+            ReviewSession::capture_bound(
+                &store,
+                String::new(),
+                capture(Mode::Refine),
+                control.clone(),
+                &wrong,
+            ),
+            Err(Error::ScopeMismatch)
+        ));
+    }
+    std::fs::write(
+        fixture.0.join("source/main.rs"),
+        "fn synthetic_changed() {}\n",
+    )
+    .unwrap();
+    // Stored snapshot still matches expected; the actual core read is stale and
+    // must reject after selection rather than consent to absent/different data.
+    assert!(matches!(
+        ReviewSession::capture_bound(
+            &store,
+            "synthetic_blue".into(),
+            capture(Mode::Refine),
+            control.clone(),
+            &expected,
+        ),
+        Err(Error::ScopeMismatch)
+    ));
+    control.cancel();
+    assert!(matches!(
+        ReviewSession::capture_bound(
+            &store,
+            "synthetic_blue".into(),
+            capture(Mode::Refine),
+            control,
+            &expected,
+        ),
+        Err(Error::Canceled)
+    ));
+    assert!(matches!(
+        ReviewSession::capture_bound(
+            &store,
+            "synthetic_blue".into(),
+            capture(Mode::Refine),
+            Control::new(Instant::now()),
+            &expected,
+        ),
+        Err(Error::Deadline)
+    ));
+}
+
+#[test]
+fn cli_overflow_fixture_fits_engine_but_not_repeated_original_json_envelope() {
+    struct LargeCandidate;
+    impl Provider for LargeCandidate {
+        fn identity(&self) -> ProviderIdentity {
+            Candidate::new().identity()
+        }
+        fn refine(
+            &self,
+            _: &Request,
+            mut seed: Brief,
+            _: &Control,
+            _: usize,
+        ) -> Result<Brief, Error> {
+            seed.objective = "y".repeat(1800);
+            seed.output_expectations = "Propose checks, do not execute.".into();
+            Ok(seed)
+        }
+    }
+    let fixture = Fixture::new();
+    let store = fixture.store();
+    let mut data = capture(Mode::Refine);
+    data.original = format!("PRIVATE_ORIGINAL {}", "x".repeat(2900));
+    data.constraints.clear();
+    let control = Control::new(Instant::now() + Duration::from_secs(5));
+    let mut session =
+        ReviewSession::capture(&store, "synthetic_blue".into(), data, control.clone()).unwrap();
+    let permission = consent(&session, &control, &Candidate::new());
+    session
+        .prepare(
+            &store,
+            Some(ProviderAccess {
+                provider: &LargeCandidate,
+                consent: &permission,
+            }),
+        )
+        .unwrap();
+    let preview = session.preview(&store).unwrap();
+    let minimal = serde_json::json!({"original":preview.original,"proposed":preview.proposed});
+    assert!(serde_json::to_vec(&minimal).unwrap().len() > 8192);
 }

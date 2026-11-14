@@ -1,4 +1,4 @@
-use super::selection;
+use super::selection_bound;
 use std::sync::atomic::AtomicBool;
 use threadmark_core::knowledge::{Project, Store};
 use threadmark_refinement::{
@@ -19,17 +19,80 @@ struct Namespace {
     root_identity: String,
     incarnation: String,
     sources: Vec<String>,
+    snapshot: Option<String>,
+}
+
+/// Exact operator-inspected registration/snapshot, not authority or credentials.
+#[derive(Clone, Debug)]
+pub struct CaptureBinding {
+    /// Registered project ID.
+    pub project: String,
+    /// Exact registered root (never used to open sources).
+    pub root: String,
+    /// Core's registered filesystem identity.
+    pub root_identity: String,
+    /// Core's registration incarnation.
+    pub incarnation: String,
+    /// Exact inspected current snapshot.
+    pub snapshot: String,
+}
+
+impl CaptureBinding {
+    /// Shape-only validation; performs no storage/source I/O.
+    pub fn validate(&self) -> Result<(), Error> {
+        threadmark_core::knowledge::validate_removal_binding(
+            &self.project,
+            &self.root,
+            &self.root_identity,
+        )
+        .map_err(|_| Error::Invalid)?;
+        threadmark_core::knowledge::validate_incarnation(&self.incarnation)
+            .map_err(|_| Error::Invalid)?;
+        if self.snapshot.len() != 64
+            || !self
+                .snapshot
+                .bytes()
+                .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        {
+            return Err(Error::Invalid);
+        }
+        Ok(())
+    }
+
+    fn check(&self, project: &Project) -> Result<(), Error> {
+        if project.id != self.project
+            || project.root != self.root
+            || project.root_identity != self.root_identity
+            || project.incarnation.as_ref() != Some(&self.incarnation)
+            || project.snapshot.as_ref() != Some(&self.snapshot)
+        {
+            return Err(Error::ScopeMismatch);
+        }
+        Ok(())
+    }
 }
 
 impl Namespace {
-    fn capture(project: Project) -> Result<Self, Error> {
+    fn capture(project: &Project) -> Result<Self, Error> {
         Ok(Self {
-            root: project.root,
-            root_identity: project.root_identity,
+            root: project.root.clone(),
+            root_identity: project.root_identity.clone(),
             // Long-lived cached consent cannot safely bind a legacy registration.
-            incarnation: project.incarnation.ok_or(Error::ScopeMismatch)?,
-            sources: project.sources,
+            incarnation: project.incarnation.clone().ok_or(Error::ScopeMismatch)?,
+            sources: project.sources.clone(),
+            snapshot: project.snapshot.clone(),
         })
+    }
+
+    fn expected(&self, id: &str) -> Project {
+        Project {
+            id: id.into(),
+            root: self.root.clone(),
+            root_identity: self.root_identity.clone(),
+            incarnation: Some(self.incarnation.clone()),
+            sources: self.sources.clone(),
+            snapshot: self.snapshot.clone(),
+        }
     }
 
     fn check(&self, store: &Store, project: &str) -> Result<(), Error> {
@@ -38,6 +101,7 @@ impl Namespace {
             || current.root_identity != self.root_identity
             || current.incarnation.as_deref() != Some(&self.incarnation)
             || current.sources != self.sources
+            || current.snapshot != self.snapshot
         {
             return Err(Error::ScopeMismatch);
         }
@@ -58,9 +122,9 @@ impl EvidenceAuthority for Authority<'_> {
         self.namespace.check(self.store, &request.data().project)?;
         // Core query is independently bounded. The operation token is checked
         // before/after it; arbitrary provider calls must honor the same token.
-        let selected = selection(
+        let selected = selection_bound(
             self.store,
-            &request.data().project,
+            &self.namespace.expected(&request.data().project),
             self.query,
             &AtomicBool::new(false),
         )
@@ -80,6 +144,7 @@ pub struct ReviewSession {
     namespace: Namespace,
     query: String,
     control: Control,
+    coverage: String,
 }
 
 impl ReviewSession {
@@ -89,8 +154,34 @@ impl ReviewSession {
     pub fn capture(
         store: &Store,
         query: String,
+        capture: RequestData,
+        control: Control,
+    ) -> Result<Self, Error> {
+        Self::capture_inner(store, query, capture, control, None)
+    }
+
+    /// Check an operator's expected namespace before any source selection and
+    /// again afterwards. Core still owns authorization, health and currentness.
+    pub fn capture_bound(
+        store: &Store,
+        query: String,
+        capture: RequestData,
+        control: Control,
+        expected: &CaptureBinding,
+    ) -> Result<Self, Error> {
+        expected.validate()?;
+        if capture.project != expected.project {
+            return Err(Error::ScopeMismatch);
+        }
+        Self::capture_inner(store, query, capture, control, Some(expected))
+    }
+
+    fn capture_inner(
+        store: &Store,
+        query: String,
         mut capture: RequestData,
         control: Control,
+        expected: Option<&CaptureBinding>,
     ) -> Result<Self, Error> {
         control.checkpoint()?;
         if capture.snapshot.is_some() || !capture.evidence.is_empty() {
@@ -98,10 +189,21 @@ impl ReviewSession {
         }
         // Validate intent/shape before reading any source content.
         Request::new(capture.clone())?;
-        let namespace = Namespace::capture(store.project(&capture.project).map_err(core_error)?)?;
-        let selected = selection(store, &capture.project, &query, &AtomicBool::new(false))
+        let project = store.project(&capture.project).map_err(core_error)?;
+        if let Some(expected) = expected {
+            expected.check(&project)?;
+        }
+        let namespace = Namespace::capture(&project)?;
+        namespace.check(store, &capture.project)?;
+        let selected = selection_bound(store, &project, &query, &AtomicBool::new(false))
             .map_err(core_error)?;
         namespace.check(store, &capture.project)?;
+        if let Some(expected) = expected {
+            expected.check(&store.project(&capture.project).map_err(core_error)?)?;
+            if selected.snapshot.as_ref() != Some(&expected.snapshot) {
+                return Err(Error::ScopeMismatch);
+            }
+        }
         control.checkpoint()?;
         capture.snapshot = selected.snapshot;
         capture.evidence = selected.evidence;
@@ -111,12 +213,18 @@ impl ReviewSession {
             namespace,
             query,
             control,
+            coverage: selected.coverage,
         })
     }
 
     /// Exact frozen request to disclose before creating matching explicit consent.
     pub fn request(&self) -> &Request {
         self.engine.request()
+    }
+
+    /// Core's coverage limitations for the frozen selection, not inferred expertise.
+    pub fn coverage(&self) -> &str {
+        &self.coverage
     }
 
     /// Effective preparation state, not approval, delivery or downstream success.

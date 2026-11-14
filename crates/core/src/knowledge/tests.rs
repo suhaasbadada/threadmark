@@ -4,6 +4,7 @@ use std::fs::OpenOptions;
 use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt, PermissionsExt, symlink};
 use std::sync::atomic::AtomicU64;
 mod bound_forget_tests;
+mod bound_query_tests;
 mod export_tests;
 mod forget_tests;
 mod incarnation_tests;
