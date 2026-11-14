@@ -130,3 +130,43 @@ quality/scale evaluation and complete Phase 2/3 acceptance remain **not run**.
 There is no Lane E PR/CI run/head: no push, PR, watch, merge, schedule, install,
 deploy or release was requested or performed. Prior main/PR checks do not certify
 this lane. Plum coordination was unavailable (linked environment unreachable).
+
+## Local verification record
+
+Tested implementation SHA: `136429b26abf06893b41924c97b18570a22e45dd`.
+The subsequent Lane E evidence-only commit appends this record; its full tested
+SHA is supplied in the final handoff after rechecking that evidence head.
+
+- `python3 scripts/check.py`: **PASS**. Locked build, format, warnings-denied
+  Clippy, all Rust workspace tests/doctests/docs, CLI/daemon diagnostics,
+  documentation links and intentional-failure gate passed. This includes the
+  prerequisite's six human-search core tests and three real-process CLI tests.
+- `cargo deny --locked check`: **PASS** (advisories, bans, licenses, sources).
+- `python3 scripts/secrets.py`: **PASS**, after staging only the eight explicitly
+  owned native/test/evidence paths. Tracked-file/history scan and negative probe
+  both passed. No scanner rule/configuration was changed.
+- `cargo build --locked -p threadmark-cli`: **PASS**, followed by the full strict
+  documented Swift wrapper with the absolute rebuilt CLI explicitly supplied:
+
+  ```sh
+  THREADMARK_CORE_TEST_BINARY="$PWD/target/debug/threadmark" \
+    sh apps/companion/scripts/swift.sh test \
+    --disable-xctest --enable-swift-testing -Xswiftc -warnings-as-errors
+  ```
+
+  **PASS: 114 tests in 11 suites**, including all opt-in real-core tests (none
+  skipped), eight new native test functions plus one new live-core journey.
+  The new journey also succeeds while the approved synthetic source is
+  unreadable; source bytes and the recorded source snapshot remain unchanged.
+  Swift source warnings are errors; the inherited wrapper still emits the
+  SwiftPM native-build-system deprecation notice, and a clean link emits the
+  existing macOS 13 target / Testing.framework macOS 14 linker warning. Neither
+  warning was hidden, changed or treated as GUI/runtime acceptance.
+- `git diff --check`, `git diff --cached --check`: **PASS**.
+- Independent Lane E review: **NOT RUN**; primary owns review/integration.
+- Lane E exact-head remote CI: **NOT RUN**; no run ID/URL/head exists.
+- Mounted app GUI/AX and retrieval-quality evaluation: **NOT RUN**.
+
+No Docker resources, real user store/content, credential, global configuration,
+network inference, desktop capture, host launch or external publication was used.
+The completed assigned worktree remains intact for primary integration.
