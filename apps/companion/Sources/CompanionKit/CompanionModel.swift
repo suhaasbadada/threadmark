@@ -35,6 +35,16 @@ public final class CompanionModel: ObservableObject {
     private var comparisonActive = false
     private var humanHistoryGeneration: UInt64 = 0
     @Published public private(set) var evidence: QueryReport?
+    @Published public private(set) var queryFileFilter: [String]?
+    @Published public private(set) var querySelectedPaths: [String]?
+    private let fileQueryOwner = UUID()
+    private struct FileQueryAction: Sendable {
+        let request: FileQueryRequest
+        let owner: UUID
+        let generation: UInt64
+        let configurationGeneration: UInt64
+        let scopeRevision: UInt64
+    }
     @Published public private(set) var sourceInspection: SourceInspectionDocument?
     @Published public private(set) var coverageReport: CoverageDocument?
     private var coverageOperation = false
@@ -262,7 +272,7 @@ public final class CompanionModel: ObservableObject {
     }
     /// Opening/canceling this immutable approval performs no core operation.
     public func requestRemoval() {
-        if coverageOperation || incrementalBuildOperation || batchActive { cancel() }
+        if coverageOperation || incrementalBuildOperation || batchActive || (sourceQueryOperation && queryFileFilter != nil) { cancel() }
         guard canRemoveProject, let project else { return }
         cancelProjectExport()
         if automaticTicket != nil { cancel() }
@@ -279,7 +289,7 @@ public final class CompanionModel: ObservableObject {
         return history.history.map(\.revision).sorted() == Array(1...history.history.count)
     }
     public func requestForget() {
-        if coverageOperation || incrementalBuildOperation || batchActive { cancel() }
+        if coverageOperation || incrementalBuildOperation || batchActive || (sourceQueryOperation && queryFileFilter != nil) { cancel() }
         guard canForgetContext, let project, let history else { return }
         cancelProjectExport()
         disableAutomaticRefresh()
@@ -546,7 +556,7 @@ public final class CompanionModel: ObservableObject {
         return InputPolicy.sourceMarker(path)
     }
     public func requestSourceForget(_ path: String) {
-        if coverageOperation || incrementalBuildOperation || batchActive { cancel() }
+        if coverageOperation || incrementalBuildOperation || batchActive || (sourceQueryOperation && queryFileFilter != nil) { cancel() }
         guard canForgetSource(path), let target = project else { return }
         cancelProjectExport()
         let markers = sourceMarkers, retainedHistory = history
@@ -769,9 +779,10 @@ public final class CompanionModel: ObservableObject {
     /// Removal/revocation takes effect in the UI immediately, including during an index job.
     public func stageSources(_ sources: [String]) {
         disableAutomaticRefresh()
-        cancel(); clearResults(); scopeRevision &+= 1; sourceDraft = sources; policyDirty = true
+        cancel(); clearResults(preserveHistory: queryFileFilter != nil); scopeRevision &+= 1; sourceDraft = sources; policyDirty = true
         status = sourceRequiresRefresh ? refreshRequiredError.localizedDescription
             : "Source policy changed — apply before Build; displayed evidence invalidated"
+        if queryFileFilter != nil, lastError == .contextConflict { status += " " + ServiceError.contextConflict.localizedDescription }
     }
     public func applySources() {
         disableAutomaticRefresh()
@@ -814,6 +825,7 @@ public final class CompanionModel: ObservableObject {
     }
     /// No selection/appearance/query/coverage/event caller. No preflight ID reload or Full Build fallback.
     public func buildIncrementally() {
+        if sourceQueryOperation && queryFileFilter != nil { cancel() }
         guard canBuildIncrementally, let captured = project,
               let request = try? IncrementalBuildRequest(project: captured) else { return }
         disableAutomaticRefresh()
@@ -850,7 +862,7 @@ public final class CompanionModel: ObservableObject {
         incrementalBuildOperation = true
     }
     public func build() {
-        if inspectionOperation || coverageOperation { cancel() }
+        if inspectionOperation || coverageOperation || (sourceQueryOperation && queryFileFilter != nil) { cancel() }
         pendingSourceForget = nil
         guard !sourceRequiresRefresh else { fail(refreshRequiredError); return }
         guard let target = project, target.id == selectedID,
@@ -896,7 +908,7 @@ public final class CompanionModel: ObservableObject {
     public func setSourceRetrievalMode(_ mode: SourceRetrievalMode) {
         guard mode != sourceRetrievalMode else { return }
         cancel()
-        evidence = nil; preview = nil
+        evidence = nil; querySelectedPaths = nil; preview = nil
         sourceRetrievalMode = mode
         status = "Source Query/Context mode changed — cached results discarded; Refine mode unchanged"
     }
@@ -908,6 +920,10 @@ public final class CompanionModel: ObservableObject {
         status = "Refine retrieval mode changed — inspect again for fresh consent; original and human history unchanged"
     }
     public func query(_ text: String) {
+        if let paths = queryFileFilter {
+            queryFiles(text, paths: paths)
+            return
+        }
         guard !sourceRequiresRefresh else { fail(refreshRequiredError); return }
         guard !text.isEmpty, text.utf8.count <= 256 else { fail(.invalid); return }
         guard let id = selectedID, let target = project, !policyDirty, !sourceRequiresRefresh else { fail(.invalid); return }
@@ -925,6 +941,64 @@ public final class CompanionModel: ObservableObject {
         }
         sourceQueryOperation = true
     }
+    /// Registered policy only; no draft, picker, discovery or filesystem access.
+    public func setQueryFileFilter(_ paths: [String]?) {
+        let canonical: [String]?
+        if let paths {
+            guard let project, paths.count <= 64, Set(paths).count == paths.count,
+                  paths.allSatisfy({ project.sources.contains($0) }) else { return }
+            canonical = project.sources.filter { paths.contains($0) }
+        } else { canonical = nil }
+        guard canonical != queryFileFilter else { return }
+        disableAutomaticRefresh(); cancelOperation(preservingReadState: true)
+        queryFileFilter = canonical; querySelectedPaths = nil; evidence = nil
+        status = canonical?.isEmpty == true ? "Select at least one registered file before Query; no all-files fallback."
+            : "Query file filter changed — Query explicitly. Context/Refine settings and full approved scope unchanged."
+        if lastError == .contextConflict { status += " " + ServiceError.contextConflict.localizedDescription }
+    }
+    public func canQuery(_ text: String) -> Bool {
+        guard configured, manualActionsAvailable, !quitting, !policyDirty, !sourceRequiresRefresh,
+              let project, selectedID == project.id, !text.isEmpty, text.utf8.count <= 256, !text.contains("\0") else { return false }
+        guard let paths = queryFileFilter else { return true }
+        return (try? FileQueryRequest(project: project, query: text, mode: sourceRetrievalMode, selectedPaths: paths)) != nil
+    }
+    private func queryFiles(_ text: String, paths: [String]) {
+        guard !sourceRequiresRefresh else { fail(refreshRequiredError); return }
+        guard !quitting, !policyDirty, let target = project, selectedID == target.id,
+              let request = try? FileQueryRequest(project: target, query: text, mode: sourceRetrievalMode, selectedPaths: paths) else {
+            disableAutomaticRefresh(); cancelOperation(preservingReadState: true)
+            evidence = nil; querySelectedPaths = nil
+            if paths.isEmpty { status = "Select at least one registered file before Query; no all-files fallback." }
+            else { fail(.invalid) }
+            return
+        }
+        disableAutomaticRefresh()
+        let action = FileQueryAction(request: request, owner: fileQueryOwner, generation: generation &+ 1,
+            configurationGeneration: configurationGeneration, scopeRevision: scopeRevision)
+        evidence = nil; querySelectedPaths = nil
+        start(status: "Querying selected output candidates — all approved files still freshness-read", joinRefreshDriver: true,
+              preserveHistory: true, preserveConflict: true) { service in
+            try Task.checkCancellation()
+            let reply = try await service.perform(.queryFilesBound(action.request))
+            try Task.checkCancellation()
+            return [reply]
+        } apply: { replies in
+            guard case .filteredQuery(let document) = replies[0], self.fileQueryOwner == action.owner,
+                  self.generation == action.generation, self.configurationGeneration == action.configurationGeneration,
+                  self.scopeRevision == action.scopeRevision, let current = self.project,
+                  ProjectExportDocument.exact(current, target), self.sourceRetrievalMode == request.mode,
+                  self.queryFileFilter == request.selectedPaths else { throw ServiceError.invalid }
+            try document.validate(request: request)
+            self.evidence = document.report; self.querySelectedPaths = request.selectedPaths
+            self.sourceQueryOperation = false
+            self.inspectionQueryScope = target; self.inspectionQueryGeneration = self.generation
+            self.status = document.report.currentness == "current-at-read"
+                ? "Filtered Query current at read — all approved files freshness-read; unselected changes invalidate the whole snapshot."
+                : "Stale or unindexed — no filtered results; Build explicitly."
+            if self.lastError == .contextConflict { self.status += " " + ServiceError.contextConflict.localizedDescription }
+        }
+        sourceQueryOperation = true
+    }
     /// Changing the window never reads sources or silently renews query eligibility.
     public func setInspectionRadius(_ radius: Int) {
         guard (0...3).contains(radius), radius != inspectionRadius else { return }
@@ -934,6 +1008,7 @@ public final class CompanionModel: ObservableObject {
     /// Called when the source query text changes; displayed rows are not fresh authority.
     public func sourceQueryChanged() {
         if inspectionOperation || sourceQueryOperation || coverageOperation { cancel() }
+        if queryFileFilter != nil { evidence = nil; querySelectedPaths = nil }
         inspectionQueryGeneration = nil; sourceInspection = nil
     }
     public func canInspectSource(_ anchor: Evidence) -> Bool {
@@ -1605,6 +1680,7 @@ public final class CompanionModel: ObservableObject {
         else if batchActive, batchReceipt != nil { batchStatus = "Complete atomic batch saved; follow-up refresh canceled. Editor and old Edit base unchanged." }
         else if batchActive { batchStatus = "Batch canceled before dispatch — no batch write requested. Intent retained; review again explicitly." }
         batchDispatched = false; batchActive = false
+        let wasFilteredQuery = sourceQueryOperation && queryFileFilter != nil
         let incrementalUnknown = incrementalMutationTicket != nil
         if incrementalUnknown {
             sourceRequiresRefresh = true; mutationRefreshError = .mutationUncertain
@@ -1612,7 +1688,7 @@ public final class CompanionModel: ObservableObject {
         incrementalMutationTicket = nil; incrementalBuildOperation = false; incrementalBuildReport = nil
         let wasCoverage = coverageOperation || preservingReadState
         let preserveQuery = inspectionOperation || coverageOperation || preservingReadState
-        let preserveComparisonConflict = (wasBatch || comparisonActive || coverageOperation || preservingReadState || (humanSearchTicket != nil && humanSearchConflict)) && lastError == .contextConflict
+        let preserveComparisonConflict = (wasBatch || comparisonActive || coverageOperation || preservingReadState || wasFilteredQuery || (humanSearchTicket != nil && humanSearchConflict)) && lastError == .contextConflict
         humanSearchConflict = false
         if coverageOperation { coverageNeedsMetadata = true }
         coverageOperation = false; coverageReport = nil
@@ -1621,7 +1697,7 @@ public final class CompanionModel: ObservableObject {
         inspectionQueryGeneration = nil; inspectionQueryScope = nil
         let uncertainExport = exportWriteStarted
         pendingProjectExport = nil; exportPicker = nil; exportActive = false; exportWriteStarted = false
-        let preserveHistory = wasBatch || refinementOperation || retainedOperationActive || preserveQuery || comparisonActive
+        let preserveHistory = wasBatch || refinementOperation || retainedOperationActive || preserveQuery || comparisonActive || wasFilteredQuery
         if comparisonActive { clearHumanComparison() }
         let revokeReview = retainedOperationActive
         retainedOperationActive = false
@@ -1676,6 +1752,7 @@ public final class CompanionModel: ObservableObject {
         if incrementalUnknown { status += " Incremental Build persisted outcome unknown; cancellation is cooperative, not proof of rollback. Refresh metadata explicitly; no retry." }
     }
     private func clearResults(preserveHistory: Bool = false) {
+        querySelectedPaths = nil
         incrementalBuildReport = nil
         coverageReport = nil
         sourceInspection = nil; inspectionQueryScope = nil; inspectionQueryGeneration = nil
@@ -1686,6 +1763,7 @@ public final class CompanionModel: ObservableObject {
         indexReport = nil; preview = nil; forgottenMarkers = nil; sourceMarkers = nil; inspectedSourceScope = nil
     }
     private func clearProject() {
+        queryFileFilter = nil; querySelectedPaths = nil
         disableAutomaticRefresh()
         scopeRevision &+= 1
         contextEditorRevision &+= 1

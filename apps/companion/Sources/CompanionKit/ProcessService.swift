@@ -81,6 +81,7 @@ public struct ProcessService: CoreService {
         let cancellation = Cancellation()
         var operationLimits = limits
         if batch != nil { operationLimits.inputBytes = 65536; operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
+        if case .queryFilesBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .indexIncrementalBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 65536) }
         if case .coverageBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 65536) }
         if case .inspectSourceAnchorBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
@@ -130,6 +131,8 @@ public struct ProcessService: CoreService {
             case .editContextBatchBound:
                 guard let batch else { throw ServiceError.invalid }
                 return .batchReceipt(try BatchReceipt.decode(data, plan: batch))
+            case .queryFilesBound(let request):
+                return .filteredQuery(try FilteredQuery.decode(data, request: request))
             case .indexIncrementalBound(let request):
                 return .incrementalBuild(try IncrementalBuildReport.decode(data, request: request))
             case .searchHumanContextKindsBound(let request):
@@ -275,6 +278,13 @@ public struct ProcessService: CoreService {
             let b = batch.binding
             args = ["context", "batch-edit", b.project, "--expected-root", b.root,
                     "--expected-root-identity", b.rootIdentity, "--expected-incarnation", b.incarnation]
+        case .queryFilesBound(let request):
+            try request.validate()
+            let p = request.project
+            guard case .string(let identity) = p.root_identity, let token = p.incarnation else { throw ServiceError.invalid }
+            args = ["query-files", p.id, request.query, "--mode", request.wireMode, "--selected-files"] + request.selectedPaths +
+                ["--expected-root", p.root, "--expected-root-identity", identity, "--expected-incarnation", token,
+                 "--expected-snapshot", try ProjectExportDocument.snapshotArgument(p), "--expected-sources"] + p.sources
         case .indexIncrementalBound(let request):
             try request.validate()
             let p = request.project

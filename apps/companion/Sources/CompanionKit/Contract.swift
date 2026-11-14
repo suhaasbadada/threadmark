@@ -363,6 +363,7 @@ public enum ServiceError: String, Error, Sendable, LocalizedError {
 }
 
 public enum Operation: Sendable {
+    case queryFilesBound(FileQueryRequest)
     case indexIncrementalBound(IncrementalBuildRequest)
     case searchHumanContextKindsBound(HumanSearchKindRequest)
     case coverageBound(CoverageRequest)
@@ -399,6 +400,7 @@ public enum Operation: Sendable {
 }
 public enum Reply: Sendable {
     case batchReceipt(BatchReceipt)
+    case filteredQuery(FilteredQuery)
     case incrementalBuild(IncrementalBuildReport)
     case filteredHumanSearch(FilteredHumanSearch)
     case coverage(CoverageDocument)
