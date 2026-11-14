@@ -143,3 +143,28 @@ Remote CI/run/head: **not run for this lane**. Independent review: **not run by
 this child**. These are explicit remaining integration gates, not inferred from
 previous main/provider CI. Linked Plum coordination was unavailable (environment
 reported unreachable); no agent messages or scheduled follow-ups were sent.
+
+## Primary integration and preselection binding repair
+
+Primary integrated only the owned F commits, preserving its independent
+SQLite/actual-transport review test. Joffrey independently found a medium
+preselection race: an earlier metadata check admitted A, but unbound core query
+could reload replacement B and read its approved files before later checks rejected
+publication/provider disclosure. A postcheck is not a pre-read scope guard.
+
+The primary's `48bd8f4940f43ed11a8684ee6da4cf705b2f35c5` adds a bound core query:
+expected root/identity/incarnation/policy/stored snapshot are validated against the
+same captured `Project` passed to source traversal, with no ID reload. Initial
+session capture and all retained authority reads use it. Existing explicit literal
+operator query stays unchanged; namespace stores the SQL snapshot separately from
+an unavailable/stale selected snapshot so Context needs-input remains possible.
+This is not an atomic external-revocation lease or authentication scheme.
+
+Two deterministic core tests pass the earlier A precheck, replace the registration
+at another or identical root through a peer connection, then prove the source
+traversal boundary is never reached. Additional policy/snapshot/legacy/cancel and
+stale-file checks pass. Joffrey independently closed the finding and passed core,
+daemon and actual CLI tests. Primary full verification passed 163 Rust tests/two
+doctests, 118 strict Swift tests against rebuilt core, dependency policy, staged
+secrets and whitespace. Native refinement remains a separate ongoing lane; exact
+integrated-head publication/CI and GUI/live-model/host gates remain open.
