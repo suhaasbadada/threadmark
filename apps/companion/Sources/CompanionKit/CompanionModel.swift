@@ -107,6 +107,18 @@ public final class CompanionModel: ObservableObject {
     private var job: Task<Void, Never>?
     private var ownedOperations: [UUID: Task<Void, Never>] = [:]
     private var generation: UInt64 = 0
+    @Published public private(set) var stagedBatch: [BatchEntry] = []
+    @Published public private(set) var pendingBatchReview: BatchReview?
+    @Published public private(set) var batchStatus = "Session-only plan — stage 2–8 existing notes; no automatic reads or writes."
+    @Published public private(set) var batchReceipt: BatchReceipt?
+    private var batchBinding: HumanContextReadBinding?
+    private var batchPlanGeneration: UInt64 = 0
+    private var batchActive = false
+    private var batchDispatched = false
+    private var batchExecution: BatchExecution?
+    private var batchFreshAfter: UInt64?
+    public var batchProjectID: String? { batchBinding?.project }
+    public var batchOutcomeUnknown: Bool { batchFreshAfter != nil }
     @Published public private(set) var pendingProjectExport: ProjectExportConfirmation?
     @Published public private(set) var projectExportStatus: String?
     private var exportPicker: ProjectExportConfirmation?
@@ -124,6 +136,7 @@ public final class CompanionModel: ObservableObject {
         if configured { status = "Not refreshed — explicit actions only" }
     }
     deinit {
+        batchExecution?.revoke()
         retainedLifetime?.cancel()
         for operation in ownedOperations.values { operation.cancel() }
     }
@@ -249,7 +262,7 @@ public final class CompanionModel: ObservableObject {
     }
     /// Opening/canceling this immutable approval performs no core operation.
     public func requestRemoval() {
-        if coverageOperation || incrementalBuildOperation { cancel() }
+        if coverageOperation || incrementalBuildOperation || batchActive { cancel() }
         guard canRemoveProject, let project else { return }
         cancelProjectExport()
         if automaticTicket != nil { cancel() }
@@ -266,7 +279,7 @@ public final class CompanionModel: ObservableObject {
         return history.history.map(\.revision).sorted() == Array(1...history.history.count)
     }
     public func requestForget() {
-        if coverageOperation || incrementalBuildOperation { cancel() }
+        if coverageOperation || incrementalBuildOperation || batchActive { cancel() }
         guard canForgetContext, let project, let history else { return }
         cancelProjectExport()
         disableAutomaticRefresh()
@@ -278,7 +291,139 @@ public final class CompanionModel: ObservableObject {
     }
     public func cancelForget() { pendingForget = nil }
     /// View-local unsaved edits invalidate approval, without saving or changing source authority.
-    public func contextEditorChanged() { pendingForget = nil; pendingSourceForget = nil }
+    public func contextEditorChanged() { pendingForget = nil; pendingSourceForget = nil; revokeBatchReview() }
+    private func revokeBatchReview() {
+        batchExecution?.revoke(); pendingBatchReview = nil
+        if batchActive { cancelOperation() }
+    }
+    /// Copies only the view-owned draft and its captured Edit base. Never loads latest or adds.
+    public func stageBatchUpdate(id: String, kind: String, text: String, expected: HumanContextRevisionBinding?) {
+        guard let expected, expected == humanContextRevisionBinding(id) else {
+            batchStatus = "Stage rejected — explicit Edit of loaded history and a captured base are required."; return
+        }
+        stageBatch(id: id, kind: kind, text: text, operation: "update")
+    }
+    public func stageBatchRetire() {
+        guard let history, let latest = history.history.last else { return }
+        stageBatch(id: history.id, kind: latest.kind, text: latest.text, operation: "retire")
+    }
+    private func stageBatch(id: String, kind: String, text: String, operation: String) {
+        guard !quitting, configured, let project, selectedID == project.id,
+              let binding = try? HumanContextReadBinding(project: project),
+              batchBinding == nil || batchBinding == binding,
+              let history, history.id == id, humanContextRevisionBinding(id) != nil,
+              history.authority == .string("context-not-authorization-or-observed-truth"),
+              history.history.count < 32, InputPolicy.contextKinds.contains(kind), !text.isEmpty,
+              text.utf8.count <= 4096, !text.contains("\0"),
+              batchFreshAfter.map({ humanHistoryGeneration > $0 }) ?? true else {
+            batchStatus = "Stage rejected — check namespace, budgets, or explicitly reload history after an uncertain attempt."; return
+        }
+        let entry = BatchEntry(id: id, operation: operation, expectedRevision: history.history.count,
+            kind: kind, text: text, capturedHistory: history, historyGeneration: humanHistoryGeneration)
+        var entries = stagedBatch.filter { $0.id != id }; entries.append(entry)
+        guard entries.count <= 8, entries.reduce(0, { $0 + $1.text.utf8.count }) <= 32768 else {
+            batchStatus = "Stage rejected — bounded plan is full."; return
+        }
+        // A one-entry plan is allowed while collecting; complete-plan encoding
+        // is validated as soon as a second target exists, and again at review.
+        if entries.count >= 2, (try? BatchPlan(binding: binding, entries: entries).encoded()) == nil {
+            batchStatus = "Stage rejected — encoded plan budget exceeded."; return
+        }
+        revokeBatchReview(); batchPlanGeneration &+= 1
+        stagedBatch = entries; batchBinding = binding; batchReceipt = nil
+        batchStatus = "Intent copied into memory only. Editor, history and Edit base unchanged; Review explicitly."
+        if batchOutcomeUnknown { batchStatus += " Prior batch persisted outcome remains unknown; each retained target needs explicit fresh history and restaging before Review." }
+    }
+    public func removeBatchEntry(_ id: String) {
+        revokeBatchReview(); stagedBatch.removeAll { $0.id == id }; batchPlanGeneration &+= 1
+        if stagedBatch.isEmpty { batchBinding = nil }
+    }
+    public func clearBatchPlan() {
+        revokeBatchReview(); stagedBatch = []; batchBinding = nil; batchPlanGeneration &+= 1
+        batchStatus = "Staged intent explicitly cleared; editor and history unchanged."
+        if batchOutcomeUnknown { batchStatus += " Prior dispatched batch persisted outcome remains unknown; clearing intent is not rollback." }
+    }
+    public var canReviewBatch: Bool {
+        guard !quitting, !busy, let project, selectedID == project.id,
+              let binding = batchBinding, (try? HumanContextReadBinding(project: project)) == binding,
+              batchFreshAfter.map({ threshold in stagedBatch.allSatisfy { $0.historyGeneration > threshold } }) ?? true else { return false }
+        return (try? BatchPlan(binding: binding, entries: stagedBatch).encoded()) != nil
+    }
+    public func reviewBatch() {
+        guard canReviewBatch, let binding = batchBinding else { return }
+        revokeBatchReview()
+        pendingBatchReview = BatchReview(id: UUID(), entries: stagedBatch, binding: binding,
+            generation: generation, configuration: configurationGeneration, planGeneration: batchPlanGeneration)
+        batchStatus = "Review exact copied human intent below. No write yet; Cancel preserves plan and drafts."
+    }
+    public func cancelBatchReview() { revokeBatchReview() }
+    private func currentBatch(_ review: BatchReview, ticket: UInt64) -> Bool {
+        !quitting && generation == ticket && configurationGeneration == review.configuration &&
+        batchPlanGeneration == review.planGeneration && pendingBatchReview?.id == review.id &&
+        selectedID == review.binding.project && project.flatMap { try? HumanContextReadBinding(project: $0) } == review.binding
+    }
+    /// Only this owned task mints execution, after joining all predecessors and
+    /// freshly checking the captured namespace. No public pending-value transport.
+    public func applyBatch(_ review: BatchReview) {
+        guard !busy, currentBatch(review, ticket: review.generation), canReviewBatch else { return }
+        let plan = BatchPlan(binding: review.binding, entries: review.entries)
+        guard (try? plan.encoded()) != nil, let target = project else { return }
+        disableAutomaticRefresh(); cancelOperation(preservingReadState: true)
+        pendingBatchReview = review
+        let ticket = generation, prior = Array(ownedOperations.values), operationID = UUID(), service = service
+        batchActive = true; batchDispatched = false; busy = true; batchReceipt = nil
+        batchStatus = "Applying reviewed atomic human batch — cancellation is cooperative, not rollback."
+        job = Task { [weak self] in
+            defer { self?.ownedOperations.removeValue(forKey: operationID) }
+            do {
+                for pending in prior { await pending.value }
+                guard let self, self.currentBatch(review, ticket: ticket), !Task.isCancelled else { return }
+                await self.refreshDriver.shutdown()
+                guard self.currentBatch(review, ticket: ticket), !Task.isCancelled else { return }
+                _ = try await Self.checkHumanNamespace(service, target)
+                guard self.currentBatch(review, ticket: ticket), !Task.isCancelled else { return }
+                let execution = BatchExecution(plan)
+                self.batchExecution = execution
+                defer { execution.revoke() }
+                self.batchDispatched = true
+                let reply = try await withTaskCancellationHandler {
+                    try Task.checkCancellation()
+                    return try await service.perform(.editContextBatchBound(execution))
+                } onCancel: { execution.revoke() }
+                guard self.currentBatch(review, ticket: ticket), !Task.isCancelled else { return }
+                guard case .batchReceipt(let supplied) = reply else { throw ServiceError.invalid }
+                let receipt = try BatchReceipt.decode(supplied.bytes, plan: plan)
+                _ = try await Self.checkHumanNamespace(service, target)
+                guard self.currentBatch(review, ticket: ticket), !Task.isCancelled else { return }
+                // A complete acknowledgment establishes saved state independently
+                // of later refresh. Never turn a refresh failure into a failed write.
+                self.batchReceipt = receipt; self.batchDispatched = false
+                self.stagedBatch = []; self.batchBinding = nil; self.batchFreshAfter = nil
+                self.batchStatus = "Complete atomic batch saved. Editor and its old Edit base remain unchanged."
+                do {
+                    let reply = try await Self.checkedHumanRead(service, .contextsBound(plan.binding), target)
+                    guard self.currentBatch(review, ticket: ticket), !Task.isCancelled else { return }
+                    guard case .contexts(let list) = reply, list.project == plan.binding.project else { throw ServiceError.invalid }
+                    self.contexts = list.contexts
+                } catch {
+                    guard self.currentBatch(review, ticket: ticket), !Task.isCancelled else { return }
+                    self.batchStatus = "Complete atomic batch saved; follow-up refresh failed. No replacement metadata adopted; reload explicitly."
+                }
+                self.batchActive = false; self.batchExecution = nil; self.pendingBatchReview = nil; self.busy = false; self.job = nil
+            } catch {
+                guard let self, self.generation == ticket else { return }
+                if self.batchDispatched { self.markBatchUnknown() }
+                else { self.batchStatus = "Batch not dispatched; review again explicitly." }
+                self.batchExecution?.revoke(); self.batchExecution = nil; self.batchDispatched = false
+                self.batchActive = false; self.pendingBatchReview = nil; self.busy = false; self.job = nil
+            }
+        }
+        ownedOperations[operationID] = job
+    }
+    private func markBatchUnknown() {
+        batchFreshAfter = humanHistoryGeneration
+        batchStatus = "Batch persisted outcome unknown. Intent retained; no retry or rollback. Explicitly reload each target history, restage from a fresh Edit base, then review again."
+    }
     nonisolated private static func sameForgetScope(_ current: Project, _ captured: Project) -> Bool {
         // Marker inspection/Forget follow-up fences use the same exact bytes as
         // the bound read; source-policy corroboration remains an additional gate.
@@ -401,7 +546,7 @@ public final class CompanionModel: ObservableObject {
         return InputPolicy.sourceMarker(path)
     }
     public func requestSourceForget(_ path: String) {
-        if coverageOperation || incrementalBuildOperation { cancel() }
+        if coverageOperation || incrementalBuildOperation || batchActive { cancel() }
         guard canForgetSource(path), let target = project else { return }
         cancelProjectExport()
         let markers = sourceMarkers, retainedHistory = history
@@ -1454,6 +1599,12 @@ public final class CompanionModel: ObservableObject {
         clearHumanComparison()
     }
     private func cancelOperation(preservingReadState: Bool = false) {
+        let wasBatch = batchActive
+        batchExecution?.revoke(); batchExecution = nil; pendingBatchReview = nil
+        if batchDispatched { markBatchUnknown() }
+        else if batchActive, batchReceipt != nil { batchStatus = "Complete atomic batch saved; follow-up refresh canceled. Editor and old Edit base unchanged." }
+        else if batchActive { batchStatus = "Batch canceled before dispatch — no batch write requested. Intent retained; review again explicitly." }
+        batchDispatched = false; batchActive = false
         let incrementalUnknown = incrementalMutationTicket != nil
         if incrementalUnknown {
             sourceRequiresRefresh = true; mutationRefreshError = .mutationUncertain
@@ -1461,7 +1612,7 @@ public final class CompanionModel: ObservableObject {
         incrementalMutationTicket = nil; incrementalBuildOperation = false; incrementalBuildReport = nil
         let wasCoverage = coverageOperation || preservingReadState
         let preserveQuery = inspectionOperation || coverageOperation || preservingReadState
-        let preserveComparisonConflict = (comparisonActive || coverageOperation || preservingReadState || (humanSearchTicket != nil && humanSearchConflict)) && lastError == .contextConflict
+        let preserveComparisonConflict = (wasBatch || comparisonActive || coverageOperation || preservingReadState || (humanSearchTicket != nil && humanSearchConflict)) && lastError == .contextConflict
         humanSearchConflict = false
         if coverageOperation { coverageNeedsMetadata = true }
         coverageOperation = false; coverageReport = nil
@@ -1470,7 +1621,7 @@ public final class CompanionModel: ObservableObject {
         inspectionQueryGeneration = nil; inspectionQueryScope = nil
         let uncertainExport = exportWriteStarted
         pendingProjectExport = nil; exportPicker = nil; exportActive = false; exportWriteStarted = false
-        let preserveHistory = refinementOperation || retainedOperationActive || preserveQuery || comparisonActive
+        let preserveHistory = wasBatch || refinementOperation || retainedOperationActive || preserveQuery || comparisonActive
         if comparisonActive { clearHumanComparison() }
         let revokeReview = retainedOperationActive
         retainedOperationActive = false

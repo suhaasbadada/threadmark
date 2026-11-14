@@ -368,6 +368,7 @@ public enum Operation: Sendable {
     case coverageBound(CoverageRequest)
     case inspectSourceAnchorBound(SourceInspectionRequest)
     case compareHumanContextBound(HumanComparisonRequest)
+    case editContextBatchBound(BatchExecution)
     case contextsBound(HumanContextReadBinding)
     case contextBound(HumanContextReadBinding, String)
     case searchHumanContextBound(HumanContextReadBinding, String)
@@ -397,6 +398,7 @@ public enum Operation: Sendable {
     case writeContext(String, String, String, String, update: Bool), retireContext(String, String)
 }
 public enum Reply: Sendable {
+    case batchReceipt(BatchReceipt)
     case incrementalBuild(IncrementalBuildReport)
     case filteredHumanSearch(FilteredHumanSearch)
     case coverage(CoverageDocument)

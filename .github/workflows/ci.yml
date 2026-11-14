@@ -38,6 +38,7 @@ jobs:
           THREADMARK_SOURCE_INSPECTION_FIXTURE_BINARY: ${{ github.workspace }}/target/source-inspection-fixtures/inspection
           THREADMARK_COVERAGE_FIXTURE_BINARY: ${{ github.workspace }}/target/coverage-fixture
           THREADMARK_INCREMENTAL_FIXTURE_BINARY: ${{ github.workspace }}/target/incremental-fixture
+          THREADMARK_BATCH_FIXTURE_BINARY: ${{ github.workspace }}/target/batch-fixture
         run: |
           mkdir -p target/retained-fixtures target/export-fixtures target/source-inspection-fixtures
           sdk=$(xcrun --sdk macosx --show-sdk-path)
@@ -50,6 +51,7 @@ jobs:
           xcrun clang -std=c11 -Wall -Wextra -Werror -nostdinc -isystem "$resource/include" -isystem "$sdk/usr/include" -isysroot "$sdk" apps/companion/Tests/SourceInspectionFixtures/inspection.c -o target/source-inspection-fixtures/inspection
           xcrun clang -std=c11 -Wall -Wextra -Werror -nostdinc -isystem "$resource/include" -isystem "$sdk/usr/include" -isysroot "$sdk" apps/companion/Tests/CoverageFixtures/coverage.c -o target/coverage-fixture
           xcrun clang -std=c11 -Wall -Wextra -Werror -nostdinc -isystem "$resource/include" -isystem "$sdk/usr/include" -isysroot "$sdk" apps/companion/Tests/IncrementalBuildFixtures/incremental.c -o target/incremental-fixture
+          xcrun clang -std=c11 -Wall -Wextra -Werror -nostdinc -isystem "$resource/include" -isystem "$sdk/usr/include" -isysroot "$sdk" apps/companion/Tests/BatchEditAPIFixtures/batch.c -o target/batch-fixture
           # Bound subprocess/socket pressure on shared runners; every case still
           # runs, including each test's explicit concurrent cancellation races.
           sh apps/companion/scripts/swift.sh test --no-parallel --disable-xctest --enable-swift-testing -Xswiftc -strict-concurrency=complete -Xswiftc -warnings-as-errors
@@ -59,6 +61,7 @@ jobs:
           sh apps/companion/Tests/HumanSearchFilterAPIFixtures/check-api.sh
           sh apps/companion/Tests/CoverageFixtures/check-api.sh
           sh apps/companion/Tests/IncrementalBuildFixtures/check-api.sh
+          sh apps/companion/Tests/BatchEditAPIFixtures/check-api.sh
           sh apps/companion/scripts/bundle.sh
           plutil -lint apps/companion/dist/Threadmark.app/Contents/Info.plist
 

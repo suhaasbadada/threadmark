@@ -64,18 +64,23 @@ public struct ProcessService: CoreService {
     }
 
     public func perform(_ operation: Operation) async throws -> Reply {
+        let batch: BatchPlan?
+        if case .editContextBatchBound(let execution) = operation { batch = try execution.claim() }
+        else { batch = nil }
+        // Claim once; decoding uses this immutable capture, never claims again.
+        let (arguments, input) = try command(operation, batch: batch)
         guard let executable, let dataDirectory,
               executable.isFileURL, dataDirectory.isFileURL,
               executable.path.hasPrefix("/"), dataDirectory.path.hasPrefix("/"),
               !executable.path.contains("\0"), !dataDirectory.path.contains("\0"),
               FileManager.default.isExecutableFile(atPath: executable.path) else { throw ServiceError.unavailable }
-        let (arguments, input) = try command(operation)
-        guard input.count <= limits.inputBytes, limits.seconds > 0,
+        guard input.count <= (batch == nil ? limits.inputBytes : 65536), limits.seconds > 0,
               limits.seconds <= 300, limits.stdoutBytes > 0, limits.stdoutBytes <= 1_048_576,
               limits.stderrBytes > 0, limits.stderrBytes <= 16_384,
               limits.inputBytes > 0, limits.inputBytes <= 4096 else { throw ServiceError.invalid }
         let cancellation = Cancellation()
         var operationLimits = limits
+        if batch != nil { operationLimits.inputBytes = 65536; operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .indexIncrementalBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 65536) }
         if case .coverageBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 65536) }
         if case .inspectSourceAnchorBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
@@ -122,6 +127,9 @@ public struct ProcessService: CoreService {
             default: responseOperation = operation
             }
             switch responseOperation {
+            case .editContextBatchBound:
+                guard let batch else { throw ServiceError.invalid }
+                return .batchReceipt(try BatchReceipt.decode(data, plan: batch))
             case .indexIncrementalBound(let request):
                 return .incrementalBuild(try IncrementalBuildReport.decode(data, request: request))
             case .searchHumanContextKindsBound(let request):
@@ -251,7 +259,7 @@ public struct ProcessService: CoreService {
     private static func currentness(_ value: String) -> Bool {
         value == "current-at-read" || value == "stale-or-unindexed"
     }
-    private func command(_ operation: Operation) throws -> ([String], Data) {
+    private func command(_ operation: Operation, batch: BatchPlan? = nil) throws -> ([String], Data) {
         func id(_ value: String) throws -> String {
             guard InputPolicy.identifier(value) else { throw ServiceError.invalid }; return value
         }
@@ -261,6 +269,12 @@ public struct ProcessService: CoreService {
         var args: [String]
         var input = Data()
         switch operation {
+        case .editContextBatchBound:
+            guard let batch else { throw ServiceError.invalid }
+            input = try batch.encoded()
+            let b = batch.binding
+            args = ["context", "batch-edit", b.project, "--expected-root", b.root,
+                    "--expected-root-identity", b.rootIdentity, "--expected-incarnation", b.incarnation]
         case .indexIncrementalBound(let request):
             try request.validate()
             let p = request.project
