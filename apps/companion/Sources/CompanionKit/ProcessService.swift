@@ -94,6 +94,7 @@ public struct ProcessService: CoreService {
         if case .searchHumanContext = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .searchHumanContextBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .searchHumanContextKindsBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
+        if case .searchHumanContextTermsBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .query = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .queryBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .queryTermsBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
@@ -140,6 +141,8 @@ public struct ProcessService: CoreService {
                 return .incrementalBuild(try IncrementalBuildReport.decode(data, request: request))
             case .searchHumanContextKindsBound(let request):
                 return .filteredHumanSearch(try FilteredHumanSearch.decode(data, request: request))
+            case .searchHumanContextTermsBound(let request):
+                return .rankedHumanSearch(try RankedHumanSearch.decode(data, request: request))
             case .coverageBound(let request):
                 return .coverage(try CoverageDocument.decode(data, request: request))
             case .inspectSourceAnchorBound(let request):
@@ -307,6 +310,11 @@ public struct ProcessService: CoreService {
             try request.validate()
             let b = request.binding
             args = ["context", "search", b.project, request.query, "--kinds"] + request.kinds +
+                ["--expected-root", b.root, "--expected-root-identity", b.rootIdentity, "--expected-incarnation", b.incarnation]
+        case .searchHumanContextTermsBound(let request):
+            try request.validate()
+            let b = request.binding
+            args = ["context", "search-terms", b.project, request.query, "--kinds"] + request.kinds +
                 ["--expected-root", b.root, "--expected-root-identity", b.rootIdentity, "--expected-incarnation", b.incarnation]
         case .coverageBound(let request):
             try request.validate()

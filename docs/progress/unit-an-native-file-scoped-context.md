@@ -2,6 +2,14 @@
 
 ## Primary integration and independent review
 
+Publication receipt (local unpublished): PR
+[#90](https://github.com/suhaasbadada/threadmark/pull/90), target `main`, full head
+`db4c1cbf390d66236e02793ff04482f006b1a854`. Exact-head CI `43604701177` and
+integrated `43604701219` were running at the initial read, with no failed check
+observed. This is not a green/merge/older-compiler claim; native notifications
+own further waits. AP native ranked notes remains active; AQ's source inspection
+set backend is an independent Rust-only unit, not native integration or inference.
+
 ### macOS CI deadline repair
 
 Publication head `db4c1cbf390d66236e02793ff04482f006b1a854`, CI `43604701177`,

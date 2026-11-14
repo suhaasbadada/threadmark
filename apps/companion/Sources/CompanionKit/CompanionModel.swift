@@ -19,6 +19,9 @@ public final class CompanionModel: ObservableObject {
     @Published public private(set) var project: Project?
     @Published public private(set) var contexts: [ContextEntry] = []
     @Published public private(set) var humanSearch: HumanContextSearch?
+    @Published public private(set) var rankedHumanSearch: RankedHumanSearch?
+    @Published public private(set) var humanSearchMode: HumanSearchMode = .literal
+    private let rankedHumanSearchOwner = UUID()
     @Published public private(set) var humanSearchKindFilter: [String]?
     @Published public private(set) var humanSearchSelectedKinds: [String]?
     private var humanSearchGeneration: UInt64 = 0
@@ -285,7 +288,7 @@ public final class CompanionModel: ObservableObject {
     }
     /// Opening/canceling this immutable approval performs no core operation.
     public func requestRemoval() {
-        if fileContextOperation || coverageOperation || incrementalBuildOperation || batchActive || (sourceQueryOperation && queryFileFilter != nil) { cancel() }
+        if humanSearchTicket != nil || fileContextOperation || coverageOperation || incrementalBuildOperation || batchActive || (sourceQueryOperation && queryFileFilter != nil) { cancel() }
         guard canRemoveProject, let project else { return }
         cancelProjectExport()
         if automaticTicket != nil { cancel() }
@@ -302,7 +305,7 @@ public final class CompanionModel: ObservableObject {
         return history.history.map(\.revision).sorted() == Array(1...history.history.count)
     }
     public func requestForget() {
-        if fileContextOperation || coverageOperation || incrementalBuildOperation || batchActive || (sourceQueryOperation && queryFileFilter != nil) { cancel() }
+        if humanSearchTicket != nil || fileContextOperation || coverageOperation || incrementalBuildOperation || batchActive || (sourceQueryOperation && queryFileFilter != nil) { cancel() }
         guard canForgetContext, let project, let history else { return }
         cancelProjectExport()
         disableAutomaticRefresh()
@@ -476,6 +479,9 @@ public final class CompanionModel: ObservableObject {
     nonisolated private static func checkedHumanRead(_ service: any CoreService, _ operation: Operation, _ captured: Project, prechecked: Bool = false) async throws -> Reply {
         let binding = try HumanContextReadBinding(project: captured) // Legacy fails before service I/O.
         switch operation {
+        case .searchHumanContextTermsBound(let request):
+            try request.validate()
+            guard request.binding == binding else { throw ServiceError.invalid }
         case .searchHumanContextKindsBound(let request):
             try request.validate()
             guard request.binding == binding else { throw ServiceError.invalid }
@@ -569,7 +575,7 @@ public final class CompanionModel: ObservableObject {
         return InputPolicy.sourceMarker(path)
     }
     public func requestSourceForget(_ path: String) {
-        if fileContextOperation || coverageOperation || incrementalBuildOperation || batchActive || (sourceQueryOperation && queryFileFilter != nil) { cancel() }
+        if humanSearchTicket != nil || fileContextOperation || coverageOperation || incrementalBuildOperation || batchActive || (sourceQueryOperation && queryFileFilter != nil) { cancel() }
         guard canForgetSource(path), let target = project else { return }
         cancelProjectExport()
         let markers = sourceMarkers, retainedHistory = history
@@ -791,11 +797,12 @@ public final class CompanionModel: ObservableObject {
     }
     /// Removal/revocation takes effect in the UI immediately, including during an index job.
     public func stageSources(_ sources: [String]) {
+        let preserveHumanHistory = humanSearchTicket != nil || humanSearchMode == .rankedAnyTerms
         disableAutomaticRefresh()
-        cancel(); clearResults(preserveHistory: queryFileFilter != nil || contextFileFilter != nil); scopeRevision &+= 1; sourceDraft = sources; policyDirty = true
+        cancel(); clearResults(preserveHistory: queryFileFilter != nil || contextFileFilter != nil || preserveHumanHistory); scopeRevision &+= 1; sourceDraft = sources; policyDirty = true
         status = sourceRequiresRefresh ? refreshRequiredError.localizedDescription
             : "Source policy changed — apply before Build; displayed evidence invalidated"
-        if queryFileFilter != nil || contextFileFilter != nil, lastError == .contextConflict { status += " " + ServiceError.contextConflict.localizedDescription }
+        if queryFileFilter != nil || contextFileFilter != nil || preserveHumanHistory, lastError == .contextConflict { status += " " + ServiceError.contextConflict.localizedDescription }
     }
     public func applySources() {
         disableAutomaticRefresh()
@@ -838,7 +845,7 @@ public final class CompanionModel: ObservableObject {
     }
     /// No selection/appearance/query/coverage/event caller. No preflight ID reload or Full Build fallback.
     public func buildIncrementally() {
-        if fileContextOperation || (sourceQueryOperation && queryFileFilter != nil) { cancel() }
+        if humanSearchTicket != nil || fileContextOperation || (sourceQueryOperation && queryFileFilter != nil) { cancel() }
         guard canBuildIncrementally, let captured = project,
               let request = try? IncrementalBuildRequest(project: captured) else { return }
         disableAutomaticRefresh()
@@ -875,7 +882,7 @@ public final class CompanionModel: ObservableObject {
         incrementalBuildOperation = true
     }
     public func build() {
-        if fileContextOperation || inspectionOperation || coverageOperation || (sourceQueryOperation && queryFileFilter != nil) { cancel() }
+        if humanSearchTicket != nil || fileContextOperation || inspectionOperation || coverageOperation || (sourceQueryOperation && queryFileFilter != nil) { cancel() }
         pendingSourceForget = nil
         guard !sourceRequiresRefresh else { fail(refreshRequiredError); return }
         guard let target = project, target.id == selectedID,
@@ -1189,7 +1196,10 @@ public final class CompanionModel: ObservableObject {
         return try? HumanContextRevisionBinding(project: scope, history: history)
     }
     public func openContext(_ contextID: String) {
-        guard let target = project, target.id == selectedID, !sourceRequiresRefresh else { return }
+        loadHumanContext(contextID, independentRead: false)
+    }
+    private func loadHumanContext(_ contextID: String, independentRead: Bool) {
+        guard let target = project, target.id == selectedID, independentRead || !sourceRequiresRefresh else { return }
         guard let binding = try? HumanContextReadBinding(project: target) else { fail(.humanReadRequiresRefresh); return }
         start(preserveHistory: true) { service in
             let reply = try await Self.checkedHumanRead(service, .contextBound(binding, contextID), target)
@@ -1207,12 +1217,17 @@ public final class CompanionModel: ObservableObject {
     }
     public func searchHumanContext(_ query: String) {
         humanSearchQueryChanged()
-        guard canSearchHumanContext, let target = project, InputPolicy.humanSearch(query) else { fail(.invalid); return }
+        guard canSearchHumanNotes(query), let target = project else { fail(.invalid); return }
+        if humanSearchMode == .rankedAnyTerms {
+            searchHumanContextRanked(query, target: target)
+            return
+        }
         if let kinds = humanSearchKindFilter {
             searchHumanContextKinds(query, kinds: kinds, target: target)
             return
         }
-        start(status: "Searching human-authored context — no source reads or inference", preserveHistory: true) { service in
+        let preserveConflict = lastError == .contextConflict
+        start(status: "Searching human-authored context — no source reads or inference", preserveHistory: true, preserveConflict: true) { service in
             let reply = try await Self.checkedHumanRead(service, .searchHumanContextBound(HumanContextReadBinding(project: target), query), target)
             return [reply]
         } apply: { replies in
@@ -1220,13 +1235,55 @@ public final class CompanionModel: ObservableObject {
             try result.validate(scope: target)
             self.humanSearch = result; self.humanSearchScope = target
             self.status = "Human context: latest active revisions at read only — not source evidence or authorization"
+            if preserveConflict { self.fail(.contextConflict) }
         }
         humanSearchTicket = generation
+        humanSearchConflict = preserveConflict
+        if preserveConflict { lastError = .contextConflict }
     }
     public func humanSearchQueryChanged() {
+        revokeBatchReview()
         humanSearchGeneration &+= 1
         if humanSearchTicket != nil { cancel() }
         clearHumanSearch()
+    }
+    public func setHumanSearchMode(_ mode: HumanSearchMode) {
+        guard humanSearchMode != mode else { return }
+        humanSearchQueryChanged(); humanSearchMode = mode
+    }
+    public func canSearchHumanNotes(_ query: String) -> Bool {
+        guard humanSearchKindFilter?.isEmpty != true, InputPolicy.humanSearch(query) else { return false }
+        if humanSearchMode == .literal { return canSearchHumanContext }
+        // Source policy/currentness is NOT human-note authority. No sourceDraft
+        // validation or reduced Project is used for AO's registration-bound read.
+        return canRemoveProject && !forgetRequiresRefresh && pendingRemoval == nil &&
+            pendingForget == nil && pendingSourceForget == nil &&
+            (try? RefinementConsent.rankedTerms(query)) != nil
+    }
+    private func searchHumanContextRanked(_ query: String, target: Project) {
+        guard let binding = try? HumanContextReadBinding(project: target),
+              let request = try? RankedHumanSearchRequest(binding: binding, query: query,
+                  kinds: humanSearchKindFilter ?? InputPolicy.contextKinds.sorted()) else { fail(.invalid); return }
+        let searchGeneration = humanSearchGeneration, config = configurationGeneration
+        let filter = humanSearchKindFilter, owner = rankedHumanSearchOwner
+        let preserveConflict = lastError == .contextConflict
+        start(status: "Searching ranked human notes — distinct terms before frequency; no source reads or inference",
+              preserveHistory: true, preserveConflict: true) { service in
+            [try await Self.checkedHumanRead(service, .searchHumanContextTermsBound(request), target)]
+        } apply: { replies in
+            guard self.rankedHumanSearchOwner == owner, self.humanSearchGeneration == searchGeneration,
+                  self.configurationGeneration == config, self.humanSearchMode == .rankedAnyTerms,
+                  self.humanSearchKindFilter == filter, self.selectedID == target.id,
+                  let current = self.project, Self.sameHumanNamespace(current, target),
+                  case .rankedHumanSearch(let result) = replies[0] else { throw ServiceError.invalid }
+            try result.validate(request: request, scope: current)
+            self.rankedHumanSearch = result; self.humanSearchScope = target
+            self.humanSearchSelectedKinds = request.kinds
+            self.status = "Ranked human notes — latest active at read; not source evidence, authorization or semantic quality"
+            if preserveConflict { self.fail(.contextConflict) }
+        }
+        humanSearchTicket = generation; humanSearchConflict = preserveConflict
+        if preserveConflict { lastError = .contextConflict }
     }
     /// Pure local choice. Even an empty explicit choice performs no service I/O.
     public func setHumanSearchKindFilter(_ kinds: [String]?) {
@@ -1254,12 +1311,20 @@ public final class CompanionModel: ObservableObject {
         if preserveConflict { lastError = .contextConflict }
     }
     /// Loads the existing history pane; never copies text into an editor or approves a rule.
+    public func inspectRankedHumanSearchEntry(_ id: String, result: RankedHumanSearch) {
+        guard !busy, humanSearchMode == .rankedAnyTerms,
+              let adopted = rankedHumanSearch, adopted.readID == result.readID,
+              let scope = humanSearchScope, let project, project.id == selectedID,
+              Self.sameHumanNamespace(project, scope),
+              adopted.document.results.contains(where: { $0.id == id }) else { return }
+        loadHumanContext(id, independentRead: true)
+    }
     public func inspectHumanSearchEntry(_ id: String) {
         guard !busy, let scope = humanSearchScope, let project, Self.sameHumanNamespace(project, scope),
               humanSearch?.results.contains(where: { $0.id == id }) == true else { return }
         openContext(id)
     }
-    private func clearHumanSearch() { humanSearch = nil; humanSearchScope = nil; humanSearchSelectedKinds = nil }
+    private func clearHumanSearch() { humanSearch = nil; rankedHumanSearch = nil; humanSearchScope = nil; humanSearchSelectedKinds = nil }
     public func editPreparation(query: String, original: String) {
         guard !preparationQuery.utf8.elementsEqual(query.utf8) || !originalDraft.utf8.elementsEqual(original.utf8) else { return }
         cancelOperation(); preparationRevision &+= 1; preparationQuery = query; originalDraft = original
@@ -1782,7 +1847,7 @@ public final class CompanionModel: ObservableObject {
         inspectionQueryGeneration = nil; inspectionQueryScope = nil
         let uncertainExport = exportWriteStarted
         pendingProjectExport = nil; exportPicker = nil; exportActive = false; exportWriteStarted = false
-        let preserveHistory = wasFileContext || wasBatch || refinementOperation || retainedOperationActive || preserveQuery || comparisonActive || wasFilteredQuery
+        let preserveHistory = wasFileContext || wasBatch || refinementOperation || retainedOperationActive || preserveQuery || comparisonActive || wasFilteredQuery || humanSearchTicket != nil
         if comparisonActive { clearHumanComparison() }
         let revokeReview = retainedOperationActive
         retainedOperationActive = false

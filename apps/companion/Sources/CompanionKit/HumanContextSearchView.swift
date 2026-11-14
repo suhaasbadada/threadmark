@@ -13,13 +13,18 @@ public struct HumanContextSearchView: View {
             Text("Search human-authored context").font(.headline)
             Text("Separate from source evidence. Human declarations are untrusted context, not observed truth or authorization.")
                 .font(.caption)
+            Picker("Human note search mode", selection: Binding(get: { model.humanSearchMode }, set: { value in model.setHumanSearchMode(value) })) {
+                ForEach(HumanSearchMode.allCases, id: \.self) { mode in Text(mode.label).tag(mode) }
+            }.accessibilityLabel("Human note search mode, independent of source and Refine")
+            Text(model.humanSearchMode == .literal
+                ? "Literal: one Unicode-lowercase substring, up to 256 UTF-8 bytes. Existing literal matching and ordering."
+                : "Any terms: 256 UTF-8 query bytes; 1–8 first-seen distinct Unicode-lowercase whitespace terms, at most 64 UTF-8 bytes each. Rank distinct matched terms before frequency, then ID byte order. No normalization, stemming or semantic quality claim.")
+                .font(.caption)
             HStack {
-                TextField("Literal human text (256 UTF-8 bytes maximum)", text: $query)
+                TextField("Human note text (256 UTF-8 bytes maximum)", text: Binding(get: { query }, set: { value in setQuery(value) }))
                     .accessibilityLabel("Human context search query")
-                    .onSubmit(search)
-                    .onChange(of: query) { _ in model.humanSearchQueryChanged() }
-                Button("Search", action: search)
-                    .disabled(!model.canSearchHumanContext || !InputPolicy.humanSearch(query) || model.humanSearchKindFilter?.isEmpty == true)
+                Button("Search notes", action: search)
+                    .disabled(!model.canSearchHumanNotes(query))
                 if model.busy { Button("Cancel", action: model.cancel) }
             }
             Toggle("Filter human context kinds (opt-in)", isOn: Binding(
@@ -33,7 +38,7 @@ public struct HumanContextSearchView: View {
                         })).toggleStyle(.checkbox).accessibilityLabel("Include human context kind: \(kind)")
                     }
                 }
-                Text("Choose at least one kind, then Search. Changing choices does not read storage.").font(.caption)
+                Text("Choose at least one kind, then Search notes. Changing choices does not read storage.").font(.caption)
             }
             if let result = model.humanSearch {
                 if let kinds = model.humanSearchSelectedKinds { Text("Selected human kinds: \(kinds.joined(separator: ", "))") }
@@ -51,13 +56,18 @@ public struct HumanContextSearchView: View {
                     }
                 }
             }
+            if let ranked = model.rankedHumanSearch { RankedHumanSearchView(model: model, result: ranked) }
             Text(model.status).font(.caption).accessibilityLabel("Human context operation status")
         }
-        .onChange(of: model.scopeRevision) { _ in query = "" }
-        .onChange(of: model.contextEditorRevision) { _ in query = "" }
+        .onChange(of: model.scopeRevision) { _ in setQuery("") }
+        .onChange(of: model.contextEditorRevision) { _ in setQuery("") }
+    }
+    private func setQuery(_ value: String) {
+        guard !query.utf8.elementsEqual(value.utf8) else { return }
+        model.humanSearchQueryChanged(); query = value
     }
     private func search() {
-        guard model.canSearchHumanContext, InputPolicy.humanSearch(query), model.humanSearchKindFilter?.isEmpty != true else { return }
+        guard model.canSearchHumanNotes(query) else { return }
         model.searchHumanContext(query)
     }
 }

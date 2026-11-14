@@ -43,6 +43,7 @@ jobs:
           THREADMARK_BATCH_FIXTURE_BINARY: ${{ github.workspace }}/target/batch-fixture
           THREADMARK_QUERY_FILTER_FIXTURE_BINARY: ${{ github.workspace }}/target/query-filter-fixture
           THREADMARK_FILE_CONTEXT_FIXTURE_BINARY: ${{ github.workspace }}/target/file-context-fixture
+          THREADMARK_RANKED_HUMAN_FIXTURE_BINARY: ${{ github.workspace }}/target/ranked-human-fixture
         run: |
           mkdir -p target/retained-fixtures target/export-fixtures target/source-inspection-fixtures
           sdk=$(xcrun --sdk macosx --show-sdk-path)
@@ -58,6 +59,7 @@ jobs:
           xcrun clang -std=c11 -Wall -Wextra -Werror -nostdinc -isystem "$resource/include" -isystem "$sdk/usr/include" -isysroot "$sdk" apps/companion/Tests/BatchEditAPIFixtures/batch.c -o target/batch-fixture
           xcrun clang -std=c11 -Wall -Wextra -Werror -nostdinc -isystem "$resource/include" -isystem "$sdk/usr/include" -isysroot "$sdk" apps/companion/Tests/QueryFilterFixtures/query-filter.c -o target/query-filter-fixture
           xcrun clang -std=c11 -Wall -Wextra -Werror -nostdinc -isystem "$resource/include" -isystem "$sdk/usr/include" -isysroot "$sdk" apps/companion/Tests/FileContextFixtures/context.c -o target/file-context-fixture
+          xcrun clang -std=c11 -Wall -Wextra -Werror -nostdinc -isystem "$resource/include" -isystem "$sdk/usr/include" -isysroot "$sdk" apps/companion/Tests/RankedHumanSearchFixtures/ranked-human.c -o target/ranked-human-fixture
           # Bound subprocess/socket pressure on shared runners; every case still
           # runs, including each test's explicit concurrent cancellation races.
           sh apps/companion/scripts/swift.sh test --no-parallel --disable-xctest --enable-swift-testing -Xswiftc -strict-concurrency=complete -Xswiftc -warnings-as-errors
@@ -71,6 +73,7 @@ jobs:
           sh apps/companion/Tests/BatchEditAPIFixtures/check-api.sh
           sh apps/companion/Tests/QueryFilterFixtures/check-api.sh
           sh apps/companion/Tests/FileContextFixtures/check-api.sh
+          sh apps/companion/Tests/RankedHumanSearchFixtures/check-api.sh
           sh apps/companion/scripts/bundle.sh
           plutil -lint apps/companion/dist/Threadmark.app/Contents/Info.plist
 
