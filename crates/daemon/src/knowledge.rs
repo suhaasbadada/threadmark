@@ -38,6 +38,11 @@ pub enum Command {
     Query(String, String),
     /// Cached read bound before source traversal to all captured metadata.
     QueryBound(threadmark_core::knowledge::Project, String),
+    /// Explicit indexed source-anchor window, bound to the complete captured project.
+    InspectSourceAnchor(
+        threadmark_core::knowledge::Project,
+        threadmark_core::knowledge::SourceAnchorInspection,
+    ),
     /// Bounded human-only active latest context search; never source evidence.
     SearchContext(String, String),
     /// Opt-in human search scoped before human SQL reads (root, identity, nonce).
@@ -166,6 +171,9 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
             threadmark_core::knowledge::validate_query_binding(expected, query)?;
             threadmark_core::knowledge::validate_query_terms(&expected.id, query)?;
         }
+        Command::InspectSourceAnchor(expected, anchor) => {
+            threadmark_core::knowledge::validate_source_inspection(expected, anchor)?;
+        }
         Command::QueryBound(expected, query) | Command::PrepareContextBound(expected, query, _) => {
             threadmark_core::knowledge::validate_query_binding(expected, query)?;
         }
@@ -233,7 +241,9 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         }
         .validate(project, path)?;
     }
-    let mut store = if let Command::ExportProject(id) = &command {
+    let mut store = if matches!(&command, Command::InspectSourceAnchor(..)) {
+        Store::open_existing_for_inspection(data_dir)?
+    } else if let Command::ExportProject(id) = &command {
         threadmark_core::knowledge::validate_export_project(id)?;
         Store::open_existing(data_dir)?
     } else if matches!(
@@ -451,6 +461,9 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         }
         Command::Query(id, text) => store.query(&id, &text, cancel)?,
         Command::QueryBound(expected, text) => store.query_bound(&expected, &text, cancel)?,
+        Command::InspectSourceAnchor(expected, anchor) => {
+            store.inspect_source_anchor(&expected, &anchor, cancel)?
+        }
         Command::PrepareContextBound(expected, query, original) => {
             crate::preparation::context_bound(&store, &expected, &query, original, cancel)?
         }
