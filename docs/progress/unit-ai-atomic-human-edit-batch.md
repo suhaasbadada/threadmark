@@ -1,5 +1,31 @@
 # Unit AI — atomic explicit human-context batch edits
 
+## Primary integration and independent review
+
+Primary committed only the ten owned files as `12b3164` and applied cleanly as
+**`3bf63f81a8750f447d8d12260839da4f067997e9`**, exact integrated tested runtime.
+No prepared baseline/site merge history replay. Joffrey independently reproduced
+the fingerprint and reviewed **CLEAR**; passed 14 batch core, six actual CLI,
+13 CAS regressions, full offline workspace suite (**370 including two doctests**,
+two deadlines ignored) and whitespace. He did not rerun lint/deny/secrets or native
+UI tests and made no changes.
+
+Primary full workspace gate **368 Rust tests + two doctests PASS**; strict serial
+actual-CLI/all-C-fixture Swift **260 tests/40 suites PASS**; all five API gates,
+offline locked deny, staged secrets and whitespace **PASS**. No fresh native
+Release claim for this backend-only addition. Exact publication-head CI remains
+separate. All target validation/suppression/quota checks precede appends in one
+transaction; no partial outcome or automatic conflict resolution inferred.
+
+PR #82 fresh main-targeted head `9f761c10a5eaf8dc4c3cd75a2dc8e82e278ce950`
+passed all five checks (CI `43591675265`, integrated `43591675250`); fresh gates
+preceded merge `9c84f6a826d73b9e51f83151b4e6567e05de9753`. Watch removed, and
+exact post-merge runs `43592319046`/`43592319072`, both targeting that merge,
+completed **PASS**. AH native incremental controls have reported implementation
+and local tests; independent review/integration remain pending. Nine inherited
+progress edits/worktrees/parent reminders preserved. No GUI/AX, live-quality,
+host-delivery, deployment or phase closure claim.
+
 ## Baseline and ownership
 
 Required local base: `cfba6b107b518af58d73e716fbaaf49c2164332d`.
