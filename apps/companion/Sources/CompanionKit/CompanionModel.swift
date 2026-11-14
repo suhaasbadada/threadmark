@@ -27,7 +27,9 @@ public final class CompanionModel: ObservableObject {
     @Published public private(set) var preview: ContextPreview?
     @Published public private(set) var pendingRefinement: RefinementConsent?
     @Published public private(set) var refinementPreview: RefinementPreview?
-    public let retainedReview = RetainedReviewController()
+    // The module-owned view may observe this controller, but external callers
+    // must use model methods so revoked consent cannot bypass its registry.
+    let retainedReview = RetainedReviewController()
     @Published public private(set) var retainedReviewVisible = false
     @Published public private(set) var retainedActionBusy = false
     private var retainedLifetime: RetainedReviewLifetime?
