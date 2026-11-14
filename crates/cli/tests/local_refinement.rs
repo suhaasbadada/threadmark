@@ -1,4 +1,6 @@
 //! Actual CLI + synthetic SQLite + owned numeric-loopback HTTP only.
+#[path = "local_refinement/ranked_preparation.rs"]
+mod ranked_preparation;
 use serde_json::{Value, json};
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};

@@ -1,5 +1,5 @@
 //! One finite local-operator invocation. No listener, persisted session or sender.
-use crate::preparation::{CaptureBinding, ReviewSession};
+use crate::preparation::{CaptureBinding, RetrievalMode, ReviewSession};
 use serde_json::json;
 use std::path::Path;
 use std::time::{Duration, Instant};
@@ -69,17 +69,32 @@ impl Options {
 /// Original stays in memory; errors contain no content. Humans review externally;
 /// the retained ReviewSession ends here, with no cross-process approval claim.
 pub fn preview(data_dir: &Path, options: Options, original: String) -> Result<String, Error> {
+    preview_with_retrieval(data_dir, options, original, RetrievalMode::Literal)
+}
+
+/// Explicit ranked opt-in; preserves the existing options DTO and literal JSON.
+pub fn preview_with_retrieval(
+    data_dir: &Path,
+    options: Options,
+    original: String,
+    retrieval: RetrievalMode,
+) -> Result<String, Error> {
     options.validate()?;
+    if retrieval == RetrievalMode::RankedTerms {
+        threadmark_core::knowledge::validate_query_terms(&options.expected.project, &options.query)
+            .map_err(|_| Error::Invalid)?;
+    }
     let capture = options.capture(original);
     Request::new(capture.clone())?; // Shape and original bounds before store open.
     let control = Control::new(Instant::now() + Duration::from_secs(30));
     let store = Store::open_existing(data_dir).map_err(|_| Error::Unavailable)?;
-    let mut session = ReviewSession::capture_bound(
+    let mut session = ReviewSession::capture_bound_with_retrieval(
         &store,
         options.query.clone(),
         capture,
         control.clone(),
         &options.expected,
+        retrieval,
     )?;
     let transport = LoopbackHttp;
     let identity = options.identity();
@@ -111,7 +126,7 @@ pub fn preview(data_dir: &Path, options: Options, original: String) -> Result<St
         PreparationState::NeedsInput => "needs-input",
         _ => return Err(Error::Unavailable),
     };
-    let value = json!({
+    let mut value = json!({
         "project": options.expected.project, "snapshot": session.request().data().snapshot,
         "root": options.expected.root, "root_identity": options.expected.root_identity,
         "incarnation": options.expected.incarnation, "query": options.query,
@@ -124,6 +139,10 @@ pub fn preview(data_dir: &Path, options: Options, original: String) -> Result<St
             "data_scope":"request-and-selected-evidence", "max_calls":1,
             "max_tokens":1024, "deadline_seconds":30, "output_byte_budget":8192},
     });
+    if retrieval == RetrievalMode::RankedTerms {
+        value["retrieval_mode"] = json!("ranked-terms");
+        value["evidence"] = crate::preparation::ranked::evidence(session.request());
+    }
     let mut line = serde_json::to_string(&value).map_err(|_| Error::Unavailable)?;
     line.push('\n');
     if line.len() > 8192 {

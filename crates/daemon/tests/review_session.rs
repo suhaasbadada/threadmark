@@ -1,4 +1,6 @@
 //! Synthetic actual-core preparation/review integration; no network or delivery.
+#[path = "review_session/ranked_preparation.rs"]
+mod ranked_preparation;
 use std::cell::Cell;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};

@@ -55,6 +55,32 @@ impl Candidate {
 }
 
 impl Store {
+    // Both query methods bind the exact policy passed to read_sources; never
+    // replace this with a metadata preflight followed by an unbound ID reload.
+    pub(super) fn query_project(&self, id: &str, expected: Option<&Project>) -> Result<Project> {
+        if let Some(expected) = expected {
+            validate_paths(&expected.sources)?;
+            let p = self.bound_project(
+                id,
+                &expected.root,
+                &expected.root_identity,
+                expected
+                    .incarnation
+                    .as_deref()
+                    .ok_or(Error::ScopeMismatch)?,
+            )?;
+            if p.id != expected.id
+                || p.sources != expected.sources
+                || p.snapshot != expected.snapshot
+            {
+                return Err(Error::ScopeMismatch);
+            }
+            Ok(p)
+        } else {
+            self.project(id)
+        }
+    }
+
     // Shared with literal query; retain its conservative whole-manifest semantics.
     pub(super) fn current_query_inputs(
         &self,
@@ -89,17 +115,41 @@ impl Store {
         self.query_terms_with_progress(id, query, cancel, || {})
     }
 
+    /// Ranked retrieval bound before source access to the exact inspected
+    /// registration, source policy and stored snapshot. Not authentication.
+    pub fn query_terms_bound(
+        &self,
+        expected: &Project,
+        query: &str,
+        cancel: &AtomicBool,
+    ) -> Result<Value> {
+        self.query_terms_scoped(&expected.id, query, cancel, Some(expected), || {}, || {})
+    }
+
     fn query_terms_with_progress(
         &self,
         id: &str,
         query: &str,
         cancel: &AtomicBool,
+        ready: impl FnMut(),
+    ) -> Result<Value> {
+        self.query_terms_scoped(id, query, cancel, None, || {}, ready)
+    }
+
+    fn query_terms_scoped(
+        &self,
+        id: &str,
+        query: &str,
+        cancel: &AtomicBool,
+        expected: Option<&Project>,
+        before_sources: impl FnOnce(),
         mut ready: impl FnMut(),
     ) -> Result<Value> {
         canceled(cancel)?;
         validate_query_terms(id, query)?;
         let terms = terms(query)?;
-        let p = self.project(id)?;
+        let p = self.query_project(id, expected)?;
+        before_sources();
         let inputs = self.current_query_inputs(&p, cancel)?;
         canceled(cancel)?;
         let mut reply = json!({

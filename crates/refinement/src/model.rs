@@ -137,7 +137,19 @@ pub struct RequestData {
 
 /// Immutable bounded request. Accessors return shared references only.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Request(RequestData);
+pub struct Request(RequestData, RetrievalMode);
+
+/// Explicit source selection algorithm, independent of Context/Refine mode.
+/// Frozen privately in Request so consent equality includes even empty selections
+/// without changing the existing capture DTO or literal wire responses.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum RetrievalMode {
+    /// Existing literal substring selection (the default).
+    #[default]
+    Literal,
+    /// Explicit bounded any-term lexical ranking; not semantic retrieval.
+    RankedTerms,
+}
 
 impl Request {
     /// Freeze a capture, rejecting overflow/duplicates rather than truncating.
@@ -179,7 +191,20 @@ impl Request {
                 return Err(Error::Stale);
             }
         }
-        Ok(Self(data))
+        Ok(Self(data, RetrievalMode::Literal))
+    }
+
+    /// Freeze explicit retrieval metadata along with exact selected data. This
+    /// does not authorize sources or inference; trusted core must supply evidence.
+    pub fn new_with_retrieval(data: RequestData, retrieval: RetrievalMode) -> Result<Self, Error> {
+        let mut request = Self::new(data)?;
+        request.1 = retrieval;
+        Ok(request)
+    }
+
+    /// Immutable algorithm bound by provider consent and review approval.
+    pub fn retrieval_mode(&self) -> RetrievalMode {
+        self.1
     }
 
     /// Read the frozen capture without allowing mutation.

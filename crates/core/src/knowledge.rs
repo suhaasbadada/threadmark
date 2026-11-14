@@ -1148,23 +1148,7 @@ impl Store {
         if text.is_empty() || text.len() > 256 {
             return Err(invalid());
         }
-        let p = if let Some(expected) = expected {
-            let p = self.bound_project(
-                id,
-                &expected.root,
-                &expected.root_identity,
-                expected
-                    .incarnation
-                    .as_deref()
-                    .ok_or(Error::ScopeMismatch)?,
-            )?;
-            if p.sources != expected.sources || p.snapshot != expected.snapshot {
-                return Err(Error::ScopeMismatch);
-            }
-            p
-        } else {
-            self.project(id)?
-        };
+        let p = self.query_project(id, expected)?;
         before_sources();
         let current_inputs = self.current_query_inputs(&p, cancel)?;
         canceled(cancel)?;

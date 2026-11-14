@@ -1,4 +1,5 @@
 //! Synthetic SQLite/current-file acceptance for explicit ranked lexical queries.
+mod bound;
 use super::*;
 use std::sync::atomic::AtomicU64;
 
