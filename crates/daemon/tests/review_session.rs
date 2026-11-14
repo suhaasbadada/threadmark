@@ -338,3 +338,111 @@ fn source_policy_revocation_supersession_and_deadline_block_review() {
         Err(Error::Deadline)
     ));
 }
+
+#[test]
+fn actual_sqlite_and_configured_loopback_provider_keep_review_and_delivery_separate() {
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+    let fixture = Fixture::new();
+    let store = fixture.store();
+    let (mut session, control) = fixture.session(&store, Mode::Refine);
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let endpoint = format!(
+        "http://{}/v1/chat/completions",
+        listener.local_addr().unwrap()
+    );
+    listener.set_nonblocking(true).unwrap();
+    let server = std::thread::spawn(move || {
+        let deadline = Instant::now() + Duration::from_secs(2);
+        let (mut socket, _) = loop {
+            match listener.accept() {
+                Ok(connection) => break connection,
+                Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                    assert!(Instant::now() < deadline, "synthetic accept deadline");
+                    std::thread::sleep(Duration::from_millis(5));
+                }
+                Err(_) => panic!("synthetic accept failed"),
+            }
+        };
+        // macOS can inherit the listener's nonblocking flag on accept. Restore
+        // bounded blocking fixture I/O explicitly instead of racing WouldBlock.
+        socket.set_nonblocking(false).unwrap();
+        socket
+            .set_read_timeout(Some(Duration::from_secs(2)))
+            .unwrap();
+        socket
+            .set_write_timeout(Some(Duration::from_secs(2)))
+            .unwrap();
+        let mut header = Vec::new();
+        while !header.ends_with(b"\r\n\r\n") {
+            let mut byte = [0];
+            socket.read_exact(&mut byte).unwrap();
+            header.push(byte[0]);
+            assert!(header.len() <= 4096);
+        }
+        let header = String::from_utf8(header).unwrap();
+        assert!(header.starts_with("POST /v1/chat/completions HTTP/1.1\r\n"));
+        assert!(!header.to_ascii_lowercase().contains("authorization"));
+        let length: usize = header
+            .lines()
+            .find_map(|line| line.strip_prefix("Content-Length: "))
+            .unwrap()
+            .parse()
+            .unwrap();
+        assert!(length <= MAX_PROVIDER_INPUT);
+        let mut body = vec![0; length];
+        socket.read_exact(&mut body).unwrap();
+        let request: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        let content = serde_json::json!({"objective":"Inspect synthetic_blue without deployment.","output_expectations":"Proposed checks, not executed.","unknowns":[],"questions":[]}).to_string();
+        let response = serde_json::to_vec(&serde_json::json!({"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":content}}]})).unwrap();
+        let header = format!(
+            "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n",
+            response.len()
+        );
+        socket.write_all(header.as_bytes()).unwrap();
+        socket.write_all(&response).unwrap();
+        request
+    });
+    let settings = ProviderSettings {
+        profiles: vec![ProviderIdentity {
+            profile: "synthetic-local".into(),
+            model: "synthetic-model".into(),
+            endpoint,
+            locality: Locality::Local,
+        }],
+        selected_profile: Some("synthetic-local".into()),
+        enabled: true,
+    };
+    let provider = ConfiguredProvider::new(&settings, &LoopbackHttp).unwrap();
+    let permission = ProviderConsent {
+        request: session.request().clone(),
+        identity: provider.identity(),
+        data_scope: DataScope::RequestAndSelectedEvidence,
+        max_calls: 1,
+        output_budget: 8192,
+        deadline: control.deadline(),
+    };
+    let result = session.prepare(
+        &store,
+        Some(ProviderAccess {
+            provider: &provider,
+            consent: &permission,
+        }),
+    );
+    let wire = server.join().unwrap();
+    result.unwrap();
+    assert_eq!(wire["model"], "synthetic-model");
+    let payload: serde_json::Value =
+        serde_json::from_str(wire["messages"][1]["content"].as_str().unwrap()).unwrap();
+    assert_eq!(payload["original"], session.request().data().original);
+    assert_eq!(payload["evidence"][0]["text"], "fn synthetic_blue() {}");
+    assert_eq!(session.state(), PreparationState::Ready);
+    assert_eq!(
+        session.preview(&store).unwrap().original,
+        capture(Mode::Refine).original
+    );
+    let approval = session.approve(&store, ReviewChoice::UsePrepared).unwrap();
+    let value = session.handoff(&store, &approval).unwrap();
+    assert_eq!(value.delivery, Delivery::NotAttempted);
+    assert_eq!(value.destination, "local-review-only");
+}
