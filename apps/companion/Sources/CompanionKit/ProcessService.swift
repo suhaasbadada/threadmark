@@ -84,6 +84,7 @@ public struct ProcessService: CoreService {
         }
         if case .searchHumanContext = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .searchHumanContextBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
+        if case .searchHumanContextKindsBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .query = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .queryBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .queryTermsBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
@@ -119,6 +120,8 @@ public struct ProcessService: CoreService {
             default: responseOperation = operation
             }
             switch responseOperation {
+            case .searchHumanContextKindsBound(let request):
+                return .filteredHumanSearch(try FilteredHumanSearch.decode(data, request: request))
             case .inspectSourceAnchorBound(let request):
                 return .sourceInspection(try SourceInspectionDocument.decode(data, request: request))
             case .compareHumanContextBound(let request):
@@ -252,6 +255,11 @@ public struct ProcessService: CoreService {
         var args: [String]
         var input = Data()
         switch operation {
+        case .searchHumanContextKindsBound(let request):
+            try request.validate()
+            let b = request.binding
+            args = ["context", "search", b.project, request.query, "--kinds"] + request.kinds +
+                ["--expected-root", b.root, "--expected-root-identity", b.rootIdentity, "--expected-incarnation", b.incarnation]
         case .inspectSourceAnchorBound(let request):
             try request.validate()
             let p = request.project, a = request.anchor

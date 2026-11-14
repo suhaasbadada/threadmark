@@ -19,10 +19,24 @@ public struct HumanContextSearchView: View {
                     .onSubmit(search)
                     .onChange(of: query) { _ in model.humanSearchQueryChanged() }
                 Button("Search", action: search)
-                    .disabled(!model.canSearchHumanContext || !InputPolicy.humanSearch(query))
+                    .disabled(!model.canSearchHumanContext || !InputPolicy.humanSearch(query) || model.humanSearchKindFilter?.isEmpty == true)
                 if model.busy { Button("Cancel", action: model.cancel) }
             }
+            Toggle("Filter human context kinds (opt-in)", isOn: Binding(
+                get: { model.humanSearchKindFilter != nil },
+                set: { model.setHumanSearchKindFilter($0 ? InputPolicy.contextKinds.sorted() : nil) }))
+            if let kinds = model.humanSearchKindFilter {
+                HStack {
+                    ForEach(InputPolicy.contextKinds.sorted(), id: \.self) { kind in
+                        Toggle(kind, isOn: Binding(get: { kinds.contains(kind) }, set: { selected in
+                            model.setHumanSearchKindFilter(selected ? kinds + [kind] : kinds.filter { $0 != kind })
+                        })).toggleStyle(.checkbox).accessibilityLabel("Include human context kind: \(kind)")
+                    }
+                }
+                Text("Choose at least one kind, then Search. Changing choices does not read storage.").font(.caption)
+            }
             if let result = model.humanSearch {
+                if let kinds = model.humanSearchSelectedKinds { Text("Selected human kinds: \(kinds.joined(separator: ", "))") }
                 Text("Project: \(result.project) · human-authored context only").font(.subheadline)
                 Text("Latest active revisions at read only; later edits, retirement or Forget may change results. No historical, semantic or source search.")
                     .font(.caption)
@@ -43,7 +57,7 @@ public struct HumanContextSearchView: View {
         .onChange(of: model.contextEditorRevision) { _ in query = "" }
     }
     private func search() {
-        guard model.canSearchHumanContext, InputPolicy.humanSearch(query) else { return }
+        guard model.canSearchHumanContext, InputPolicy.humanSearch(query), model.humanSearchKindFilter?.isEmpty != true else { return }
         model.searchHumanContext(query)
     }
 }

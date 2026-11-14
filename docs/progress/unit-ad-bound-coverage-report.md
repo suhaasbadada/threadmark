@@ -1,5 +1,22 @@
 # Unit AD — bound metadata-only lexical coverage
 
+## Publication outcome
+
+PR #79 passed all five checks at full head
+`26a2efa02e8f315885ee25573d6971ed00fa6f51` (CI `43587483663`, integrated
+`43587483669`). Fresh exact-head/main/check/review/approval/discussion/rules
+verification found no blocker; authorized merge completed as
+**`e26aea6ec00fabb0e56ba259fa858f61ce2d758e`**. Watch removed after merge.
+Separate exact post-merge CI remains unverified.
+
+PR #78 separate post-merge runs `43587415125` and `43587415134`, both targeting
+`71958a0ee5c334f4068d6683997d171c78922f2f`, completed **PASS**. Native coverage
+inspection continues in its existing lane. Kind-filter implementation has been
+reported, but final strict native verification is still running; no native pass,
+independent review or integration is inferred from that preliminary handoff.
+Nine inherited progress edits/worktrees/parent reminders preserved. No GUI/AX,
+live-provider quality, host delivery, deployment or phase closure claimed.
+
 ## Primary integration and independent repair recheck
 
 Primary committed only the eight owned files as `adce0b4` and applied cleanly as

@@ -1,6 +1,31 @@
 //! Human context is an overlay, never verified source evidence or authorization.
 use super::*;
 
+/// Validated nonempty unique human-kind selection in deterministic wire order.
+#[derive(Clone, Debug)]
+pub struct HumanSearchKinds(Vec<String>);
+
+impl HumanSearchKinds {
+    /// Validate shape before storage; no SQL identifiers are constructed.
+    pub fn new(kinds: &[String]) -> Result<Self> {
+        if kinds.is_empty() || kinds.len() > 5 || kinds.iter().any(|k| !context_kind(k)) {
+            return Err(invalid());
+        }
+        let mut canonical = kinds.to_vec();
+        canonical.sort();
+        canonical.dedup();
+        if canonical.len() != kinds.len() {
+            return Err(invalid());
+        }
+        Ok(Self(canonical))
+    }
+
+    /// Exact captured canonical selection, not authorization.
+    pub fn kinds(&self) -> &[String] {
+        &self.0
+    }
+}
+
 /// Validate human-only lexical search before opening storage; no query is echoed.
 pub fn validate_human_search(project: &str, query: &str) -> Result<()> {
     identity(project)?;
@@ -31,6 +56,21 @@ impl Store {
         })
     }
 
+    /// Explicit kind-filtered human search; bound admission is mandatory.
+    pub fn search_context_kinds_bound(
+        &self,
+        project: &str,
+        query: &str,
+        kinds: &HumanSearchKinds,
+        binding: &ContextReadBinding<'_>,
+        cancel: &AtomicBool,
+    ) -> Result<Value> {
+        validate_human_search(project, query)?;
+        self.read_human_bound(project, binding, cancel, |tx, registration| {
+            self.search_context_selected_in(tx, registration, query, Some(kinds), cancel, || {})
+        })
+    }
+
     fn search_context_observed(
         &self,
         project: &str,
@@ -54,6 +94,18 @@ impl Store {
         tx: &rusqlite::Transaction<'_>,
         registration: &Project,
         query: &str,
+        cancel: &AtomicBool,
+        boundary: impl FnMut(),
+    ) -> Result<Value> {
+        self.search_context_selected_in(tx, registration, query, None, cancel, boundary)
+    }
+
+    fn search_context_selected_in(
+        &self,
+        tx: &rusqlite::Transaction<'_>,
+        registration: &Project,
+        query: &str,
+        kinds: Option<&HumanSearchKinds>,
         cancel: &AtomicBool,
         mut boundary: impl FnMut(),
     ) -> Result<Value> {
@@ -109,7 +161,8 @@ impl Store {
             {
                 return Err(invalid());
             }
-            if retired != 0 {
+            // Validate all scoped latest rows before filtering, never hide corruption.
+            if retired != 0 || kinds.is_some_and(|selected| !selected.0.contains(&kind)) {
                 continue;
             }
             let score = text.to_lowercase().matches(&needle).count();
@@ -130,6 +183,10 @@ impl Store {
             "matched_entries": matched, "omitted_entries": matched,
             "truncated": matched != 0, "results": []
         });
+        if let Some(kinds) = kinds {
+            reply["version"] = json!("human-search-kind-filter-v1");
+            reply["selected_kinds"] = json!(kinds.kinds());
+        }
         for (_, id, revision, kind, text) in candidates {
             canceled(cancel)?;
             let results = reply["results"].as_array_mut().ok_or(invalid())?;

@@ -49,6 +49,8 @@ pub enum Command {
     SearchContext(String, String),
     /// Opt-in human search scoped before human SQL reads (root, identity, nonce).
     SearchContextBound(String, String, String, String, String),
+    /// Explicit filtered human search, mandatory captured registration.
+    SearchContextKindsBound(String, String, Vec<String>, String, String, String),
     /// Explicit any-term lexical ranking; literal query/default preparation unchanged.
     QueryTerms(String, String),
     /// Cached ranked read; exact binding reaches core before traversal.
@@ -120,6 +122,16 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         threadmark_core::knowledge::validate_export_binding(expected)?;
     }
     match &command {
+        Command::SearchContextKindsBound(project, query, kinds, root, identity, token) => {
+            threadmark_core::knowledge::validate_human_search(project, query)?;
+            threadmark_core::knowledge::HumanSearchKinds::new(kinds)?;
+            threadmark_core::knowledge::ContextReadBinding {
+                root,
+                root_identity: identity,
+                incarnation: token,
+            }
+            .validate(project)?;
+        }
         Command::CompareContextBound(project, id, from, to, root, identity, token) => {
             threadmark_core::knowledge::validate_context_comparison(
                 project,
@@ -279,6 +291,7 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
             | Command::ContextBound(..)
             | Command::CompareContextBound(..)
             | Command::SearchContextBound(..)
+            | Command::SearchContextKindsBound(..)
             | Command::UpdateContextRevisionBound(..)
             | Command::RetireContextRevisionBound(..)
             | Command::QueryBound(..)
@@ -362,6 +375,18 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
             },
             cancel,
         )?,
+        Command::SearchContextKindsBound(project, query, kinds, root, identity, token) => store
+            .search_context_kinds_bound(
+                &project,
+                &query,
+                &threadmark_core::knowledge::HumanSearchKinds::new(&kinds)?,
+                &threadmark_core::knowledge::ContextReadBinding {
+                    root: &root,
+                    root_identity: &identity,
+                    incarnation: &token,
+                },
+                cancel,
+            )?,
         Command::SearchContextBound(project, query, root, identity, token) => store
             .search_context_bound(
                 &project,

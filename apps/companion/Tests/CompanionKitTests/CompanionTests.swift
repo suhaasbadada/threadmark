@@ -99,6 +99,7 @@ private actor ExplicitFakeCoreService: CoreService {
             guard projects.contains(where: { (try? HumanContextReadBinding(project: $0)) == b }) else { throw ServiceError.scopeMismatch }
             return try await perform(.context(b.project, id))
         case .searchHumanContextBound: throw ServiceError.unavailable
+        case .searchHumanContextKindsBound: throw ServiceError.unavailable
         case .exportProjectBound: throw ServiceError.invalid // Dedicated export fixtures own this boundary.
         case .inspectSourceAnchorBound: throw ServiceError.invalid // Dedicated inspection fixtures own this boundary.
         case .updateContextRevisionBound(let binding, let kind, let text):

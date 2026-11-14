@@ -3,6 +3,8 @@ use serde_json::Value;
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Command, Output, Stdio};
+#[path = "human_search/kind_filter.rs"]
+mod kind_filter;
 
 struct Fixture(PathBuf);
 impl Fixture {

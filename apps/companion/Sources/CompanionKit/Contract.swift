@@ -363,6 +363,7 @@ public enum ServiceError: String, Error, Sendable, LocalizedError {
 }
 
 public enum Operation: Sendable {
+    case searchHumanContextKindsBound(HumanSearchKindRequest)
     case inspectSourceAnchorBound(SourceInspectionRequest)
     case compareHumanContextBound(HumanComparisonRequest)
     case contextsBound(HumanContextReadBinding)
@@ -394,6 +395,7 @@ public enum Operation: Sendable {
     case writeContext(String, String, String, String, update: Bool), retireContext(String, String)
 }
 public enum Reply: Sendable {
+    case filteredHumanSearch(FilteredHumanSearch)
     case sourceInspection(SourceInspectionDocument)
     case humanComparison(HumanComparison)
     case projectExport(ProjectExportDocument)
