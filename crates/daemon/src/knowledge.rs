@@ -50,6 +50,11 @@ pub enum Command {
     Query(String, String),
     /// Cached read bound before source traversal to all captured metadata.
     QueryBound(threadmark_core::knowledge::Project, String),
+    /// Explicit output-only file filter; complete policy remains the read boundary.
+    QueryFilesBound(
+        threadmark_core::knowledge::Project,
+        threadmark_core::knowledge::FileQuery,
+    ),
     /// Explicit indexed source-anchor window, bound to the complete captured project.
     InspectSourceAnchor(
         threadmark_core::knowledge::Project,
@@ -132,6 +137,7 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         threadmark_core::knowledge::validate_export_binding(expected)?;
     }
     match &command {
+        Command::QueryFilesBound(expected, request) => request.validate(expected)?,
         Command::EditContextBatchBound(project, request, root, identity, token) => {
             request.validate(
                 project,
@@ -320,6 +326,7 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
             | Command::UpdateContextRevisionBound(..)
             | Command::RetireContextRevisionBound(..)
             | Command::QueryBound(..)
+            | Command::QueryFilesBound(..)
             | Command::QueryTermsBound(..)
             | Command::PrepareContextTermsBound(..)
             | Command::PrepareContextBound(..)
@@ -348,6 +355,9 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         Store::open(data_dir)?
     };
     let result = match command {
+        Command::QueryFilesBound(expected, request) => {
+            store.query_files_bound(&expected, &request, cancel)?
+        }
         Command::EditContextBatchBound(project, request, root, identity, token) => {
             return store.edit_context_batch_bound(
                 &project,

@@ -87,6 +87,9 @@ fn usage() -> std::process::ExitCode {
     );
     eprintln!("{}", local_refinement::USAGE);
     eprintln!(
+        "query-files PROJECT QUERY --mode literal|ranked-any-terms --selected-files FILE ... --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-snapshot HASH|none --expected-sources [FILE ...] (1..64 distinct approved output candidates only; FULL approved policy source/freshness reads remain; required exact binding/order; existing store, no stdin; whole JSON plus newline <=8192 bytes; no Context/Refine integration)"
+    );
+    eprintln!(
         "cached source reads: query PROJECT TEXT, query-terms PROJECT TEXT or context prepare PROJECT QUERY [--terms] (original only on bounded stdin), followed by --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-snapshot HASH|none --expected-sources [FILE ...] (exact list last, at most 64; all flags required together; current registration alone authorizes source reads, not these metadata values)"
     );
     eprintln!(
@@ -118,7 +121,9 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
     // Bounded parser; untrusted arguments and errors are never echoed.
     // Inspection has 20 fixed arguments including --data-dir/STORE, plus the
     // complete approved policy of up to 64 files. Other grammars keep their cap.
-    let argument_limit = if args.get(2).is_some_and(|s| s == "source")
+    let argument_limit = if args.get(2).is_some_and(|s| s == "query-files") {
+        145 // fixed grammar plus 64 selected and 64 complete-policy paths
+    } else if args.get(2).is_some_and(|s| s == "source")
         && args.get(3).is_some_and(|s| s == "inspect")
     {
         84
@@ -429,6 +434,37 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
             Command::CoverageReport(expected)
         }
         ["query", id, text] => Command::Query((*id).into(), (*text).into()),
+        [
+            "query-files",
+            id,
+            text,
+            "--mode",
+            mode,
+            "--selected-files",
+            rest @ ..,
+        ] => {
+            use threadmark_core::knowledge::{FileQuery, FileQueryMode};
+            let mode = match *mode {
+                "literal" => FileQueryMode::Literal,
+                "ranked-any-terms" => FileQueryMode::RankedAnyTerms,
+                _ => return usage(),
+            };
+            let Some(end) = rest.iter().position(|w| *w == "--expected-root") else {
+                return usage();
+            };
+            let Some(expected) = read_binding(id, text, &rest[end..]) else {
+                return usage();
+            };
+            let request = FileQuery {
+                query: (*text).into(),
+                mode,
+                selected_paths: rest[..end].iter().map(|p| (*p).into()).collect(),
+            };
+            if request.validate(&expected).is_err() {
+                return usage();
+            }
+            Command::QueryFilesBound(expected, request)
+        }
         ["query-terms", id, text, binding @ ..] if !binding.is_empty() => {
             let Some(expected) = read_binding(id, text, binding) else {
                 return usage();

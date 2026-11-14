@@ -145,9 +145,35 @@ impl Store {
         before_sources: impl FnOnce(),
         mut ready: impl FnMut(),
     ) -> Result<Value> {
+        self.query_selected_pipeline(
+            id,
+            query,
+            cancel,
+            (expected, None),
+            before_sources,
+            &mut ready,
+        )
+    }
+
+    // One source walk, row verification, ranking and publication fence for both modes.
+    pub(super) fn query_selected_pipeline(
+        &self,
+        id: &str,
+        query: &str,
+        cancel: &AtomicBool,
+        scope: (Option<&Project>, Option<&FileQuery>),
+        before_sources: impl FnOnce(),
+        mut ready: impl FnMut(),
+    ) -> Result<Value> {
+        let (expected, filter) = scope;
         canceled(cancel)?;
-        validate_query_terms(id, query)?;
-        let terms = terms(query)?;
+        let literal = filter.is_some_and(|r| r.mode == FileQueryMode::Literal);
+        let terms = if literal {
+            Vec::new()
+        } else {
+            validate_query_terms(id, query)?;
+            terms(query)?
+        };
         let p = self.query_project(id, expected)?;
         before_sources();
         let inputs = self.current_query_inputs(&p, cancel)?;
@@ -161,6 +187,29 @@ impl Store {
             "results":[],
             "limitations":"Unicode lowercase only; no stemming or normalization; no notes/history, inference or permission from content; current-at-read is not a filesystem lock"
         });
+        if let Some(filter) = filter {
+            reply["format"] = json!("threadmark-file-scoped-retrieval");
+            reply["version"] = json!(1);
+            reply["incarnation"] = json!(p.incarnation);
+            reply["selected_paths"] = json!(filter.selected_paths);
+            reply["mode"] = json!(if literal {
+                "literal"
+            } else {
+                "ranked-any-terms"
+            });
+            if literal {
+                reply.as_object_mut().ok_or(invalid())?.remove("terms");
+                reply["selection"] = json!("bounded-path-line-prefix");
+                reply["coverage"] = json!("lexical-lines-only; no semantic coverage");
+                reply["limitations"] = json!(
+                    "SQLite ASCII lowercase substring only; full approved policy freshness reads; current-at-read is not a filesystem lock"
+                );
+            }
+            // An explicit scope must never be silently truncated out of the frame.
+            if serde_json::to_vec(&reply).map_err(unavailable)?.len() + 2 > 8192 {
+                return Err(invalid());
+            }
+        }
         if let Some(inputs) = &inputs {
             // Precompute line tables once per source: no repeated lines().nth().
             let mut lookup = BTreeMap::new();
@@ -173,15 +222,25 @@ impl Store {
             }
             let mut best: Vec<Candidate> = Vec::with_capacity(9);
             let mut scanned = 0;
+            let mut visited = 0;
             let mut matched = 0;
+            let mut literal_match = if literal {
+                Some(
+                    self.db
+                        .prepare("SELECT instr(lower(?1),lower(?2))>0")
+                        .map_err(unavailable)?,
+                )
+            } else {
+                None
+            };
             let mut stmt = self.db.prepare(
                 "SELECT path,line,text,hash,producer FROM evidence WHERE project=?1 ORDER BY path,line LIMIT 262145"
             ).map_err(unavailable)?;
             let mut rows = stmt.query([id]).map_err(unavailable)?;
             while let Some(row) = rows.next().map_err(unavailable)? {
                 canceled(cancel)?;
-                scanned += 1;
-                if scanned > 64 * 4096 {
+                visited += 1;
+                if visited > 64 * 4096 {
                     return Err(invalid());
                 }
                 let path: String = row.get(0).map_err(unavailable)?;
@@ -202,13 +261,28 @@ impl Store {
                 if hash != source.hash || lines.get(coordinate).copied() != Some(text.as_str()) {
                     return Err(invalid());
                 }
-                let lower = text.to_lowercase();
+                if filter.is_some_and(|r| !r.selected_paths.contains(&path)) {
+                    continue;
+                }
+                scanned += 1;
                 let mut distinct = 0;
                 let mut occurrences = 0;
-                for term in &terms {
-                    let count = lower.matches(term.as_str()).count();
-                    distinct += usize::from(count > 0);
-                    occurrences += count;
+                if let Some(matcher) = &mut literal_match {
+                    // Match only selected, verified rows, using the exact existing
+                    // SQLite folding (Rust Unicode lowercase is NOT equivalent).
+                    distinct = usize::from(
+                        matcher
+                            .query_row(params![text, query], |r| r.get::<_, bool>(0))
+                            .map_err(unavailable)?,
+                    );
+                    occurrences = distinct;
+                } else {
+                    let lower = text.to_lowercase();
+                    for term in &terms {
+                        let count = lower.matches(term.as_str()).count();
+                        distinct += usize::from(count > 0);
+                        occurrences += count;
+                    }
                 }
                 if distinct == 0 {
                     continue;
@@ -237,6 +311,21 @@ impl Store {
                     "producer":c.producer,"kind":"observed-source-line","currentness":"current-at-read",
                     "coverage":"lexical-only","matched_terms":c.matched,"occurrences":c.occurrences
                 }));
+                if literal {
+                    let result = reply["results"]
+                        .as_array_mut()
+                        .ok_or(invalid())?
+                        .last_mut()
+                        .ok_or(invalid())?;
+                    result
+                        .as_object_mut()
+                        .ok_or(invalid())?
+                        .remove("matched_terms");
+                    result
+                        .as_object_mut()
+                        .ok_or(invalid())?
+                        .remove("occurrences");
+                }
                 // Include newline; reserve one byte for either boolean spelling.
                 if serde_json::to_vec(&reply).map_err(unavailable)?.len() + 2 > 8192 {
                     reply["results"].as_array_mut().ok_or(invalid())?.pop();
@@ -247,6 +336,9 @@ impl Store {
         }
         ready();
         canceled(cancel)?;
+        if filter.is_some() {
+            self.healthy()?;
+        }
         let latest = self.project(id)?;
         if latest.root != p.root
             || latest.root_identity != p.root_identity
