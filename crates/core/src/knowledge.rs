@@ -27,6 +27,7 @@ mod export;
 mod forget;
 mod human_read;
 mod human_search;
+mod incremental;
 mod ranked_query;
 mod schema;
 mod source_forget;
@@ -37,6 +38,7 @@ pub use coverage::validate_coverage_binding;
 pub use forget::{ForgetBinding, ForgetStage};
 pub use human_read::ContextReadBinding;
 pub use human_search::{HumanSearchKinds, validate_human_search};
+pub use incremental::validate_incremental_binding;
 pub use ranked_query::validate_query_terms;
 pub use schema::UpgradeStage;
 pub use source_forget::{SourceForgetBinding, SourceForgetStage, validate_source_forget};
@@ -324,6 +326,8 @@ fn read_source(
         bytes.extend_from_slice(&chunk[..n]);
         #[cfg(test)]
         coverage::observe_chunk(cancel);
+        #[cfg(test)]
+        incremental::observe_chunk(cancel);
         canceled(cancel).map_err(Whole)?;
         if n == 0 {
             break;
@@ -1134,32 +1138,7 @@ impl Store {
         canceled(cancel)?;
         let producer = extractor.producer().to_owned();
         identity(&producer)?;
-        let mut evidence = Vec::new();
-        for (source, text) in &inputs {
-            canceled(cancel)?;
-            let lines: Vec<_> = text.lines().collect();
-            if lines.len() > 4096 {
-                return Err(invalid());
-            }
-            let selected = extractor.extract(text, cancel)?;
-            if selected.len() > 4096 {
-                return Err(invalid());
-            }
-            let mut seen = std::collections::BTreeSet::new();
-            for line in selected {
-                let value = line
-                    .checked_sub(1)
-                    .and_then(|i| lines.get(i))
-                    .ok_or(invalid())?;
-                if !seen.insert(line) || value.len() > 1024 || value.trim().is_empty() {
-                    return Err(invalid());
-                }
-                evidence.push((source, line, *value));
-                if evidence.len() > 16384 {
-                    return Err(invalid());
-                }
-            }
-        }
+        let evidence = incremental::stage(&inputs, extractor, cancel)?;
         let manifest: Vec<_> = inputs.iter().map(|(s, _)| s.clone()).collect();
         progress(IndexStage::Extracted);
         canceled(cancel)?;

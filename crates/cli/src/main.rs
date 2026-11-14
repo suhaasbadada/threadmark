@@ -92,6 +92,9 @@ fn usage() -> std::process::ExitCode {
     eprintln!(
         "project coverage PROJECT --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-snapshot HASH|none --expected-sources [FILE ...] (required once, exact order; metadata-only lexical status of explicit approved files, not semantic completeness; existing read-only DELETE store, no stdin or Build; 65536 JSON bytes including newline)"
     );
+    eprintln!(
+        "index-incremental PROJECT --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-snapshot HASH|none --expected-sources [FILE ...] (required once, exact order; existing writable schema v3/v4 store only, no stdin; validated lexical SQL-row reuse, full bounded source reads, no semantic coverage; 65536 JSON bytes including newline; ordinary index unchanged)"
+    );
     std::process::ExitCode::from(2)
 }
 
@@ -360,6 +363,15 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
             Command::Sources((*id).into(), files.iter().map(|s| (*s).into()).collect())
         }
         ["index", id] => Command::Index((*id).into()),
+        ["index-incremental", id, binding @ ..] => {
+            let Some(expected) = read_binding(id, "incremental", binding) else {
+                return usage();
+            };
+            if threadmark_core::knowledge::validate_incremental_binding(&expected).is_err() {
+                return usage();
+            }
+            Command::IndexIncremental(expected)
+        }
         [
             "index",
             id,

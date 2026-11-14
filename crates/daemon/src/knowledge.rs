@@ -32,6 +32,8 @@ pub enum Command {
     SourcesBound(String, String, String, String, Vec<String>, Vec<String>),
     /// Explicit bounded index job.
     Index(String),
+    /// Explicit manual lexical row reuse, bound to a full captured project.
+    IndexIncremental(threadmark_core::knowledge::Project),
     /// Timed reconciliation bound to exact previously approved scope.
     IndexBound(String, String, String, Vec<String>),
     /// Native automatic reconciliation bound to a registration nonce.
@@ -206,6 +208,9 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         Command::CoverageReport(expected) => {
             threadmark_core::knowledge::validate_coverage_binding(expected)?;
         }
+        Command::IndexIncremental(expected) => {
+            threadmark_core::knowledge::validate_incremental_binding(expected)?;
+        }
         Command::QueryBound(expected, query) | Command::PrepareContextBound(expected, query, _) => {
             threadmark_core::knowledge::validate_query_binding(expected, query)?;
         }
@@ -284,6 +289,7 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
     } else if matches!(
         &command,
         Command::IndexBound(..)
+            | Command::IndexIncremental(..)
             | Command::ExportProjectBound(..)
             | Command::ContextsBound(..)
             | Command::ForgottenContextsBound(..)
@@ -515,6 +521,10 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
             json!({"project":id,"source_evidence_invalidated":true})
         }
         Command::Index(id) => store.index(&id, &mut LexicalLines, cancel)?,
+        Command::IndexIncremental(expected) => {
+            // Successful commit is authoritative; no post-commit cancel error.
+            return store.index_incremental(&expected, cancel);
+        }
         Command::IndexIncarnationBound(id, root, identity, sources, token) => {
             store.index_incarnation_bound(&id, &root, &identity, &sources, &token, cancel)?
         }
