@@ -141,3 +141,32 @@ evidence-only follow-up identified at handoff. Do not cherry-pick the base merge
 `a32ea0e0f837902f68f983936efe0444702d4976`; primary already owns those bases.
 No publication, review or remote CI on this lane's exact head is inferred from
 PR #54/55 or the supplied successful post-merge runs.
+# Primary integration and launch-error correction
+
+Exact combined tested implementation:
+`121b3f0caf7972e68d9cd6e8ef09d55fae389c00`, integrated onto ranked preparation
+`cdeb277264b0690911c0d60f40bd31e53c344cd6` without weakening native source fences.
+Retained protocol v1 remains **literal-only**: ranked `--terms` is explicitly
+rejected, never silently ignored. Ranked finite preview remains separately usable.
+
+Joffrey found one medium launch-path issue: generic argument validation could
+emit usage on stderr before the protocol watchdog was armed. Primary now routes
+raw `refine review` arguments first; the retained watchdog encloses count, UTF-8,
+length and flag validation. Invalid launches emit only bounded terminal JSON,
+before opening storage or reading stdin. Added oversized/count/non-UTF-8/missing
+argument regressions. Independent recheck **closed** the finding, including five
+held-open-stdin launch probes and five relevant Rust tests; no remaining findings.
+
+Primary combined `scripts/check.py` and strict actual-CLI native suite **PASS**
+(140 Swift tests/17 suites). Dedicated retained CLI suite **PASS**, 11 tests;
+the two explicitly ignored production-duration tests were not repeated during
+integration. Their earlier lane results above remain separate evidence, not a new
+exact-combined-head deadline pass. Staged secrets and whitespace **PASS**.
+
+PR #58 merged as `03cd43bc31201137be339485f6d4fd29045a51a6` after fresh
+exact-head checks/review/rules/discussions. Both separate exact post-merge runs
+`43563937238` and `43563937245` passed. PR #59 was retargeted to main and updated
+to `272f08a48ea851e6b248411acd7e2a1e3503a8bd`; its new-head remote checks are a
+separate gate and not inherited from the former base. Retained publication/CI,
+native retained wiring, GUI/AX, live model and host delivery remain subsequent
+gates. Nine inherited progress edits remain untouched/excluded. No phase closure.
