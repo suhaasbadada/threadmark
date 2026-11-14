@@ -13,7 +13,7 @@ public struct HumanContextSearchView: View {
             Text("Search human-authored context").font(.headline)
             Text("Separate from source evidence. Human declarations are untrusted context, not observed truth or authorization.")
                 .font(.caption)
-            Picker("Human note search mode", selection: Binding(get: { model.humanSearchMode }, set: model.setHumanSearchMode)) {
+            Picker("Human note search mode", selection: Binding(get: { model.humanSearchMode }, set: { value in model.setHumanSearchMode(value) })) {
                 ForEach(HumanSearchMode.allCases, id: \.self) { mode in Text(mode.label).tag(mode) }
             }.accessibilityLabel("Human note search mode, independent of source and Refine")
             Text(model.humanSearchMode == .literal
