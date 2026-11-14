@@ -79,13 +79,143 @@ fn simultaneous_expected_revision_writers_publish_only_one_append() {
     let update = mutate(&mut first, &p, 1, false);
     let retire = peer.join().unwrap();
     assert_eq!(usize::from(update.is_ok()) + usize::from(retire.is_ok()), 1);
-    assert_eq!(
+    // Public admission can fail closed before comparing revisions (for example,
+    // while a concurrent DELETE journal disappears). Only a reached comparison
+    // establishes ScopeMismatch; dependency/admission errors remain Unavailable.
+    assert!(matches!(
         if update.is_err() { update } else { retire },
-        Err(Error::ScopeMismatch)
-    );
+        Err(Error::ScopeMismatch | Error::Unavailable)
+    ));
     let after = first.context("a", "note").unwrap();
     assert_eq!(after["history"].as_array().unwrap().len(), 2);
     assert_eq!(after["history"][1]["retired"], retire.is_ok());
+    assert_eq!(after["history"][1]["revision"], 2);
+    assert_eq!(
+        after["history"][1]["text"],
+        if retire.is_ok() {
+            "synthetic original"
+        } else {
+            "synthetic guarded"
+        }
+    );
+    drop(first);
+    assert_eq!(f.store().context("a", "note").unwrap(), after);
+}
+
+fn mutate_captured(s: &mut Store, p: &Project, revision: u32, retire: bool) -> Result<()> {
+    if retire {
+        s.retire_context_guarded(p, "note", Some((revision, &token())))
+    } else {
+        s.write_context_guarded(
+            p,
+            "note",
+            "decision",
+            "synthetic guarded",
+            true,
+            Some((revision, &token())),
+        )
+    }
+}
+
+#[test]
+fn overlapping_captured_revision_writers_compare_after_the_winner_commits() {
+    for winner_retires in [false, true] {
+        let f = Fixture::new();
+        let mut winner = f.registered();
+        winner
+            .write_context("a", "note", "note", "synthetic original", false)
+            .unwrap();
+        let captured = winner.project("a").unwrap();
+        let before = winner.context("a", "note").unwrap();
+        let mut loser = f.store();
+        let peer_capture = loser.project("a").unwrap();
+        let (entered, admitted) = std::sync::mpsc::channel();
+        let (release, continue_commit) = std::sync::mpsc::channel();
+        let (committed, finished) = std::sync::mpsc::channel();
+        let writer = std::thread::spawn(move || {
+            context_revision::BEFORE_COMMIT.with_borrow_mut(|hook| {
+                *hook = Some(Box::new(move || {
+                    entered.send(()).unwrap();
+                    continue_commit
+                        .recv_timeout(std::time::Duration::from_secs(5))
+                        .unwrap();
+                }));
+            });
+            let result = mutate_captured(&mut winner, &captured, 1, winner_retires);
+            let _ = committed.send(result.is_ok());
+            result
+        });
+        if admitted
+            .recv_timeout(std::time::Duration::from_secs(5))
+            .is_err()
+        {
+            let result = writer.join();
+            panic!("writer never reached its guarded commit: {result:?}");
+        }
+        // Test-only SQLite admission handler: do not release the winner until
+        // the other connection actually encounters its held writer lock. Retry
+        // admission once only after the winner reports a successful commit.
+        // No production mutation retry or error remapping is introduced.
+        let busy_seen = std::sync::Arc::new(AtomicBool::new(false));
+        let blocked = busy_seen.clone();
+        let mut handoff = Some((release, finished));
+        loser
+            .db
+            .busy_handler(Some(move |_| {
+                handoff.take().is_some_and(|(release, committed)| {
+                    blocked.store(true, Ordering::SeqCst);
+                    release.send(()).is_ok()
+                        && committed
+                            .recv_timeout(std::time::Duration::from_secs(5))
+                            .unwrap_or(false)
+                })
+            }))
+            .unwrap();
+        let result = mutate_captured(&mut loser, &peer_capture, 1, !winner_retires);
+        let encountered_lock = busy_seen.load(Ordering::SeqCst);
+        loser.db.busy_handler(None::<fn(i32) -> bool>).unwrap();
+        assert_eq!(writer.join().unwrap(), Ok(()));
+        assert!(encountered_lock);
+        assert_eq!(result, Err(Error::ScopeMismatch));
+        let after = loser.context("a", "note").unwrap();
+        assert_eq!(after["history"].as_array().unwrap().len(), 2);
+        assert_eq!(after["history"][0], before["history"][0]);
+        assert_eq!(after["history"][1]["revision"], 2);
+        assert_eq!(after["history"][1]["retired"], winner_retires);
+        assert_eq!(
+            after["history"][1]["text"],
+            if winner_retires {
+                "synthetic original"
+            } else {
+                "synthetic guarded"
+            }
+        );
+        drop(loser);
+        assert_eq!(f.store().context("a", "note").unwrap(), after);
+    }
+}
+
+#[test]
+fn held_writer_lock_refuses_captured_mutations_without_appending() {
+    for retire in [false, true] {
+        let f = Fixture::new();
+        let mut s = f.registered();
+        s.write_context("a", "note", "note", "synthetic original", false)
+            .unwrap();
+        let captured = s.project("a").unwrap();
+        let before = s.context("a", "note").unwrap();
+        let peer = f.store();
+        peer.db.execute_batch("BEGIN IMMEDIATE").unwrap();
+        s.db.busy_timeout(std::time::Duration::ZERO).unwrap();
+        assert_eq!(
+            mutate_captured(&mut s, &captured, 1, retire),
+            Err(Error::Unavailable)
+        );
+        peer.db.execute_batch("ROLLBACK").unwrap();
+        assert_eq!(s.context("a", "note").unwrap(), before);
+        drop(s);
+        assert_eq!(f.store().context("a", "note").unwrap(), before);
+    }
 }
 
 #[test]
