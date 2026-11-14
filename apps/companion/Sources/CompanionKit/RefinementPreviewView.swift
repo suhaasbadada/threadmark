@@ -73,11 +73,14 @@ private struct RetainedEngineReviewView: View {
                 Text("Project: \(consent.project.id) · literal selection · snapshot \(consent.project.snapshot?.description ?? "none")").font(.caption)
                 Text("Coverage at preparation: \(consent.selection.coverage.description)").font(.caption)
             }
-            Text("Original · unchanged").font(.headline)
-            Text(verbatim: model.originalDraft).textSelection(.enabled)
-            if let proposed = review.proposed {
-                Text("Proposed · unverified, not delivered").font(.headline)
-                Text(verbatim: proposed).textSelection(.enabled)
+            if case .approvedValue(let value) = review.state {
+                ReviewTextDiffView(comparison: ReviewTextDiff(original: review.original, proposed: value.text),
+                    proposedLabel: "Approved engine value · \(value.delivery) · \(value.choice)")
+            } else if let proposed = review.proposed {
+                ReviewTextDiffView(comparison: ReviewTextDiff(original: review.original, proposed: proposed))
+            } else {
+                Text("Original · unchanged").font(.headline)
+                Text(verbatim: model.originalDraft).textSelection(.enabled)
             }
             ForEach(Array(review.questions.enumerated()), id: \.offset) { _, question in
                 Text(verbatim: "Material question: " + question).textSelection(.enabled)
@@ -90,10 +93,6 @@ private struct RetainedEngineReviewView: View {
                 Button("Use original") { model.useRetainedOriginal(challenge) }
                     .disabled(!model.retainedActionsAvailable)
                     .accessibilityIdentifier("retained-use-original")
-            }
-            if case .approvedValue(let value) = review.state {
-                Text("Approved engine value · \(value.delivery) · \(value.choice)")
-                Text(verbatim: value.text).textSelection(.enabled)
             }
             Button("Cancel retained review", action: model.cancelRefinement)
             Text("Edits cannot clear material questions. Both choices are revalidated by the retained Rust engine. Values stay in memory; no clipboard, host draft, Send or execution. Closing Manage retains this bounded session; Quit cancels and joins it. Native accessibility and live-model quality are not certified.").font(.caption)
@@ -129,6 +128,7 @@ private struct RetainedProseEditor: View {
     }
     var body: some View {
         VStack(alignment: .leading) {
+            Text("Comparison above shows the last engine preview. Unsaved fields appear in that comparison only after Edit; changing them does not approve or deliver anything.").font(.caption)
             TextField("Editable objective", text: $objective)
             TextField("Editable output expectations", text: $expectations)
             HStack {
