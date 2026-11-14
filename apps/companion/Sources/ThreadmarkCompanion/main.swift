@@ -189,6 +189,7 @@ struct ProjectsView: View {
                         Text("Coverage: \(report.coverage.description)").textSelection(.enabled)
                     }
                     Divider()
+                    SourceRetrievalModePicker(model: model)
                     HStack {
                         TextField("Search authorized source evidence", text: $query)
                             .accessibilityIdentifier("project-evidence-query")
@@ -198,6 +199,8 @@ struct ProjectsView: View {
                     if let result = model.evidence {
                         Text("\(result.currentness) · snapshot \(result.snapshot?.description ?? "none")")
                         Text("Coverage: \(result.coverage.description)")
+                        if let terms = result.terms { Text("Ranked lexical terms: \(terms.joined(separator: ", ")) · bounded selection, not semantic completeness").font(.caption) }
+                        if result.truncated == true { Text("Additional matches omitted by bounded selection.").font(.caption) }
                         ForEach(Array(result.results.enumerated()), id: \.offset) { _, item in
                             VStack(alignment: .leading) {
                                 Text("\(item.path):\(item.line) · \(item.producer) · \(item.currentness)").font(.caption)
@@ -375,11 +378,24 @@ struct ContextView: View {
 }
 
 @MainActor
+struct SourceRetrievalModePicker: View {
+    @ObservedObject var model: CompanionModel
+    var body: some View {
+        Picker("Source Query / Context matching", selection: Binding(
+            get: { model.sourceRetrievalMode }, set: { model.setSourceRetrievalMode($0) })) {
+            ForEach(SourceRetrievalMode.allCases, id: \.self) { mode in Text(mode.label).tag(mode) }
+        }.accessibilityIdentifier("source-retrieval-mode")
+        Text(model.sourceRetrievalMode.explanation).font(.caption)
+    }
+}
+
+@MainActor
 struct ContextPreparationView: View {
     @ObservedObject var model: CompanionModel
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Context-only preview · no AI").font(.headline)
+            SourceRetrievalModePicker(model: model)
             Text("Occasional local evidence review, not a chat or coding-tool composer. Drafts and previews stay in memory; nothing is saved, copied or sent.")
             TextField("Evidence query (up to 256 UTF-8 bytes)", text: Binding(
                 get: { model.preparationQuery },
@@ -396,6 +412,7 @@ struct ContextPreparationView: View {
                     .accessibilityIdentifier("context-dismiss")
             }
             if let preview = model.preview {
+                if let coverage = preview.coverage { Text("Coverage: \(coverage)").font(.caption) }
                 Text("State: \(preview.state) · snapshot: \(preview.snapshot?.description ?? "none")").textSelection(.enabled)
                 Text("Evidence was checked at preparation read only; this is not a guarantee of currentness now. Edits or scope changes discard this preview.").font(.caption)
                 if preview.state == "needs-input" {

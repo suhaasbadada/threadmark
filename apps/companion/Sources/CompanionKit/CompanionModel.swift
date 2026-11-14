@@ -438,12 +438,21 @@ public final class CompanionModel: ObservableObject {
             self.status = report.empty ? "Partial — empty snapshot; inspect coverage" : "Build completed — inspect coverage; currentness not checked"
         }
     }
+    @Published public private(set) var sourceRetrievalMode: SourceRetrievalMode = .literal
+    public func setSourceRetrievalMode(_ mode: SourceRetrievalMode) {
+        guard mode != sourceRetrievalMode else { return }
+        cancel()
+        evidence = nil; preview = nil
+        sourceRetrievalMode = mode
+        status = "Source Query/Context mode changed — cached results discarded; Refine remains literal"
+    }
     public func query(_ text: String) {
         guard !sourceRequiresRefresh else { fail(refreshRequiredError); return }
         guard !text.isEmpty, text.utf8.count <= 256 else { fail(.invalid); return }
         guard let id = selectedID, let target = project, !policyDirty, !sourceRequiresRefresh else { fail(.invalid); return }
         evidence = nil
-        start(preserveHistory: true) { service in [try await Self.checkedSourceRead(service, .queryBound(target, text), target)] } apply: { replies in
+        let operation: Operation = sourceRetrievalMode == .literal ? .queryBound(target, text) : .queryTermsBound(target, text)
+        start(preserveHistory: true) { service in [try await Self.checkedSourceRead(service, operation, target)] } apply: { replies in
             guard case .query(let result) = replies[0], result.project == id,
                   result.results.allSatisfy({ $0.project == id && self.sourceDraft.contains($0.path) }) else { throw ServiceError.scopeMismatch }
             self.evidence = result
@@ -562,8 +571,10 @@ public final class CompanionModel: ObservableObject {
         guard !sourceRequiresRefresh else { cancel(); fail(refreshRequiredError); return }
         guard canPrepareContext, let id = selectedID, let target = project else { cancel(); fail(.invalid); return }
         let query = preparationQuery, original = originalDraft
+        let operation: Operation = sourceRetrievalMode == .literal
+            ? .prepareContextBound(target, query, original) : .prepareContextTermsBound(target, query, original)
         start(status: "Preparing Context-only preview — no AI or handoff", preserveHistory: true) { service in
-            [try await Self.checkedSourceRead(service, .prepareContextBound(target, query, original), target)]
+            [try await Self.checkedSourceRead(service, operation, target)]
         } apply: { replies in
             guard case .preview(let result) = replies[0] else { throw ServiceError.invalid }
             try result.validate(project: id, original: original)

@@ -24,7 +24,8 @@ private actor SourceReadPeer: CoreService {
         let captured: Project?
         var build = false
         switch operation {
-        case .queryBound(let p, _), .prepareContextBound(let p, _, _): captured = p
+        case .queryBound(let p, _), .prepareContextBound(let p, _, _),
+             .queryTermsBound(let p, _), .prepareContextTermsBound(let p, _, _): captured = p
         case .indexBound(let id, let root, let identity, let sources, let token):
             build = true
             captured = interceptBuild ? Project(id: id, root: root, sources: sources, rootIdentity: .string(identity), incarnation: token) : nil
@@ -147,7 +148,7 @@ struct BoundSourceReadTests {
         await model.shutdown()
     }
     @Test(.enabled(if: ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"] != nil),
-          arguments: ["query", "context", "refine"], ["same-root", "different-root", "policy", "snapshot"])
+          arguments: ["query", "context", "refine", "ranked-query", "ranked-context"], ["same-root", "different-root", "policy", "snapshot"])
     @MainActor func actualCLIRejectsReplacementBetweenPrecheckAndSelection(operation: String, change: String) async throws {
         let binary = try #require(ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"])
         let fixture = try ApprovedWatchFixture(); defer { fixture.remove() }
@@ -165,9 +166,10 @@ struct BoundSourceReadTests {
         model.openContext("memo"); await model.waitForOperation()
         model.editPreparation(query: "synthetic", original: "Synthetic unsaved original; do not send")
         let editor = model.contextEditorRevision
+        if operation.hasPrefix("ranked-") { model.setSourceRetrievalMode(.rankedTerms) }
         switch operation {
-        case "query": model.query("synthetic")
-        case "context": model.prepareContext()
+        case "query", "ranked-query": model.query("synthetic")
+        case "context", "ranked-context": model.prepareContext()
         default: model.requestRefinement(settings: try refinementSettings())
         }
         await model.waitForOperation()

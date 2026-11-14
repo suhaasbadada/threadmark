@@ -89,6 +89,7 @@ private actor ExplicitFakeCoreService: CoreService {
         calls += 1
         if let error = nextFailure { nextFailure = nil; throw error }
         switch operation {
+        case .queryTermsBound, .prepareContextTermsBound: throw ServiceError.unavailable
         case .queryBound(let p, let q): return try await perform(.query(p.id, q))
         case .prepareContextBound(let p, let q, let original): return try await perform(.prepareContext(p.id, q, original))
         case .searchHumanContext, .refinePreview: throw ServiceError.unavailable
