@@ -16,6 +16,133 @@ const FORGET: [&str; 5] = [
     "--confirm-forget-local-history",
 ];
 const UPGRADE: [&str; 3] = ["store", "upgrade", "--confirm-local-schema-upgrade"];
+const UPGRADE_V3: [&str; 6] = [
+    "store",
+    "upgrade",
+    "--to-version",
+    "3",
+    "--confirm-local-schema-upgrade",
+    "--confirm-legacy-workers-stopped",
+];
+
+#[test]
+fn v3_attestation_and_binding_validation_precede_open_and_creation() {
+    let f = Fixture::new();
+    for args in [
+        vec![
+            "store",
+            "upgrade",
+            "--to-version",
+            "3",
+            "--confirm-local-schema-upgrade",
+        ],
+        vec![
+            "store",
+            "upgrade",
+            "--to-version",
+            "3",
+            "--confirm-legacy-workers-stopped",
+        ],
+        vec![
+            "store",
+            "upgrade",
+            "--to-version",
+            "4",
+            "--confirm-local-schema-upgrade",
+            "--confirm-legacy-workers-stopped",
+        ],
+        UPGRADE_V3.to_vec(),
+        vec![
+            "project",
+            "remove",
+            "a",
+            "--confirm-remove-local-data",
+            "--expected-root",
+            "/synthetic",
+            "--expected-root-identity",
+            "1:2",
+            "--expected-incarnation",
+            "bad",
+        ],
+        vec![
+            "index",
+            "a",
+            "--expected-root",
+            "/synthetic",
+            "--expected-root-identity",
+            "1:2",
+            "--expected-incarnation",
+            "0123456789ABCDEF0123456789abcdef",
+            "--expected-sources",
+            "main.rs",
+        ],
+    ] {
+        let out = f.run(&args, None);
+        assert!(!out.status.success() && out.stdout.is_empty());
+        assert!(!f.0.join("store").exists());
+    }
+}
+
+#[test]
+fn cli_same_directory_reregistration_rejects_native_old_bindings() {
+    let f = Fixture::new();
+    let root = f.0.join("source");
+    f.ok(
+        &["project", "add", "a", root.to_str().unwrap(), "main.rs"],
+        None,
+    );
+    let old = f.ok(&["project", "show", "a"], None);
+    let root = old["root"].as_str().unwrap();
+    let identity = old["root_identity"].as_str().unwrap();
+    let token = old["incarnation"].as_str().unwrap();
+    let bound_index = [
+        "index",
+        "a",
+        "--expected-root",
+        root,
+        "--expected-root-identity",
+        identity,
+        "--expected-incarnation",
+        token,
+        "--expected-sources",
+        "main.rs",
+    ];
+    f.ok(&bound_index, None);
+    let bound_remove = [
+        "project",
+        "remove",
+        "a",
+        "--confirm-remove-local-data",
+        "--expected-root",
+        root,
+        "--expected-root-identity",
+        identity,
+        "--expected-incarnation",
+        token,
+    ];
+    f.ok(&bound_remove, None);
+    f.ok(&["project", "add", "a", root, "main.rs"], None);
+    f.ok(
+        &["context", "add", "a", "memo", "note"],
+        Some(b"synthetic replacement"),
+    );
+    let current = f.ok(&["project", "show", "a"], None);
+    assert_ne!(current["incarnation"], old["incarnation"]);
+    let db = f.0.join("store/knowledge.sqlite");
+    let before = std::fs::read(&db).unwrap();
+    std::fs::remove_file(f.0.join("source/main.rs")).unwrap();
+    for args in [&bound_index[..], &bound_remove[..]] {
+        let out = f.run(args, None);
+        assert!(!out.status.success() && out.stdout.is_empty());
+        assert_eq!(std::fs::read(&db).unwrap(), before);
+    }
+    assert_eq!(f.ok(&UPGRADE_V3, None)["schema_version"], 3);
+    assert_eq!(f.ok(&UPGRADE, None)["schema_version"], 3);
+    assert_eq!(
+        f.ok(&["context", "show", "a", "memo"], None)["history"][0]["revision"],
+        1
+    );
+}
 
 #[test]
 fn forget_and_upgrade_exact_confirmation_required_before_open_or_creation() {

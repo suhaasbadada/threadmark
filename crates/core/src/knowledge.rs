@@ -45,7 +45,19 @@ fn sha256(bytes: &[u8]) -> String {
     }
     out
 }
-/// Validate caller-bound removal without opening or creating a store.
+/// Validate a registration token before opening storage or reading sources.
+pub fn validate_incarnation(token: &str) -> Result<()> {
+    if token.len() != 32
+        || !token
+            .bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    {
+        return Err(invalid());
+    }
+    Ok(())
+}
+
+/// Validate explicit legacy root-only CLI approval binding.
 pub fn validate_removal_binding(id: &str, root: &str, root_identity: &str) -> Result<()> {
     identity(id)?;
     if !root.starts_with('/')
@@ -276,6 +288,8 @@ pub struct Project {
     pub root: String,
     /// Filesystem device/inode, distinct across registered worktrees.
     pub root_identity: String,
+    /// Registration nonce on schema v3; legacy stores have no cached approval authority.
+    pub incarnation: Option<String>,
     /// Exact relative file allowlist, never recursive discovery.
     pub sources: Vec<String>,
     /// Content snapshot identity (not a Git revision); absent after scope revocation.
@@ -389,7 +403,7 @@ impl Store {
                 || u16::from_be_bytes([header[16], header[17]]) != 4096
                 || !matches!(
                     u32::from_be_bytes(header[60..64].try_into().map_err(unavailable)?),
-                    1 | 2
+                    1..=3
                 )
                 || i64::from(u32::from_be_bytes(
                     header[68..72].try_into().map_err(unavailable)?,
@@ -418,6 +432,7 @@ impl Store {
                 CREATE TABLE context(project TEXT NOT NULL, id TEXT NOT NULL, revision INTEGER NOT NULL, kind TEXT NOT NULL, text TEXT NOT NULL, retired INTEGER NOT NULL, PRIMARY KEY(project,id,revision));
                 CREATE INDEX context_project ON context(project,id,revision);").map_err(unavailable)?;
             schema::install_v2(&tx)?;
+            schema::install_v3(&tx)?;
             tx.commit().map_err(unavailable)?;
         }
         schema::validate(&db)?;
@@ -545,6 +560,28 @@ impl Store {
         self.remove_project_for_policy(&project, cancel, |_| {})
     }
 
+    /// Native cached approvals must bind a validated registration incarnation.
+    pub fn remove_project_incarnation_bound(
+        &mut self,
+        id: &str,
+        root: &str,
+        root_identity: &str,
+        incarnation: &str,
+        cancel: &AtomicBool,
+    ) -> Result<Value> {
+        validate_removal_binding(id, root, root_identity)?;
+        validate_incarnation(incarnation)?;
+        canceled(cancel)?;
+        let project = self.project(id)?;
+        if project.root != root
+            || project.root_identity != root_identity
+            || project.incarnation.as_deref() != Some(incarnation)
+        {
+            return Err(Error::ScopeMismatch);
+        }
+        self.remove_project_for_policy(&project, cancel, |_| {})
+    }
+
     /// Observe synchronous deletion stages, including a final cancellation boundary.
     pub fn remove_project_with_progress(
         &mut self,
@@ -578,7 +615,7 @@ impl Store {
             .map_err(unavailable)?;
         progress(RemovalStage::ContextRemoved);
         canceled(cancel)?;
-        if schema::version(&tx)? == 2 {
+        if schema::version(&tx)? >= 2 {
             tx.execute("DELETE FROM forgotten_context WHERE project=?1", [id])
                 .map_err(unavailable)?;
         }
@@ -595,14 +632,23 @@ impl Store {
     pub fn project(&self, id: &str) -> Result<Project> {
         self.healthy()?;
         identity(id)?;
-        let (root, root_identity, sources, snapshot): (String, String, String, Option<String>) =
-            self.db
-                .query_row(
-                    "SELECT root,root_identity,sources,snapshot FROM projects WHERE id=?1",
-                    [id],
-                    |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
-                )
-                .map_err(unavailable)?;
+        let sql = if schema::version(&self.db)? == 3 {
+            "SELECT root,root_identity,sources,snapshot,incarnation FROM projects JOIN project_incarnations ON project_incarnations.project=projects.id WHERE id=?1"
+        } else {
+            "SELECT root,root_identity,sources,snapshot,NULL FROM projects WHERE id=?1"
+        };
+        let (root, root_identity, sources, snapshot, incarnation): (
+            String,
+            String,
+            String,
+            Option<String>,
+            Option<String>,
+        ) = self
+            .db
+            .query_row(sql, [id], |r| {
+                Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?))
+            })
+            .map_err(unavailable)?;
         if sources.len() > 16384
             || root.len() > 4096
             || root_identity.len() > 128
@@ -614,10 +660,14 @@ impl Store {
         }
         let paths: Vec<String> = serde_json::from_str(&sources).map_err(unavailable)?;
         validate_paths(&paths)?;
+        if let Some(token) = &incarnation {
+            validate_incarnation(token)?;
+        }
         Ok(Project {
             id: id.into(),
             root,
             root_identity,
+            incarnation,
             sources: paths,
             snapshot,
         })
@@ -658,7 +708,10 @@ impl Store {
                 |r| Ok((r.get(0)?, r.get(1)?)),
             )
             .map_err(unavailable)?;
-        if root != project.root || root_identity != project.root_identity {
+        if root != project.root
+            || root_identity != project.root_identity
+            || schema::incarnation(tx, &project.id)? != project.incarnation
+        {
             return Err(Error::ScopeMismatch);
         }
         Ok(())
@@ -795,16 +848,53 @@ impl Store {
         )
     }
 
+    /// Reconcile only the exact cached native approval, before any source access.
+    pub fn index_incarnation_bound(
+        &mut self,
+        id: &str,
+        root: &str,
+        root_identity: &str,
+        sources: &[String],
+        incarnation: &str,
+        cancel: &AtomicBool,
+    ) -> Result<Value> {
+        validate_index_binding(id, root, root_identity, sources)?;
+        validate_incarnation(incarnation)?;
+        self.index_scoped_incarnation(
+            id,
+            Some((root, root_identity, sources)),
+            Some(incarnation),
+            &mut LexicalLines,
+            cancel,
+            |_| {},
+        )
+    }
+
     fn index_scoped(
         &mut self,
         id: &str,
         binding: Option<(&str, &str, &[String])>,
         extractor: &mut impl SourceExtractor,
         cancel: &AtomicBool,
+        progress: impl FnMut(IndexStage),
+    ) -> Result<Value> {
+        self.index_scoped_incarnation(id, binding, None, extractor, cancel, progress)
+    }
+
+    fn index_scoped_incarnation(
+        &mut self,
+        id: &str,
+        binding: Option<(&str, &str, &[String])>,
+        expected_incarnation: Option<&str>,
+        extractor: &mut impl SourceExtractor,
+        cancel: &AtomicBool,
         mut progress: impl FnMut(IndexStage),
     ) -> Result<Value> {
         canceled(cancel)?;
         let p = self.project(id)?;
+        if expected_incarnation.is_some_and(|token| p.incarnation.as_deref() != Some(token)) {
+            return Err(Error::ScopeMismatch);
+        }
         if let Some((root, identity, sources)) = binding
             && (p.root != root || p.root_identity != identity || p.sources != sources)
         {
@@ -859,7 +949,8 @@ impl Store {
             .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)
             .map_err(unavailable)?;
         // Serialize publication with removal and recheck the exact captured approval.
-        // Same-ID re-registration at a different root must not admit an old worker.
+        Self::require_project_root(&tx, &p)?;
+        // Recheck policy too; root identity alone cannot fence same-root reuse.
         let (root, root_identity, policy): (String, String, String) = tx
             .query_row(
                 "SELECT root,root_identity,sources FROM projects WHERE id=?1",
@@ -984,7 +1075,12 @@ impl Store {
         }
         canceled(cancel)?;
         let latest = self.project(id)?;
-        if latest.sources != p.sources || latest.snapshot != p.snapshot {
+        if latest.root != p.root
+            || latest.root_identity != p.root_identity
+            || latest.incarnation != p.incarnation
+            || latest.sources != p.sources
+            || latest.snapshot != p.snapshot
+        {
             return Err(Error::ScopeMismatch);
         }
         Ok(reply)

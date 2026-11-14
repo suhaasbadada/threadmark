@@ -92,7 +92,7 @@ public struct ProcessService: CoreService {
         do {
             let decoder = JSONDecoder()
             switch operation {
-            case .removeProject(let id, _, _):
+            case .removeProject(let id, _, _, _):
                 guard data.count <= 1024 else { throw ServiceError.outputLimit }
                 guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                       Set(object.keys) == ["project", "removed", "retention_limits"] else { throw ServiceError.invalid }
@@ -107,14 +107,14 @@ public struct ProcessService: CoreService {
             case .projects:
                 let projects = try decoder.decode([Project].self, from: data)
                 guard projects.count <= 64, Set(projects.map(\.id)).count == projects.count,
-                      projects.allSatisfy({ InputPolicy.identifier($0.id) && InputPolicy.sources($0.sources) }) else { throw ServiceError.invalid }
+                      projects.allSatisfy({ InputPolicy.identifier($0.id) && InputPolicy.sources($0.sources) && ($0.incarnation.map(InputPolicy.incarnation) ?? true) }) else { throw ServiceError.invalid }
                 return .projects(projects)
             case .project(let id):
                 let result = try decoder.decode(Project.self, from: data)
                 guard result.id == id else { throw ServiceError.scopeMismatch }
-                guard InputPolicy.sources(result.sources) else { throw ServiceError.invalid }
+                guard InputPolicy.sources(result.sources), result.incarnation.map(InputPolicy.incarnation) ?? true else { throw ServiceError.invalid }
                 return .project(result)
-            case .index(let id), .indexBound(let id, _, _, _):
+            case .index(let id), .indexBound(let id, _, _, _, _):
                 let result = try decoder.decode(IndexReport.self, from: data)
                 guard result.project == id else { throw ServiceError.scopeMismatch }
                 guard result.files >= 0, result.files <= 64, result.anchors >= 0 else { throw ServiceError.invalid }
@@ -158,9 +158,9 @@ public struct ProcessService: CoreService {
         var args: [String]
         var input = Data()
         switch operation {
-        case .removeProject(let p, let root, let identity):
-            guard InputPolicy.removal(root: root, identity: identity) else { throw ServiceError.invalid }
-            args = ["project", "remove", try id(p), "--confirm-remove-local-data", "--expected-root", root, "--expected-root-identity", identity]
+        case .removeProject(let p, let root, let identity, let token):
+            guard InputPolicy.removal(root: root, identity: identity), InputPolicy.incarnation(token) else { throw ServiceError.invalid }
+            args = ["project", "remove", try id(p), "--confirm-remove-local-data", "--expected-root", root, "--expected-root-identity", identity, "--expected-incarnation", token]
         case .prepareContext(let p, let query, let original):
             guard InputPolicy.preparation(query: query, original: original) else { throw ServiceError.invalid }
             args = ["context", "prepare", try id(p), query]
@@ -172,9 +172,9 @@ public struct ProcessService: CoreService {
             args = ["project", "add", try id(p), root] + (try sources(files))
         case .setSources(let p, let files): args = ["project", "sources", try id(p)] + (try sources(files))
         case .index(let p): args = ["index", try id(p)]
-        case .indexBound(let p, let root, let identity, let files):
-            guard InputPolicy.removal(root: root, identity: identity), !files.isEmpty else { throw ServiceError.invalid }
-            args = ["index", try id(p), "--expected-root", root, "--expected-root-identity", identity, "--expected-sources"] + (try sources(files))
+        case .indexBound(let p, let root, let identity, let files, let token):
+            guard InputPolicy.removal(root: root, identity: identity), !files.isEmpty, InputPolicy.incarnation(token) else { throw ServiceError.invalid }
+            args = ["index", try id(p), "--expected-root", root, "--expected-root-identity", identity, "--expected-incarnation", token, "--expected-sources"] + (try sources(files))
         case .query(let p, let text):
             guard !text.isEmpty, text.utf8.count <= 256, !text.contains("\0") else { throw ServiceError.invalid }
             args = ["query", try id(p), text]

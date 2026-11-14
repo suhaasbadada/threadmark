@@ -29,6 +29,7 @@ public struct AutomaticRefreshConsent: Equatable, Sendable {
     public let projectID: String
     public let root: String
     public let rootIdentity: String
+    public let incarnation: String
     public let sources: [String]
     public let scopeRevision: UInt64
 }

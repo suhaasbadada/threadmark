@@ -35,10 +35,12 @@ public struct Project: Codable, Equatable, Identifiable, Sendable {
     public let id: String
     public let root: String
     public let root_identity: JSONValue?
+    public let incarnation: String?
     public let sources: [String]
     public let snapshot: JSONValue?
-    public init(id: String, root: String, sources: [String], snapshot: JSONValue? = nil, rootIdentity: JSONValue? = nil) {
+    public init(id: String, root: String, sources: [String], snapshot: JSONValue? = nil, rootIdentity: JSONValue? = nil, incarnation: String? = nil) {
         self.id = id; self.root = root; self.sources = sources; self.snapshot = snapshot; root_identity = rootIdentity
+        self.incarnation = incarnation
     }
 }
 public struct RemovedProject: Codable, Sendable {
@@ -158,8 +160,8 @@ public enum ServiceError: String, Error, Sendable, LocalizedError {
 }
 
 public enum Operation: Sendable {
-    case indexBound(String, String, String, [String])
-    case removeProject(String, String, String)
+    case indexBound(String, String, String, [String], String)
+    case removeProject(String, String, String, String)
     case projects, project(String), addProject(String, String, [String]), setSources(String, [String])
     case index(String), query(String, String), contexts(String), context(String, String)
     case prepareContext(String, String, String)
@@ -177,6 +179,9 @@ public protocol CoreService: Sendable {
 }
 
 public enum InputPolicy {
+    public static func incarnation(_ token: String) -> Bool {
+        token.utf8.count == 32 && token.utf8.allSatisfy { (48...57).contains($0) || (97...102).contains($0) }
+    }
     public static func removal(root: String, identity: String) -> Bool {
         root.hasPrefix("/") && root.utf8.count <= 4096 && !root.contains("\0") &&
         !identity.isEmpty && identity.utf8.count <= 128 && !identity.contains("\0")

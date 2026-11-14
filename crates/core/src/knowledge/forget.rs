@@ -21,7 +21,7 @@ pub(super) fn markers(
 ) -> Result<std::collections::BTreeSet<String>> {
     match schema::version(db)? {
         1 => return Ok(Default::default()),
-        2 => (),
+        2 | 3 => (),
         _ => return Err(Error::Unavailable),
     }
     let mut stmt = db
@@ -87,7 +87,7 @@ impl Store {
             .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)
             .map_err(unavailable)?;
         Self::require_project_root(&tx, project)?;
-        if schema::version(&tx)? != 2 {
+        if schema::version(&tx)? < 2 {
             return Err(Error::Unavailable);
         }
         canceled(cancel)?;
@@ -130,7 +130,7 @@ impl Store {
         self.healthy()?;
         let tx = self.db.unchecked_transaction().map_err(unavailable)?;
         self.project(project)?;
-        if schema::version(&tx)? != 2 {
+        if schema::version(&tx)? < 2 {
             return Err(Error::Unavailable);
         }
         let forgotten: Vec<_> = markers(&tx, project)?

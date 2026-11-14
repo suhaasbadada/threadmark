@@ -16,8 +16,8 @@ private func preview(_ id: String, _ original: String, state: String = "ready-fo
 /// Deliberately test-only; never compiled into the application or adapter.
 private actor ExplicitFakeCoreService: CoreService {
     var projects = [
-        Project(id: "alpha", root: "/synthetic/alpha", sources: ["a.rs"], rootIdentity: .string("r1")),
-        Project(id: "beta", root: "/synthetic/beta", sources: ["b.rs"]),
+        Project(id: "alpha", root: "/synthetic/alpha", sources: ["a.rs"], rootIdentity: .string("r1"), incarnation: "0123456789abcdef0123456789abcdef"),
+        Project(id: "beta", root: "/synthetic/beta", sources: ["b.rs"], incarnation: "fedcba9876543210fedcba9876543210"),
     ]
     var revisions: [String: [ContextRevision]] = [:]
     var nextFailure: ServiceError?
@@ -28,6 +28,10 @@ private actor ExplicitFakeCoreService: CoreService {
     var removalCalls = 0
     var removalMode = "valid"
     func setRemovalMode(_ value: String) { removalMode = value }
+    func replaceAlphaIncarnation(_ token: String?) {
+        let p = projects[0]
+        projects[0] = Project(id: p.id, root: p.root, sources: p.sources, snapshot: p.snapshot, rootIdentity: p.root_identity, incarnation: token)
+    }
     func holdNextRemoval() { holdRemoval = true }
     func finishRemoval() {
         projects.removeAll { $0.id == "alpha" }
@@ -79,9 +83,9 @@ private actor ExplicitFakeCoreService: CoreService {
         calls += 1
         if let error = nextFailure { nextFailure = nil; throw error }
         switch operation {
-        case .removeProject(let id, let root, let identity):
+        case .removeProject(let id, let root, let identity, let token):
             removalCalls += 1
-            guard projects.contains(where: { $0.id == id && $0.root == root && $0.root_identity == .string(identity) }) else { throw ServiceError.scopeMismatch }
+            guard projects.contains(where: { $0.id == id && $0.root == root && $0.root_identity == .string(identity) && $0.incarnation == token }) else { throw ServiceError.scopeMismatch }
             if holdRemoval {
                 holdRemoval = false; started = true; observer?.resume(); observer = nil
                 return try await withCheckedThrowingContinuation { pending = $0 }
@@ -105,7 +109,7 @@ private actor ExplicitFakeCoreService: CoreService {
             guard let project = projects.first(where: { $0.id == p }) else { throw ServiceError.invalid }
             return .project(mismatch ? projects[1] : project)
         case .addProject(let id, let root, let sources):
-            projects.append(Project(id: id, root: root, sources: sources)); return .acknowledged
+            projects.append(Project(id: id, root: root, sources: sources, incarnation: "fedcba9876543210fedcba9876543210")); return .acknowledged
         case .setSources(let id, let sources):
             sourceEvents.append("begin:" + sources.joined(separator: ","))
             if holdSources {
@@ -114,10 +118,10 @@ private actor ExplicitFakeCoreService: CoreService {
                 await withCheckedContinuation { sourceRelease = $0 }
             }
             guard let i = projects.firstIndex(where: { $0.id == id }) else { throw ServiceError.invalid }
-            projects[i] = Project(id: id, root: projects[i].root, sources: sources)
+            projects[i] = Project(id: id, root: projects[i].root, sources: sources, rootIdentity: projects[i].root_identity, incarnation: projects[i].incarnation)
             sourceEvents.append("commit:" + sources.joined(separator: ",")); return .acknowledged
-        case .indexBound(let p, let root, let identity, let files):
-            guard projects.contains(where: { $0.id == p && $0.root == root && $0.root_identity == .string(identity) && $0.sources == files }) else { throw ServiceError.scopeMismatch }
+        case .indexBound(let p, let root, let identity, let files, let token):
+            guard projects.contains(where: { $0.id == p && $0.root == root && $0.root_identity == .string(identity) && $0.sources == files && $0.incarnation == token }) else { throw ServiceError.scopeMismatch }
             if holdIndex {
                 holdIndex = false; started = true; observer?.resume(); observer = nil
                 return try await withCheckedThrowingContinuation { pending = $0 }
@@ -151,6 +155,33 @@ private actor ExplicitFakeCoreService: CoreService {
 
 @Suite("Explicit fake-service model acceptance") @MainActor
 struct ModelTests {
+    @Test func legacyProjectRequiresExplicitUpgradeWithoutDispatchingCachedActions() async throws {
+        let service = ExplicitFakeCoreService()
+        await service.replaceAlphaIncarnation(nil)
+        let model = CompanionModel(service: service, configured: true)
+        model.select("alpha"); await model.waitForOperation()
+        #expect(model.status.contains("--confirm-legacy-workers-stopped"))
+        #expect(!model.canRemoveProject && model.automaticRefreshProposal == nil)
+        let calls = await service.calls
+        model.requestRemoval()
+        #expect(model.pendingRemoval == nil)
+        #expect(await service.calls == calls)
+    }
+    @Test func sameRootReplacementInvalidatesDelayedRemovalAndRefreshConsent() async throws {
+        let (model, service) = await selected()
+        let consent = try #require(model.automaticRefreshProposal)
+        model.requestRemoval()
+        let removal = try #require(model.pendingRemoval)
+        await service.replaceAlphaIncarnation("fedcba9876543210fedcba9876543210")
+        model.refreshSelected(); await model.waitForOperation()
+        let calls = await service.calls
+        model.confirmRemoval(removal)
+        model.enableAutomaticRefresh(consent)
+        await model.waitForOperation()
+        #expect(model.automaticRefreshConsent == nil && model.pendingRemoval == nil)
+        #expect(await service.calls == calls)
+        #expect(await service.removalCalls == 0)
+    }
     @Test(arguments: ["ack", "wrong", "false", "stale-list", "list-failure"])
     func removalRequiresTypedReceiptAndFreshList(mode: String) async throws {
         let (model, service) = await selected()
@@ -237,10 +268,11 @@ struct ModelTests {
         #expect(await service.calls == calls && !driver.active)
         let consent = try #require(model.automaticRefreshProposal)
         for wrong in [
-            AutomaticRefreshConsent(projectID: "beta", root: consent.root, rootIdentity: consent.rootIdentity, sources: consent.sources, scopeRevision: consent.scopeRevision),
-            AutomaticRefreshConsent(projectID: consent.projectID, root: "/synthetic/other", rootIdentity: consent.rootIdentity, sources: consent.sources, scopeRevision: consent.scopeRevision),
-            AutomaticRefreshConsent(projectID: consent.projectID, root: consent.root, rootIdentity: "other", sources: consent.sources, scopeRevision: consent.scopeRevision),
-            AutomaticRefreshConsent(projectID: consent.projectID, root: consent.root, rootIdentity: consent.rootIdentity, sources: ["other.rs"], scopeRevision: consent.scopeRevision)
+            AutomaticRefreshConsent(projectID: "beta", root: consent.root, rootIdentity: consent.rootIdentity, incarnation: consent.incarnation, sources: consent.sources, scopeRevision: consent.scopeRevision),
+            AutomaticRefreshConsent(projectID: consent.projectID, root: "/synthetic/other", rootIdentity: consent.rootIdentity, incarnation: consent.incarnation, sources: consent.sources, scopeRevision: consent.scopeRevision),
+            AutomaticRefreshConsent(projectID: consent.projectID, root: consent.root, rootIdentity: "other", incarnation: consent.incarnation, sources: consent.sources, scopeRevision: consent.scopeRevision),
+            AutomaticRefreshConsent(projectID: consent.projectID, root: consent.root, rootIdentity: consent.rootIdentity, incarnation: "fedcba9876543210fedcba9876543210", sources: consent.sources, scopeRevision: consent.scopeRevision),
+            AutomaticRefreshConsent(projectID: consent.projectID, root: consent.root, rootIdentity: consent.rootIdentity, incarnation: consent.incarnation, sources: ["other.rs"], scopeRevision: consent.scopeRevision)
         ] {
             model.enableAutomaticRefresh(wrong)
             #expect(!driver.active && model.automaticRefreshConsent == nil)
@@ -602,9 +634,25 @@ struct ModelTests {
 
 @Suite("Owned synthetic subprocess adapter")
 struct AdapterTests {
+    @Test func incarnationBoundIndexMapsExactScopeAndChecksResponse() async throws {
+        try await withAdapter("index-bound-valid") { adapter in
+            guard case .indexed(let report) = try await adapter.perform(.indexBound("alpha", "/synthetic/alpha", "r1", ["a.rs"], "0123456789abcdef0123456789abcdef")) else { throw ServiceError.invalid }
+            #expect(report.project == "alpha")
+        }
+        try await withAdapter("index-bound-wrong") { adapter in
+            await #expect(throws: ServiceError.scopeMismatch) { try await adapter.perform(.indexBound("alpha", "/synthetic/alpha", "r1", ["a.rs"], "0123456789abcdef0123456789abcdef")) }
+        }
+    }
+    @Test(arguments: ["", "short", "0123456789ABCDEF0123456789abcdef", "0123456789abcdef0123456789abcdef0", "0123456789abcdef0123456789abcdeg"])
+    func malformedIncarnationRejectsBeforeSpawn(token: String) async throws {
+        try await withAdapter("index-bound-valid") { adapter in
+            await #expect(throws: ServiceError.invalid) { try await adapter.perform(.indexBound("alpha", "/synthetic/alpha", "r1", ["a.rs"], token)) }
+            await #expect(throws: ServiceError.invalid) { try await adapter.perform(.removeProject("alpha", "/synthetic/alpha", "r1", token)) }
+        }
+    }
     @Test func boundRemovalExactArgumentsAndTypedReceipt() async throws {
         try await withAdapter("removal-valid") { adapter in
-            guard case .removed(let receipt) = try await adapter.perform(.removeProject("alpha", "/synthetic/alpha", "r1")) else { throw ServiceError.invalid }
+            guard case .removed(let receipt) = try await adapter.perform(.removeProject("alpha", "/synthetic/alpha", "r1", "0123456789abcdef0123456789abcdef")) else { throw ServiceError.invalid }
             try receipt.validate(project: "alpha")
         }
     }
@@ -612,13 +660,13 @@ struct AdapterTests {
     func removalRejectsInvalidReceipts(mode: String) async throws {
         try await withAdapter("removal-" + mode) { adapter in
             let expected: ServiceError = mode == "wrong" ? .scopeMismatch : (mode == "large" ? .outputLimit : .invalid)
-            await #expect(throws: expected) { try await adapter.perform(.removeProject("alpha", "/synthetic/alpha", "r1")) }
+            await #expect(throws: expected) { try await adapter.perform(.removeProject("alpha", "/synthetic/alpha", "r1", "0123456789abcdef0123456789abcdef")) }
         }
     }
     @Test func removalRejectsInvalidBoundsBeforeSpawn() async throws {
         try await withAdapter("removal-valid") { adapter in
             for (root, identity) in [("", "r1"), ("relative", "r1"), ("/synthetic", ""), ("/synthetic\0", "r1"), ("/synthetic", "r\0"), ("/" + String(repeating: "x", count: 4096), "r1"), ("/synthetic", String(repeating: "x", count: 129))] {
-                await #expect(throws: ServiceError.invalid) { try await adapter.perform(.removeProject("alpha", root, identity)) }
+                await #expect(throws: ServiceError.invalid) { try await adapter.perform(.removeProject("alpha", root, identity, "0123456789abcdef0123456789abcdef")) }
             }
         }
     }
@@ -636,6 +684,7 @@ struct AdapterTests {
         try await withAdapter("valid") { adapter in
             guard case .projects(let projects) = try await adapter.perform(.projects) else { Issue.record("Wrong reply"); return }
             #expect(projects.count == 1 && projects[0].sources == ["a.rs"])
+            #expect(projects[0].incarnation == "0123456789abcdef0123456789abcdef")
             guard case .query(let query) = try await adapter.perform(.query("alpha", "synthetic")) else { Issue.record("Wrong reply"); return }
             #expect(query.currentness == "stale-or-unindexed")
         }

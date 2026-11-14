@@ -38,6 +38,44 @@ const V2: [(&str, &str); 4] = [
     ),
 ];
 
+const V3: [(&str, &str); 3] = [
+    (
+        "project_incarnations",
+        "CREATE TABLE project_incarnations(project TEXT PRIMARY KEY, incarnation TEXT NOT NULL UNIQUE)",
+    ),
+    (
+        "threadmark_project_incarnation_insert",
+        "CREATE TRIGGER threadmark_project_incarnation_insert AFTER INSERT ON projects BEGIN INSERT INTO project_incarnations(project,incarnation) VALUES(NEW.id,lower(hex(randomblob(16)))); END",
+    ),
+    (
+        "threadmark_project_incarnation_delete",
+        "CREATE TRIGGER threadmark_project_incarnation_delete AFTER DELETE ON projects BEGIN DELETE FROM project_incarnations WHERE project=OLD.id; END",
+    ),
+];
+
+pub(super) fn install_v3(db: &Connection) -> Result<()> {
+    for (_, sql) in V3 {
+        db.execute_batch(sql).map_err(unavailable)?;
+    }
+    db.execute_batch("INSERT INTO project_incarnations SELECT id,lower(hex(randomblob(16))) FROM projects; PRAGMA user_version=3;").map_err(unavailable)?;
+    validate(db).map(|_| ())
+}
+
+pub(super) fn incarnation(db: &Connection, id: &str) -> Result<Option<String>> {
+    if version(db)? < 3 {
+        return Ok(None);
+    }
+    let token: String = db
+        .query_row(
+            "SELECT incarnation FROM project_incarnations WHERE project=?1",
+            [id],
+            |r| r.get(0),
+        )
+        .map_err(unavailable)?;
+    validate_incarnation(&token)?;
+    Ok(Some(token))
+}
+
 // Normalize formatting outside literals only, never predicates or messages.
 fn normalized(sql: &str) -> String {
     let mut quoted = false;
@@ -93,18 +131,19 @@ pub(super) fn validate(db: &Connection) -> Result<i64> {
     let page: i64 = db
         .pragma_query_value(None, "page_size", |r| r.get(0))
         .map_err(unavailable)?;
-    if app != APP_ID || page != 4096 || !matches!(version, 1 | 2) {
+    if app != APP_ID || page != 4096 || !matches!(version, 1..=3) {
         return Err(Error::Unavailable);
     }
     let mut stmt = db
-        .prepare("SELECT name,sql FROM sqlite_schema WHERE sql IS NOT NULL ORDER BY name LIMIT 9")
+        .prepare("SELECT name,sql FROM sqlite_schema WHERE sql IS NOT NULL ORDER BY name LIMIT 12")
         .map_err(unavailable)?;
     let rows = stmt
         .query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))
         .map_err(unavailable)?;
     let expected: Vec<_> = BASE
         .iter()
-        .chain(V2.iter().take(if version == 2 { 4 } else { 0 }))
+        .chain(V2.iter().take(if version >= 2 { 4 } else { 0 }))
+        .chain(V3.iter().take(if version == 3 { 3 } else { 0 }))
         .collect();
     let mut count = 0;
     for row in rows {
@@ -124,7 +163,7 @@ pub(super) fn validate(db: &Connection) -> Result<i64> {
     // SQLite owns only these implicit uniqueness indexes. NULL SQL must not
     // become a loophole for admitting arbitrary extra schema objects.
     let mut stmt = db
-        .prepare("SELECT type,name,tbl_name FROM sqlite_schema WHERE sql IS NULL LIMIT 6")
+        .prepare("SELECT type,name,tbl_name FROM sqlite_schema WHERE sql IS NULL LIMIT 8")
         .map_err(unavailable)?;
     let rows = stmt
         .query_map([], |r| {
@@ -142,15 +181,31 @@ pub(super) fn validate(db: &Connection) -> Result<i64> {
             "sqlite_autoindex_projects_1" | "sqlite_autoindex_projects_2" => table == "projects",
             "sqlite_autoindex_evidence_1" => table == "evidence",
             "sqlite_autoindex_context_1" => table == "context",
-            "sqlite_autoindex_forgotten_context_1" => version == 2 && table == "forgotten_context",
+            "sqlite_autoindex_forgotten_context_1" => version >= 2 && table == "forgotten_context",
+            "sqlite_autoindex_project_incarnations_1"
+            | "sqlite_autoindex_project_incarnations_2" => {
+                version == 3 && table == "project_incarnations"
+            }
             _ => false,
         };
         if kind != "index" || !valid || !implicit.insert(name) {
             return Err(Error::Unavailable);
         }
     }
-    if implicit.len() != if version == 2 { 5 } else { 4 } {
+    if implicit.len()
+        != match version {
+            3 => 7,
+            2 => 5,
+            _ => 4,
+        }
+    {
         return Err(Error::Unavailable);
+    }
+    if version == 3 {
+        let invalid: bool = db.query_row("SELECT EXISTS(SELECT 1 FROM projects p LEFT JOIN project_incarnations i ON i.project=p.id WHERE i.project IS NULL) OR EXISTS(SELECT 1 FROM project_incarnations i LEFT JOIN projects p ON p.id=i.project WHERE p.id IS NULL OR typeof(i.incarnation)!='text' OR length(CAST(i.incarnation AS BLOB))!=32 OR instr(i.incarnation,char(0))>0 OR i.incarnation GLOB '*[^0-9a-f]*')", [], |r| r.get(0)).map_err(unavailable)?;
+        if invalid {
+            return Err(Error::Unavailable);
+        }
     }
     Ok(version)
 }
@@ -184,6 +239,24 @@ impl Store {
         cancel: &AtomicBool,
         mut progress: impl FnMut(UpgradeStage),
     ) -> Result<Value> {
+        self.upgrade_to_with_progress(2, cancel, &mut progress)
+    }
+
+    /// Explicit owner-attested v3 migration; callers must stop legacy workers first.
+    pub fn upgrade_to_v3(&mut self, cancel: &AtomicBool) -> Result<Value> {
+        self.upgrade_to_with_progress(3, cancel, |_| {})
+    }
+
+    /// Atomic migration with synthetic fault/cancellation observation boundaries.
+    pub fn upgrade_to_with_progress(
+        &mut self,
+        target: i64,
+        cancel: &AtomicBool,
+        mut progress: impl FnMut(UpgradeStage),
+    ) -> Result<Value> {
+        if !matches!(target, 2 | 3) {
+            return Err(invalid());
+        }
         canceled(cancel)?;
         self.healthy()?;
         let tx = self
@@ -196,11 +269,15 @@ impl Store {
         if old == 1 {
             install_v2(&tx)?;
         }
+        if target == 3 && old < 3 {
+            install_v3(&tx)?;
+        }
+        let actual = version(&tx)?;
         progress(UpgradeStage::ReadyToCommit);
         canceled(cancel)?;
         tx.commit().map_err(unavailable)?;
         Ok(
-            json!({"schema_version":2,"upgraded":old == 1,"compatibility":"Older binaries cannot open schema v2; no automatic downgrade."}),
+            json!({"schema_version":actual,"upgraded":old != actual,"compatibility":format!("Older binaries cannot open schema v{actual}; no automatic downgrade.")}),
         )
     }
 }

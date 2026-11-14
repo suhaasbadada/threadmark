@@ -58,20 +58,21 @@ struct LiveCoreTests {
         driver.fire(); await model.waitForOperation()
         guard case .project(let revoked) = try await adapter.perform(.project("alpha")) else { throw ServiceError.invalid }
         #expect(revoked.sources.isEmpty && revoked.snapshot == nil && !driver.active)
-        // Explicit repair and re-consent, then another caller reuses the same ID at
-        // a different root between UI approval and the bound CLI invocation.
+        // Explicit repair and re-consent, then another caller reuses the same ID
+        // at the identical directory between approval and bound CLI invocation.
         model.stageSources(["a.rs"]); model.applySources(); await model.waitForOperation()
         let repaired = try #require(model.automaticRefreshProposal)
         model.enableAutomaticRefresh(repaired)
-        _ = try await adapter.perform(.removeProject("alpha", repaired.root, repaired.rootIdentity))
-        let replacement = base.appendingPathComponent("replacement")
-        try fm.createDirectory(at: replacement, withIntermediateDirectories: false)
-        try Data("synthetic_replacement\n".utf8).write(to: replacement.appendingPathComponent("a.rs"))
-        _ = try await adapter.perform(.addProject("alpha", replacement.path, ["a.rs"]))
+        _ = try await adapter.perform(.removeProject("alpha", repaired.root, repaired.rootIdentity, repaired.incarnation))
+        _ = try await adapter.perform(.addProject("alpha", root.path, ["a.rs"]))
+        _ = try await adapter.perform(.writeContext("alpha", "memo", "note", "Synthetic replacement revision one", update: false))
+        await #expect(throws: ServiceError.failed) { try await adapter.perform(.removeProject("alpha", repaired.root, repaired.rootIdentity, repaired.incarnation)) }
         driver.fire(); await model.waitForOperation()
         #expect(model.status.contains("Needs attention") && model.indexReport == nil && !driver.active)
         guard case .project(let reused) = try await adapter.perform(.project("alpha")) else { throw ServiceError.invalid }
-        #expect(reused.snapshot == nil) // Core, not only model, rejected cross-root work.
+        #expect(reused.snapshot == nil && reused.incarnation != repaired.incarnation)
+        guard case .context(let replacementNote) = try await adapter.perform(.context("alpha", "memo")) else { throw ServiceError.invalid }
+        #expect(replacementNote.history.count == 1 && replacementNote.history[0].revision == 1)
         await model.shutdown()
     }
     @Test(.enabled(if: ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"] != nil,
@@ -177,7 +178,7 @@ struct LiveCoreTests {
         #expect(persisted.history.last?.retired == true)
         let identity = try #require(registered.root_identity)
         guard case .string(let binding) = identity else { throw ServiceError.invalid }
-        guard case .removed(let receipt) = try await reopened.perform(.removeProject("alpha", registered.root, binding)) else {
+        guard case .removed(let receipt) = try await reopened.perform(.removeProject("alpha", registered.root, binding, try #require(registered.incarnation))) else {
             Issue.record("Missing typed removal receipt"); return
         }
         try receipt.validate(project: "alpha")
@@ -193,7 +194,7 @@ struct LiveCoreTests {
         guard case .contexts(let removedHistory) = try await adapter.perform(.contexts("alpha")) else { throw ServiceError.invalid }
         #expect(removedHistory.contexts.isEmpty)
         _ = try await adapter.perform(.writeContext("alpha", "replacement", "note", "Synthetic replacement note", update: false))
-        await #expect(throws: ServiceError.failed) { try await reopened.perform(.removeProject("alpha", registered.root, binding)) }
+        await #expect(throws: ServiceError.failed) { try await reopened.perform(.removeProject("alpha", registered.root, binding, try #require(registered.incarnation))) }
         guard case .query(let preservedEvidence) = try await adapter.perform(.query("alpha", "replacement_evidence")),
               case .context(let preservedNote) = try await adapter.perform(.context("alpha", "replacement")) else { throw ServiceError.invalid }
         #expect(!preservedEvidence.results.isEmpty && preservedNote.history.count == 1)

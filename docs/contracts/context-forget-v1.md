@@ -72,6 +72,20 @@ Unknown unmarked targets fail without creating a marker. An already marked targe
 is idempotent; the marker remains authoritative even if stale/corrupt content is
 present. Capacity failure rejects the whole operation without deleting history.
 
+Native confirmation requires a registration incarnation as well as displayed
+root and revision: `--expected-root ROOT --expected-root-identity IDENTITY
+--expected-incarnation TOKEN --expected-revision N`. See
+[registration incarnations](registration-incarnation-v1.md); native Forget is
+not implemented by this contract alone. All four bindings are required together;
+`N` is an integer 1–32. Invalid bindings fail
+before opening/creating storage. In the deletion transaction, root/root identity
+and registration incarnation and target's latest revision must still match. A newly edited or reused entry
+fails without installing a marker or deleting history. Bound calls do not use
+the unbound idempotent path when the expected live revision is already absent.
+The existing explicit unbound CLI remains available; native clients always bind.
+These values prevent stale approval, not authentication or broader source access.
+No receipt or database schema change follows from this optional binding.
+
 Cancellation checks before staging and just before commit; staged cancel/SQL
 failure rolls back both marker and deletion. The committed result is authoritative;
 do not claim cancellation rolled back an operation after commit. Receipt fields:

@@ -46,6 +46,9 @@ fn usage() -> std::process::ExitCode {
     eprintln!(
         "explicit compatibility change: store upgrade --confirm-local-schema-upgrade (existing store only; older binaries cannot open schema v2; no automatic downgrade)"
     );
+    eprintln!(
+        "schema v3: store upgrade --to-version 3 --confirm-local-schema-upgrade --confirm-legacy-workers-stopped (existing store only; stop older workers first; operator attestation is not machine proof); native removal/index bindings additionally require --expected-incarnation TOKEN before --expected-sources"
+    );
     std::process::ExitCode::from(2)
 }
 
@@ -74,6 +77,49 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
         .as_slice()
     {
         ["store", "upgrade", "--confirm-local-schema-upgrade"] => Command::UpgradeStore,
+        [
+            "store",
+            "upgrade",
+            "--to-version",
+            "3",
+            "--confirm-local-schema-upgrade",
+            "--confirm-legacy-workers-stopped",
+        ] => Command::UpgradeStoreV3,
+        [
+            "project",
+            "remove",
+            id,
+            "--confirm-remove-local-data",
+            "--expected-root",
+            root,
+            "--expected-root-identity",
+            identity,
+            "--expected-incarnation",
+            token,
+        ] => Command::RemoveProjectIncarnationBound(
+            (*id).into(),
+            (*root).into(),
+            (*identity).into(),
+            (*token).into(),
+        ),
+        [
+            "index",
+            id,
+            "--expected-root",
+            root,
+            "--expected-root-identity",
+            identity,
+            "--expected-incarnation",
+            token,
+            "--expected-sources",
+            files @ ..,
+        ] => Command::IndexIncarnationBound(
+            (*id).into(),
+            (*root).into(),
+            (*identity).into(),
+            files.iter().map(|s| (*s).into()).collect(),
+            (*token).into(),
+        ),
         [
             "context",
             "forget",
