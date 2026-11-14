@@ -1,4 +1,4 @@
-use super::selection;
+use super::selection_bound;
 use std::sync::atomic::AtomicBool;
 use threadmark_core::knowledge::{Project, Store};
 use threadmark_refinement::{
@@ -19,6 +19,7 @@ struct Namespace {
     root_identity: String,
     incarnation: String,
     sources: Vec<String>,
+    snapshot: Option<String>,
 }
 
 /// Exact operator-inspected registration/snapshot, not authority or credentials.
@@ -72,14 +73,26 @@ impl CaptureBinding {
 }
 
 impl Namespace {
-    fn capture(project: Project) -> Result<Self, Error> {
+    fn capture(project: &Project) -> Result<Self, Error> {
         Ok(Self {
-            root: project.root,
-            root_identity: project.root_identity,
+            root: project.root.clone(),
+            root_identity: project.root_identity.clone(),
             // Long-lived cached consent cannot safely bind a legacy registration.
-            incarnation: project.incarnation.ok_or(Error::ScopeMismatch)?,
-            sources: project.sources,
+            incarnation: project.incarnation.clone().ok_or(Error::ScopeMismatch)?,
+            sources: project.sources.clone(),
+            snapshot: project.snapshot.clone(),
         })
+    }
+
+    fn expected(&self, id: &str) -> Project {
+        Project {
+            id: id.into(),
+            root: self.root.clone(),
+            root_identity: self.root_identity.clone(),
+            incarnation: Some(self.incarnation.clone()),
+            sources: self.sources.clone(),
+            snapshot: self.snapshot.clone(),
+        }
     }
 
     fn check(&self, store: &Store, project: &str) -> Result<(), Error> {
@@ -88,6 +101,7 @@ impl Namespace {
             || current.root_identity != self.root_identity
             || current.incarnation.as_deref() != Some(&self.incarnation)
             || current.sources != self.sources
+            || current.snapshot != self.snapshot
         {
             return Err(Error::ScopeMismatch);
         }
@@ -108,9 +122,9 @@ impl EvidenceAuthority for Authority<'_> {
         self.namespace.check(self.store, &request.data().project)?;
         // Core query is independently bounded. The operation token is checked
         // before/after it; arbitrary provider calls must honor the same token.
-        let selected = selection(
+        let selected = selection_bound(
             self.store,
-            &request.data().project,
+            &self.namespace.expected(&request.data().project),
             self.query,
             &AtomicBool::new(false),
         )
@@ -179,9 +193,9 @@ impl ReviewSession {
         if let Some(expected) = expected {
             expected.check(&project)?;
         }
-        let namespace = Namespace::capture(project)?;
+        let namespace = Namespace::capture(&project)?;
         namespace.check(store, &capture.project)?;
-        let selected = selection(store, &capture.project, &query, &AtomicBool::new(false))
+        let selected = selection_bound(store, &project, &query, &AtomicBool::new(false))
             .map_err(core_error)?;
         namespace.check(store, &capture.project)?;
         if let Some(expected) = expected {

@@ -30,6 +30,20 @@ fn selection(
     cancel: &AtomicBool,
 ) -> Result<AuthorizedSnapshot, Error> {
     let value = store.query(project, query, cancel)?;
+    selected_value(value, project)
+}
+
+fn selection_bound(
+    store: &Store,
+    project: &threadmark_core::knowledge::Project,
+    query: &str,
+    cancel: &AtomicBool,
+) -> Result<AuthorizedSnapshot, Error> {
+    let value = store.query_bound(project, query, cancel)?;
+    selected_value(value, &project.id)
+}
+
+fn selected_value(value: Value, project: &str) -> Result<AuthorizedSnapshot, Error> {
     let mut coverage = value["coverage"]
         .as_str()
         .ok_or(Error::InvalidExtraction)?
