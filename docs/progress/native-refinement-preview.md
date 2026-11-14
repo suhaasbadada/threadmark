@@ -156,3 +156,38 @@ host draft/delivery, clipboard and live-host certification remain open. No priva
 real data, global configuration, credentials, installs, Docker, external server,
 new dependency or generated lockfile edit was introduced. P3-A2 and P4-A1–A4 remain
 partial; no phase is closed by these local tests.
+
+## Primary integration, review and repairs
+
+The primary integrated E's actual human-search transport/model/view and H's
+mounted consent/Refine preview into its implementation worktree. Joffrey reviewed
+the combined native loop and found two P2 issues: default Swift slash escaping
+inflated valid Rust envelopes beyond the native limit, and two inherited
+Connections/Privacy statements incorrectly denied the now implemented explicitly
+confirmed local provider flow. Both were repaired in exact tested runtime
+`218100e96046cca6321185a480994626d65ed91c` and independently re-reviewed closed.
+
+Consent/preview re-encoding now uses `withoutEscapingSlashes` with the newline
+inside the 8192-byte bound. Actual raw transport bounds, duplicate/schema gates,
+identity binding and original-byte checks remain intact. One regression uses
+actual SQLite/CLI selection from eight 1000-byte slash-heavy synthetic lines;
+consent succeeds with zero provider connections, then cancellation retains the
+original. A 6000-slash valid preview also passes while raw oversized input still
+fails. Connections/Privacy now accurately distinguish provider-free Context,
+settings and automatic lexical work from explicitly confirmed local Refine
+transmission, possible local-server forwarding and unavailable remote inference.
+
+Primary checks passed 172 Rust tests plus two doctests, 135 strict-concurrency
+Swift tests using rebuilt actual core, dependency policy, staged secrets and
+whitespace. Joffrey independently passed eight targeted regression/rejection/
+cancellation tests. Final integration `fc3ca56d42449b4a6e240d6d4ebc8c509fcdddc6`
+incorporates PR #56's merge without a runtime tree change. Release bundle build,
+source/bundled plist validation and all seven launch-validation cases passed.
+No GUI window was launched or private desktop captured for these checks.
+
+Exact remote native head/CI remains required. Preliminary cached native source
+reads and Context use existing namespace pre/postchecks; moving those bindings
+into the core read itself is a separate active hardening lane, not a claim made
+from the F inference-call binding repair. Persistent pipe review, optional ranked
+preparation, GUI/AX, real-model quality, remote TLS/auth and actual host delivery
+remain separate gates. Nine inherited progress appends remain untouched/excluded.

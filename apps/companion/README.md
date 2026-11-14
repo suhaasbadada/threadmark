@@ -199,11 +199,20 @@ the real adapter, and removes its data. It does not launch an app GUI or host.
   explanation distinguishes it from Quit. Quit cancels **all** outstanding owned
   operations (including previously superseded ones), waits for adapter teardown,
   then exits. No process names, process groups or unrelated tasks are killed.
-- Connections separates the local subprocess transport, unavailable inference
-  profiles and unavailable/not-certified host adapters. There are no credential
-  fields, network/send actions or silent sample fallback.
-- Configuration and drafts/previews are memory-only. Relaunch requires selecting
-  the executable/data directory again; core persistence is not shell persistence.
+- Connections separates the local subprocess transport, explicit default-off
+  provider profiles and unavailable/not-certified host adapters. Profiles can be
+  saved/loaded only through explicitly chosen private files; loading leaves them
+  off. There are no credential fields, host send actions or silent sample fallback.
+- Drafts/previews remain memory-only. Core/store selection is explicit on relaunch
+  or through paired launch arguments; no global preferences are discovered.
+  Nonsecret profile persistence never stores drafts, source excerpts or consent.
+- Context and human-note search do not invoke inference. Local Refine preview
+  requires a separate immutable Cancel-default confirmation of the exact original,
+  selected source evidence, profile/model/endpoint and one-call budgets. It sends
+  only that disclosed data to numeric-loopback HTTP; a local server may forward
+  data elsewhere. Remote TLS/auth and protected credential entry are unavailable.
+  The finite CLI returns a reviewable preview, not retained approval, clipboard,
+  host draft, send or downstream success. Cancel/failure preserves original text.
 - No notifications, telemetry, content archive, custom animation, login startup
   or automatic provider calls. Automatic source reads require the separate file-event/periodic
   refresh consent above. Standard native controls/system appearance
@@ -276,9 +285,11 @@ After separate authorization and core CLI integration:
    Check light/dark, reduced motion, focus order, text labels and screen reader.
 
 Phase 1 live host/inference gates stay OPEN. Full P3-A1–P3-A6 acceptance remains
-open pending these observed journeys. Conflict resolution, export,
-login startup, incremental structural indexing, host certification and inference are visibly
-unavailable or outside client-v1, not simulated by the shell.
+open pending these observed journeys. Native conflict-resolution/export UX,
+login startup, incremental structural indexing and host certification remain
+unavailable. Confirmed local Refine has synthetic CLI/HTTP acceptance, not live-model
+quality or GUI certification. Remote inference and actual host delivery remain open;
+no phase is closed by a compiled control or passing fixture.
 
 The deterministic model tests exercise injected ticks. Synthetic native tests
 exercise actual DispatchSource approved-file events with bounded async delivery
