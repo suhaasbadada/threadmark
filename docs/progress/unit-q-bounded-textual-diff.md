@@ -123,6 +123,19 @@ Plum lookup returned `thread_not_found`; no coordination or external response is
 pending, and no follow-up was scheduled.
 # Primary combined integration
 
+## Final publication gates
+
+PR #65 merged as `bbf6f374112ece43d7189b23952ace5f4867d117` after all five
+exact-head checks at `0cdce7105e1088dbfe070facb2361aeaa56fff9d` and fresh
+main/rules/review/discussion checks. Separate exact post-merge CI
+`43570646851`/`43570646977` passed. PR #66 was retargeted/updated to main;
+all five checks passed at `60f1eb9702c4000b0b306d78a1e5c7175924b44d` (CI
+`43570656117`, integrated `43570656018`). Fresh clean main target, required
+checks, review/approval/discussion and rules gates preceded merge
+`c6b931841be95e9c6238fe460520d93603837db6`. Its separate exact post-merge CI is
+not yet verified. Both PR watches were removed after merge. GUI/AX, live model
+quality, host delivery and phase closure remain separate open gates.
+
 Primary committed only the six owned files in the completed lane as `db2c550`
 and applied them without conflicts as
 `dc2e16c83654e105a281e7ac086fca478b2cd537`. No baseline/site merges were replayed.

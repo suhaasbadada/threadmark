@@ -58,6 +58,10 @@ pub enum Command {
     WriteContextBound(String, String, String, String, bool, String, String, String),
     /// Cached retirement bound to a registration.
     RetireContextBound(String, String, String, String, String),
+    /// Opt-in cached edit with exact latest human revision, checked atomically.
+    UpdateContextRevisionBound(String, String, String, String, String, String, String, u32),
+    /// Opt-in cached retirement with exact latest human revision.
+    RetireContextRevisionBound(String, String, String, String, String, u32),
     /// List latest human records.
     Contexts(String),
     /// Inspect bounded edit history.
@@ -92,6 +96,35 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         threadmark_core::knowledge::validate_removal_binding(id, root, identity)?;
     }
     match &command {
+        Command::UpdateContextRevisionBound(
+            project,
+            id,
+            kind,
+            text,
+            root,
+            identity,
+            token,
+            revision,
+        ) => {
+            threadmark_core::knowledge::validate_context_kind(kind)?;
+            threadmark_core::knowledge::validate_context_text(text)?;
+            threadmark_core::knowledge::ContextRevisionBinding {
+                root,
+                root_identity: identity,
+                incarnation: token,
+                revision: *revision,
+            }
+            .validate(project, id)?;
+        }
+        Command::RetireContextRevisionBound(project, id, root, identity, token, revision) => {
+            threadmark_core::knowledge::ContextRevisionBinding {
+                root,
+                root_identity: identity,
+                incarnation: token,
+                revision: *revision,
+            }
+            .validate(project, id)?;
+        }
         Command::QueryTermsBound(expected, query)
         | Command::PrepareContextTermsBound(expected, query, _) => {
             threadmark_core::knowledge::validate_query_binding(expected, query)?;
@@ -170,6 +203,8 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
     } else if matches!(
         &command,
         Command::IndexBound(..)
+            | Command::UpdateContextRevisionBound(..)
+            | Command::RetireContextRevisionBound(..)
             | Command::QueryBound(..)
             | Command::QueryTermsBound(..)
             | Command::PrepareContextTermsBound(..)
@@ -199,6 +234,47 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         Store::open(data_dir)?
     };
     let result = match command {
+        Command::UpdateContextRevisionBound(
+            project,
+            id,
+            kind,
+            text,
+            root,
+            identity,
+            token,
+            revision,
+        ) => {
+            store.update_context_revision_bound(
+                &project,
+                &id,
+                &kind,
+                &text,
+                &threadmark_core::knowledge::ContextRevisionBinding {
+                    root: &root,
+                    root_identity: &identity,
+                    incarnation: &token,
+                    revision,
+                },
+                cancel,
+            )?;
+            // Core's final cancellation check precedes commit. A late cancel
+            // must not turn a committed append into an apparent failed write.
+            return Ok(json!({"project":project,"id":id,"saved":true,"producer":"human-authored"}));
+        }
+        Command::RetireContextRevisionBound(project, id, root, identity, token, revision) => {
+            store.retire_context_revision_bound(
+                &project,
+                &id,
+                &threadmark_core::knowledge::ContextRevisionBinding {
+                    root: &root,
+                    root_identity: &identity,
+                    incarnation: &token,
+                    revision,
+                },
+                cancel,
+            )?;
+            return Ok(json!({"project":project,"id":id,"retired":true}));
+        }
         // Core's final cancellation boundary precedes commit. Do not turn an
         // authoritative committed Forget/upgrade into a misleading cancel error.
         Command::UpgradeStore => return store.upgrade(cancel),

@@ -20,12 +20,14 @@ const FLAGS: OFlags = OFlags::RDONLY
     .union(OFlags::NOFOLLOW)
     .union(OFlags::CLOEXEC);
 
+mod context_revision;
 mod export;
 mod forget;
 mod human_search;
 mod ranked_query;
 mod schema;
 mod source_forget;
+pub use context_revision::{ContextRevisionBinding, validate_context_kind, validate_context_text};
 pub use forget::{ForgetBinding, ForgetStage};
 pub use human_search::validate_human_search;
 pub use ranked_query::validate_query_terms;
@@ -1235,11 +1237,32 @@ impl Store {
         text: &str,
         update: bool,
     ) -> Result<()> {
+        self.write_context_guarded(project, id, kind, text, update, None)
+    }
+
+    fn write_context_guarded(
+        &mut self,
+        project: &Project,
+        id: &str,
+        kind: &str,
+        text: &str,
+        update: bool,
+        guard: Option<(u32, &AtomicBool)>,
+    ) -> Result<()> {
         identity(id)?;
-        if !context_kind(kind) || text.is_empty() || text.len() > 4096 || text.contains('\0') {
-            return Err(invalid());
+        validate_context_kind(kind)?;
+        validate_context_text(text)?;
+        if let Some((_, cancel)) = guard {
+            canceled(cancel)?;
         }
-        let tx = self.db.transaction().map_err(unavailable)?;
+        let tx = self
+            .db
+            .transaction_with_behavior(if guard.is_some() {
+                rusqlite::TransactionBehavior::Immediate
+            } else {
+                rusqlite::TransactionBehavior::Deferred
+            })
+            .map_err(unavailable)?;
         Self::require_project_root(&tx, project)?;
         let project = project.id.as_str();
         forget::require_unmarked(&tx, project, id)?;
@@ -1250,6 +1273,11 @@ impl Store {
                 |r| r.get(0),
             )
             .map_err(unavailable)?;
+        if let Some((expected, _)) = guard
+            && revision != Some(i64::from(expected))
+        {
+            return Err(Error::ScopeMismatch);
+        }
         if update != revision.is_some() || revision.is_some_and(|r| !(1..32).contains(&r)) {
             return Err(invalid());
         }
@@ -1268,6 +1296,11 @@ impl Store {
             params![project, id, revision.unwrap_or(0) + 1, kind, text],
         )
         .map_err(unavailable)?;
+        if let Some((_, cancel)) = guard {
+            #[cfg(test)]
+            context_revision::before_commit();
+            canceled(cancel)?;
+        }
         tx.commit().map_err(unavailable)
     }
 
@@ -1303,12 +1336,36 @@ impl Store {
     }
 
     fn retire_context_for_policy(&mut self, project: &Project, id: &str) -> Result<()> {
+        self.retire_context_guarded(project, id, None)
+    }
+
+    fn retire_context_guarded(
+        &mut self,
+        project: &Project,
+        id: &str,
+        guard: Option<(u32, &AtomicBool)>,
+    ) -> Result<()> {
         identity(id)?;
-        let tx = self.db.transaction().map_err(unavailable)?;
+        if let Some((_, cancel)) = guard {
+            canceled(cancel)?;
+        }
+        let tx = self
+            .db
+            .transaction_with_behavior(if guard.is_some() {
+                rusqlite::TransactionBehavior::Immediate
+            } else {
+                rusqlite::TransactionBehavior::Deferred
+            })
+            .map_err(unavailable)?;
         Self::require_project_root(&tx, project)?;
         let project = project.id.as_str();
         forget::require_unmarked(&tx, project, id)?;
         let (revision,kind,text): (i64,String,String) = tx.query_row("SELECT revision,kind,text FROM context WHERE project=?1 AND id=?2 ORDER BY revision DESC LIMIT 1", params![project,id], |r| Ok((r.get(0)?,r.get(1)?,r.get(2)?))).map_err(unavailable)?;
+        if let Some((expected, _)) = guard
+            && revision != i64::from(expected)
+        {
+            return Err(Error::ScopeMismatch);
+        }
         let count: i64 = tx
             .query_row(
                 "SELECT count(*) FROM context WHERE project=?1",
@@ -1328,6 +1385,11 @@ impl Store {
             params![project, id, revision + 1, kind, text],
         )
         .map_err(unavailable)?;
+        if let Some((_, cancel)) = guard {
+            #[cfg(test)]
+            context_revision::before_commit();
+            canceled(cancel)?;
+        }
         tx.commit().map_err(unavailable)
     }
 
