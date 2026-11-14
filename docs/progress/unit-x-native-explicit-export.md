@@ -1,5 +1,37 @@
 # Unit X — explicit scoped native local project export
 
+## Integrated acceptance and publication preparation
+
+Primary committed the repaired 13-file unit as `ea05bfa` and applied only owned
+changes as `1b3a57f`, retaining V/Y bound human/marker cases in three textual
+conflicts. The export fake now validates bound LIST rather than an unbound fake
+case. The actual-CLI test starts each independent replacement probe by explicit
+selection, not cached Refresh (which V correctly refuses after nonce replacement).
+No stale-consent assertion or production guard was relaxed. CI now rebuilds and
+enables the export C fixture instead of silently skipping its transport test.
+
+Exact integrated tested SHA **`54ce7124b76a22a5667efe6372ec0586f4cfa322`**:
+full workspace check **265 Rust tests + two doctests**, strict serial Debug
+**214 tests/30 suites**, strict overlap Release **25 tests/four suites**, ordinary-
+import API gate, offline locked deny, staged secrets/whitespace, bundle build and
+Info.plist validation **PASS**. Actual CLI and retained/export C fixtures enabled.
+The unchanged long deadline cases remain ignored in normal checks. No GUI launch.
+Initial combined Debug caught the test's incompatible cached-Refresh assumption;
+that failed run is not passing evidence. Full rerun passed after the narrow fix.
+
+Joffrey independently cleared the integration at that exact SHA, passed 25 overlap
+tests/four suites with actual CLI/C fixtures, API gate, C warnings-as-errors syntax
+and whitespace. Reviewed Swift 6.1 compatibility, but executed installed Swift 6.4
+only; remote CI remains its separate gate. Private writer/document controls and
+V/Y lifecycle boundaries remain intact. No source/store cleanup or user export.
+
+PR #73 passed all five checks at `8285ebbe3426caf42106c821d306823d939536c8`
+(CI `43580072928`, integrated `43580072931`); fresh exact-head/main/check/review/
+approval/discussion/rules gates preceded merge `11a56089b61560f0120f585dead00c667f4e5923`.
+Merged main normally without replaying lane baseline/site history. Separate #73
+post-merge CI and this unit's remote publication gates remain pending. All nine
+inherited progress edits/worktrees/parent reminders preserved; no phase closure.
+
 ## Primary repair after independent review
 
 Joffrey found High pending-confirmation transport bypass and Medium `/` root
