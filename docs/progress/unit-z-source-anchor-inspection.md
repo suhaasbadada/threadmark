@@ -1,5 +1,24 @@
 # Unit Z — bounded source-anchor inspection
 
+## Primary integration
+
+Primary committed only the eight owned files as `6c149f0` and applied without
+conflicts as **`c60bd4a311b63f6b15905190b3909bfcdf96db9b`**, the exact integrated
+tested runtime. No lane baseline/site merge history was replayed. Full workspace
+gate **PASS**, 282 Rust tests + two doctests; strict serial actual-CLI/retained-
+and-export-C-fixture Swift suite **PASS**, 214 tests/30 suites. API compiler gate,
+offline locked deny, staged secrets and whitespace **PASS**. Unchanged long
+deadline fixtures remained ignored, not relabeled as fresh evidence.
+
+Joffrey's initial two Medium findings and primary repairs are recorded below;
+independent repair recheck is **CLEAR**. Exact publication-head CI remains a
+separate gate. Human-note revision comparison continues independently. All nine
+inherited progress edits, worktrees and parent-owned reminders preserved. No GUI,
+provider, host delivery or phase closure claim.
+
+PR #74's exact post-merge runs `43581425149` and `43581425110`, both targeting
+`9ced15c40ea2a24dedefefc6cb5b5abba25bfa67`, completed **PASS**.
+
 ## Primary repair after independent review
 
 Initial Joffrey review was **not clear**: the actual daemon's normal store opener
