@@ -7,7 +7,7 @@ public struct QueryFilterControls: View {
     public var body: some View {
         GroupBox("Query result file scope") {
             VStack(alignment: .leading) {
-                Text("Query results only; Context/Refine use separate settings and full approved scope").font(.caption)
+                Text("Query results only. Context has its own independent file scope; Refine and retained review keep separate full approved scope consent.").font(.caption)
                 Toggle("Filter Query results to selected registered files", isOn: Binding(
                     get: { model.queryFileFilter != nil },
                     set: { model.setQueryFileFilter($0 ? [] : nil) }))

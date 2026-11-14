@@ -42,6 +42,8 @@ func apBadFrames(_ r: RankedHumanSearchRequest) throws -> [Data] {
 }
 
 actor APRankedCore: CoreService {
+    let scope: Project
+    init(scope: Project = apProject) { self.scope = scope }
     var calls = 0, oldSearches = 0, filtered = 0
     var requests: [RankedHumanSearchRequest] = []
     var hold = false, didStart = false, fail = false, forged = false, active = false, overtook = false
@@ -61,7 +63,7 @@ actor APRankedCore: CoreService {
         calls += 1
         if active { overtook = true }
         switch operation {
-        case .project: return .project(apProject)
+        case .project: return .project(scope)
         case .contextsBound: return .contexts(ContextList(project: "alpha", contexts: []))
         case .contextBound(_, let id):
             return .context(ContextHistory(project: "alpha", id: id, producer: "human-authored", authority: .string("context-not-authorization-or-observed-truth"), history: [ContextRevision(revision: 1, kind: "note", text: "Synthetic human history", retired: false)]))
@@ -77,6 +79,9 @@ actor APRankedCore: CoreService {
                 return .rankedHumanSearch(RankedHumanSearch(document: try RankedHumanSearch.decode(apFrame(p), request: request).document, bytes: bytes))
             }
             return .rankedHumanSearch(result)
+        case .prepareContextFilesBound(let request):
+            await pauseIfArmed()
+            return .fileContext(try FileContextDocument.decode(fileContextBytes(request), request: request))
         case .searchHumanContextBound: oldSearches += 1; await pauseIfArmed(); throw ServiceError.failed
         case .searchHumanContextKindsBound: filtered += 1; await pauseIfArmed(); throw ServiceError.failed
         case .editContextBatchBound(let execution): _ = try execution.claim(); throw ServiceError.failed
@@ -214,6 +219,42 @@ struct RankedHumanSearchTests {
         model.searchHumanContext("needle"); await model.waitForOperation()
         #expect(model.rankedHumanSearch != nil && model.batchOutcomeUnknown)
         #expect(model.stagedBatch.count == intent && model.batchStatus == warning && !model.canReviewBatch)
+        await model.shutdown()
+    }
+    @Test(arguments: ["ranked-notes", "file-context"]) @MainActor
+    func integratedContextAndNoteSuccessorsJoinAndKeepIndependentScopes(predecessor: String) async throws {
+        let core = APRankedCore(scope: fileQueryScope), model = CompanionModel(service: core, configured: true)
+        model.select("alpha"); await model.waitForOperation()
+        model.openContext("memo"); await model.waitForOperation()
+        model.editPreparation(query: "center", original: "Exact unsent original\r\n")
+        model.writeContext(id: "memo", kind: "note", text: "Unsaved draft", update: true)
+        let base = try #require(model.humanContextRevisionBinding("memo")), editor = model.contextEditorRevision
+        model.setHumanSearchMode(.rankedAnyTerms)
+        model.setQueryFileFilter([]); model.setContextFileFilter(["z.rs"])
+        await core.arm()
+        if predecessor == "ranked-notes" { model.searchHumanContext("first") }
+        else { model.prepareContext() }
+        await core.wait()
+        let calls = await core.calls
+        if predecessor == "ranked-notes" {
+            model.setContextFileFilter(["a.rs"]); model.prepareContext()
+        } else {
+            model.cancel(); model.searchHumanContext("second")
+        }
+        #expect(await core.calls == calls)
+        await core.release(); await model.waitForOperation()
+        #expect(await !core.overtook)
+        #expect(model.queryFileFilter == [] && model.humanSearchMode == .rankedAnyTerms)
+        #expect(model.history?.id == "memo" && model.humanContextRevisionBinding("memo") == base)
+        #expect(model.contextEditorRevision == editor && model.lastError == .contextConflict)
+        #expect(model.originalDraft == "Exact unsent original\r\n")
+        if predecessor == "ranked-notes" {
+            #expect(model.rankedHumanSearch == nil && model.contextSelectedPaths == ["a.rs"])
+            #expect(model.preview?.original == model.originalDraft)
+        } else {
+            #expect(model.preview == nil && model.contextFileFilter == ["z.rs"])
+            #expect(model.rankedHumanSearch?.document.terms == ["second"])
+        }
         await model.shutdown()
     }
     @Test(arguments: [false, true]) @MainActor

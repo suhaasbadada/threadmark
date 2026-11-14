@@ -20,6 +20,7 @@ compile CoverageFixtures/coverage.c coverage-fixture
 compile IncrementalBuildFixtures/incremental.c incremental-fixture
 compile BatchEditAPIFixtures/batch.c batch-fixture
 compile QueryFilterFixtures/query-filter.c query-filter-fixture
+compile FileContextFixtures/context.c file-context-fixture
 compile RankedHumanSearchFixtures/ranked-human.c ranked-human-fixture
 export THREADMARK_CORE_TEST_BINARY="$root/target/debug/threadmark"
 export THREADMARK_RETAINED_FIXTURES="$root/target/retained-fixtures"
@@ -29,13 +30,14 @@ export THREADMARK_COVERAGE_FIXTURE_BINARY="$root/target/coverage-fixture"
 export THREADMARK_INCREMENTAL_FIXTURE_BINARY="$root/target/incremental-fixture"
 export THREADMARK_BATCH_FIXTURE_BINARY="$root/target/batch-fixture"
 export THREADMARK_QUERY_FILTER_FIXTURE_BINARY="$root/target/query-filter-fixture"
+export THREADMARK_FILE_CONTEXT_FIXTURE_BINARY="$root/target/file-context-fixture"
 export THREADMARK_RANKED_HUMAN_FIXTURE_BINARY="$root/target/ranked-human-fixture"
 for configuration in debug release; do
   sh apps/companion/scripts/swift.sh test -c "$configuration" --no-parallel --disable-xctest --enable-swift-testing \
     -Xswiftc -strict-concurrency=complete -Xswiftc -warnings-as-errors
 done
 sh apps/companion/scripts/check-retained-api.sh
-for family in SourceInspectionFixtures ComparisonAPIFixtures HumanSearchFilterAPIFixtures CoverageFixtures IncrementalBuildFixtures BatchEditAPIFixtures QueryFilterFixtures RankedHumanSearchFixtures; do
+for family in SourceInspectionFixtures ComparisonAPIFixtures HumanSearchFilterAPIFixtures CoverageFixtures IncrementalBuildFixtures BatchEditAPIFixtures QueryFilterFixtures FileContextFixtures RankedHumanSearchFixtures; do
   sh "apps/companion/Tests/$family/check-api.sh"
 done
 sh apps/companion/scripts/bundle.sh
