@@ -103,12 +103,13 @@ public struct RetainedReviewLifetime: Sendable {
         await start(consent: consent, executable: executable, store: store, seconds: 300)
     }
     // Internal shorter parent deadline for bounded tests, never a CLI override.
-    func start(consent: RefinementConsent, executable: URL, store: URL, seconds: Double) async {
+    func start(consent: RefinementConsent, executable: URL, store: URL, seconds: Double,
+               didSpawn: (@Sendable (Int32) -> Void)? = nil) async {
         guard !busy, process == nil, binding?.matches(consent) == true,
               !usedConsentIDs.contains(consent.id) else { lastError = .invalid; return }
         do {
             try consent.validate()
-            let child = try RetainedReviewProcess(executable: executable, store: store, consent: consent, seconds: seconds)
+            let child = try RetainedReviewProcess(executable: executable, store: store, consent: consent, seconds: seconds, didSpawn: didSpawn)
             usedConsentIDs.insert(consent.id)
             self.consent = consent; original = consent.original; process = child
             state = .preparing; lastError = nil

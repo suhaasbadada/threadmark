@@ -47,7 +47,8 @@ final class RetainedReviewProcess: Sendable {
     private let mailbox: RetainedReviewMailbox
     private let worker: Task<ServiceError?, Never>
 
-    init(executable: URL, store: URL, consent: RefinementConsent, seconds: Double = 300) throws {
+    init(executable: URL, store: URL, consent: RefinementConsent, seconds: Double = 300,
+         didSpawn: (@Sendable (Int32) -> Void)? = nil) throws {
         try consent.validate()
         guard executable.isFileURL, executable.path.hasPrefix("/"), !executable.path.contains("\0"),
               FileManager.default.isExecutableFile(atPath: executable.path),
@@ -62,7 +63,7 @@ final class RetainedReviewProcess: Sendable {
         let mailbox = RetainedReviewMailbox(); self.mailbox = mailbox
         worker = Task.detached {
             let result: ServiceError?
-            do { try Self.run(executable: executable, store: store, arguments: arguments, consent: consent, seconds: seconds, mailbox: mailbox); result = nil }
+            do { try Self.run(executable: executable, store: store, arguments: arguments, consent: consent, seconds: seconds, mailbox: mailbox, didSpawn: didSpawn); result = nil }
             catch let failure as ServiceError { result = failure }
             catch { result = .failed }
             mailbox.finish(result); return result
@@ -85,7 +86,7 @@ final class RetainedReviewProcess: Sendable {
     func cancelAndJoin() async { mailbox.cancel(); _ = await worker.value }
 
     private static func run(executable: URL, store: URL, arguments: [String], consent: RefinementConsent,
-                            seconds: Double, mailbox: RetainedReviewMailbox) throws {
+                             seconds: Double, mailbox: RetainedReviewMailbox, didSpawn: (@Sendable (Int32) -> Void)?) throws {
         let input = Pipe(), output = Pipe(), diagnostics = Pipe()
         let handles = [input.fileHandleForReading, input.fileHandleForWriting, output.fileHandleForReading,
                        output.fileHandleForWriting, diagnostics.fileHandleForReading, diagnostics.fileHandleForWriting]
@@ -122,6 +123,7 @@ final class RetainedReviewProcess: Sendable {
         guard spawned == 0 else { throw ServiceError.unavailable }
         mailbox.record(pid: pid)
         var child = OwnedChild(pid: pid)
+        didSpawn?(pid)
         try? input.fileHandleForReading.close(); try? output.fileHandleForWriting.close(); try? diagnostics.fileHandleForWriting.close()
         let deadline = ProcessInfo.processInfo.systemUptime + seconds
         var failure: ServiceError?
