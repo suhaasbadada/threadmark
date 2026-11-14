@@ -34,6 +34,9 @@ fn usage() -> std::process::ExitCode {
         "usage: threadmark --version | status | smoke; or --data-dir ABSOLUTE_NEW_PRIVATE_DIR project add ID ROOT [FILE ...] | project list | project show ID | project sources ID [FILE ...] | project remove ID --confirm-remove-local-data (local policy/evidence/context only; sources untouched; not Forget or forensic erasure) | index PROJECT | query PROJECT TEXT | context prepare PROJECT QUERY (original on stdin) | context add/update PROJECT ID KIND (stdin) | context retire/show PROJECT ID | context list PROJECT"
     );
     eprintln!(
+        "human-only lexical retrieval: context search PROJECT QUERY (active latest human revisions, not source-backed facts; max 256 query UTF-8 bytes, 8 whole entries, 8192 JSON bytes including newline)"
+    );
+    eprintln!(
         "optional exact removal approval binding: --expected-root ROOT --expected-root-identity IDENTITY (both required together; not credentials)"
     );
     eprintln!(
@@ -280,6 +283,9 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
             files.iter().map(|s| (*s).into()).collect(),
         ),
         ["query", id, text] => Command::Query((*id).into(), (*text).into()),
+        ["context", "search", project, query] => {
+            Command::SearchContext((*project).into(), (*query).into())
+        }
         ["context", "prepare", project, query] => {
             let mut bytes = Vec::new();
             if std::io::stdin().take(4097).read_to_end(&mut bytes).is_err() || bytes.len() > 4096 {

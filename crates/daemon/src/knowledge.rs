@@ -34,6 +34,8 @@ pub enum Command {
     IndexIncarnationBound(String, String, String, Vec<String>, String),
     /// Bounded source-backed lexical inspection.
     Query(String, String),
+    /// Bounded human-only active latest context search; never source evidence.
+    SearchContext(String, String),
     /// Prepare a memory-only context preview (project, query, unchanged original).
     PrepareContext(String, String, String),
     /// Create/revise human context (project, ID, kind, content, update).
@@ -78,6 +80,9 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         threadmark_core::knowledge::validate_removal_binding(id, root, identity)?;
     }
     match &command {
+        Command::SearchContext(project, query) => {
+            threadmark_core::knowledge::validate_human_search(project, query)?;
+        }
         Command::SourcesBound(id, root, identity, token, old, new) => {
             threadmark_core::knowledge::validate_sources_binding(
                 id, root, identity, token, old, new,
@@ -147,6 +152,7 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
             | Command::ForgetContext(..)
             | Command::ForgetContextBound(..)
             | Command::ForgottenContexts(..)
+            | Command::SearchContext(..)
     ) {
         // Reconciliation and explicit lifecycle operations require existing
         // storage; none may recreate a missing store as a side effect.
@@ -237,6 +243,7 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
             store.index_bound(&id, &root, &identity, &sources, cancel)?
         }
         Command::Query(id, text) => store.query(&id, &text, cancel)?,
+        Command::SearchContext(project, query) => store.search_context(&project, &query, cancel)?,
         Command::PrepareContext(id, query, original) => {
             crate::preparation::context(&store, &id, &query, original, cancel)?
         }

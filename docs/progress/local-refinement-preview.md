@@ -176,3 +176,17 @@ plus two doctests), all 118 strict-concurrency Swift tests against rebuilt core,
 dependency policy, staged secrets and whitespace. Publication adds this evidence
 only. Exact remote head/CI remains required; native consent/preview is completed
 in another isolated lane but is not included or certified by this CLI-only unit.
+
+## PR #55 publication outcome
+
+PR [#55](https://github.com/suhaasbadada/threadmark/pull/55) passed all five checks
+on `919b6209e6e2cf0e6312de660fd00c03948c7096`: CI
+[43554218326](https://github.com/suhaasbadada/threadmark/actions/runs/43554218326)
+and integrated [43554218322](https://github.com/suhaasbadada/threadmark/actions/runs/43554218322).
+Fresh exact-head/main/rules/discussions checks found no blocker; recorded review
+and recheck applied. It merged at `2026-11-14T04:01:04Z` as
+`8b04317dc21e748d7bcd75cf931138b8c56f2e47`. It was already green before a watch
+was needed. Separate exact post-merge CI
+[43554520479](https://github.com/suhaasbadada/threadmark/actions/runs/43554520479)
+and integrated [43554520476](https://github.com/suhaasbadada/threadmark/actions/runs/43554520476)
+both passed. Native UI/consent and persistent review remain separate units.
