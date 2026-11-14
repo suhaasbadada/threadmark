@@ -90,3 +90,28 @@ No GUI walkthrough, VoiceOver/native accessibility certification, semantic quali
 evaluation, complete resource acceptance, independent review or remote CI was run.
 P2/P3/P4 stay open. Coordinator must compose this isolated diff with lane L's
 retained-controller mounts; this unit does not modify retained files.
+# Primary integration
+
+Primary committed the reviewed exact 12-file diff as
+`61a44d00162d829620ff0ff77c7c2d72695a3606` in the task checkout, then applied only
+that owned commit as `2ab405255f957ac22b5d856a0d1f77f48f995760` onto the reviewed
+retained CLI/native adapter combination. No landing-page or baseline-contract
+commits were replayed. Lane worktree remains intact.
+
+Joffrey independent review: **CLEAR**. Independently passed four CLI integration,
+two core pre-traversal binding and seven parameterized strict actual-CLI Swift
+tests. Primary full workspace gate and combined strict Swift **PASS**, 149 tests
+across 19 suites, with actual rebuilt CLI and hostile retained fixtures enabled.
+Dependency policy, staged secrets and whitespace passed before publication.
+Refine remains literal: choosing ranked Query/Context never silently changes
+provider consent or retained-review retrieval mode.
+
+PR #59 merged as `38491837bfb85c9c389feafa78999efa2c77118f` after fresh exact-head
+checks; separate post-merge runs `43564569859`/`43564569870` both passed. PR #60
+merged as `d4905c8112a154f496a281ce1d7e1f75b0f13942` after five checks passed at
+`d59b6d9f74ecfd03e2bab7d267f6b354f9329fe6`, clean main target, no unresolved
+discussions/review/rules blocker and independent review closure. Its post-merge
+CI remains a separate gate. PR #61 retarget/update is pending new-head CI.
+
+GUI/AX, live provider/quality, native retained app wiring, host delivery and phase
+closure remain unverified. Nine inherited progress modifications stay excluded.
