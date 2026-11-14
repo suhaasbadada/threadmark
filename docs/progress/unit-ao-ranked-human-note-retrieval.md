@@ -1,5 +1,34 @@
 # Unit AO — bound multi-term durable human-note retrieval
 
+## Primary integration and independent review
+
+Owned implementation committed as `9b45b11` and cleanly applied on merged AM as
+**`4afd97e31535ad7953d1735978299a03e68340e1`**, exact integrated tested runtime.
+No baseline/site merge replay or conflict repair. The ordered nine-path binary
+diff fingerprint was reproduced after integration, identical to
+**`2796e9c37bfc7d3c94686eb7cdcf0b0db3fb9955df62bd07776a00dacbe43528`**.
+
+Joffrey independently reviewed **CLEAR**, verified baseline/inventory/fingerprint,
+checked old literal semantics against surrounding code and inherited tests (not
+only the new golden fixture), and reran full offline checks (**419 tests/doctests**),
+focused core/CLI regressions, offline locked deny, staged secrets and whitespace.
+No native, remote CI or atomic post-publication revocation certification claimed.
+
+Primary reran full offline workspace check, offline locked deny, secrets and
+whitespace **PASS** at the exact integrated runtime. Full strict serial native
+Debug and Release each **296 tests/47 suites PASS** against the new CLI, with all
+fixture variables enabled; this exercises unchanged existing literal human-search
+and related native flows, not a new native ranked-note implementation. Two inherited
+long-deadline tests remain ignored. Publication-head CI is separate and pending.
+
+AM #88 exact post-merge runs `43601436812` and `43601436873` both completed
+**PASS** at `01546a08d8291688e1ecb41510833d20a70ab83f`. AL #87 integrated run
+`43601072415` passed at `179db1f43ead127cbbc0a767b6eede92ad19064e`, but CI
+`43601072392` concluded **canceled**, not success; no retry or earlier-head
+substitution was performed. Nine inherited progress edits, local earlier-unit
+receipts and all worktrees preserved. AN native file-scoped Context remains
+independent; GUI/AX, live quality, host delivery and phase closure remain open.
+
 ## Scope and baseline
 
 TM-01–TM-04, TM-07, TM-10; partial P2-A1/A3/A4/A5/A6 and P3-A4.
