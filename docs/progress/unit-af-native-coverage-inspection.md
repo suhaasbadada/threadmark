@@ -1,5 +1,39 @@
 # Unit AF — native explicit coverage/freshness inspection
 
+## Primary integration and independent review
+
+Primary committed only thirteen owned files as `6a89285` and applied as
+**`48defb21f9fd7599a0f678896da2b79a98d5954e`**, exact integrated tested runtime.
+Four textual conflicts retained both filtered-search and coverage enum/transport/
+CI gates, and combined read-preservation/CAS-conflict capture before clearing.
+No baseline/site history replay. The stdin-fixture CI repair remains unchanged.
+
+Joffrey independently reproduced the isolated AF fingerprint, reviewed **CLEAR**,
+passed 41 tests/nine suites with actual CLI/C fixtures, coverage API gate and
+whitespace. Then independently reviewed the exact combined runtime **CLEAR**:
+21 tests/four suites, eight additional cross-feature actual-CLI journeys behind a
+cancellation-ignoring wrapper (both directions, pending/completed predecessors,
+successful/failing successors), all five API gates and whitespace **PASS**. Used
+existing Rust/C binaries; did not independently rerun complete Rust/Release/CI.
+Pending coverage intentionally disables Search; reverse pending tests explicitly
+Cancel before Search rather than inventing an enabled UI action.
+
+Primary full workspace **328 Rust tests + two doctests PASS**; strict serial actual-
+CLI/all-C-fixture full Debug and Release each **260 tests/40 suites PASS**; all five
+API gates, offline locked deny, staged secrets/whitespace, release bundle/plist
+**PASS**. Long deadlines remained ignored. Logs `target/unit-af-integrated-*` are
+local primary evidence, not remote CI. Exact publication-head CI remains later.
+
+PR #80 old `d8010cc` failed Ubuntu due to the existing pipe fixture; its retained
+diagnosis/repair is in AE progress, not waived or blindly retried. Repaired full
+head `3c3da3c3811d101ef60ad0f3bc55501aa0910426` passed all five checks (CI
+`43589341144`, integrated `43589341164`); fresh exact-head/main/check/review/
+approval/discussion/rules gates preceded authorized merge
+`6e4223cb7cd279086e2672ec5a16c07f89e4da42`. Watch removed; separate post-merge
+CI remains unverified. AG incremental lexical indexing continues independently.
+Nine inherited progress edits/worktrees/parent reminders preserved. No GUI/AX,
+live-quality, host delivery, source-I/O avoidance or phase closure inferred.
+
 ## Baseline, ownership and integration boundary
 
 Implementation sub-agent: Bob product unit AF. Requirements **TM-01–TM-04,
