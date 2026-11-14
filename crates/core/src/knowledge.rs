@@ -470,6 +470,8 @@ pub struct Project {
 }
 
 pub use export::validate_export_binding;
+mod file_query;
+pub use file_query::{FileQuery, FileQueryMode};
 
 /// Validate cached source-read metadata without opening storage or source paths.
 /// This is stale-approval protection, not source authorization.
