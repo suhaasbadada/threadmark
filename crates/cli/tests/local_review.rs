@@ -11,6 +11,43 @@ use std::sync::{
 use std::time::{Duration, Instant};
 
 static NEXT: AtomicU64 = AtomicU64::new(0);
+
+#[test]
+fn malformed_launch_arguments_use_closed_json_before_store_or_stdin() {
+    use std::ffi::OsString;
+    use std::os::unix::ffi::OsStringExt;
+    let root = std::env::temp_dir().join(format!(
+        "threadmark-review-invalid-{}-{}",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
+    ));
+    assert!(!root.exists());
+    for tail in [
+        vec![OsString::from("x".repeat(4097))],
+        vec![OsString::from("x"); 80],
+        vec![OsString::from_vec(vec![0xff])],
+        vec![],
+        vec![OsString::from("--terms")],
+    ] {
+        let output = Command::new(env!("CARGO_BIN_EXE_threadmark"))
+            .arg("--data-dir")
+            .arg(&root)
+            .args(["refine", "review"])
+            .args(tail)
+            .stdin(Stdio::null())
+            .output()
+            .unwrap();
+        assert_eq!(output.status.code(), Some(2));
+        assert!(output.stderr.is_empty());
+        assert!(output.stdout.len() <= 8192 && output.stdout.ends_with(b"\n"));
+        let event: Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(event["event"], "failure");
+        assert_eq!(event["terminal"], true);
+        assert_eq!(event["delivery"], "DeliveryNotAttempted");
+        assert!(!root.exists());
+    }
+}
+
 struct Fixture(PathBuf);
 impl Fixture {
     fn new() -> Self {

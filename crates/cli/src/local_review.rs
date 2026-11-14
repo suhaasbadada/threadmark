@@ -178,7 +178,7 @@ fn session(
     }
 }
 
-pub fn run(data_dir: &Path, words: &[String]) -> ExitCode {
+pub fn run(data_dir: &Path, raw_words: &[std::ffi::OsString]) -> ExitCode {
     let deadline = Instant::now() + Duration::from_secs(300);
     let mut output = Output {
         frames: 0,
@@ -198,7 +198,21 @@ pub fn run(data_dir: &Path, words: &[String]) -> ExitCode {
             std::process::exit(2);
         }
     });
-    let Some(options) = super::local_refinement::parse(words) else {
+    let words = (raw_words.len() <= 78)
+        .then(|| {
+            raw_words
+                .iter()
+                .map(|word| {
+                    word.to_str()
+                        .filter(|word| word.len() <= 4096)
+                        .map(str::to_owned)
+                })
+                .collect::<Option<Vec<_>>>()
+        })
+        .flatten();
+    let parsed = words.as_deref().and_then(super::local_refinement::parse);
+    // Retained protocol v1 is literal-only; never silently discard ranked mode.
+    let Some((options, threadmark_daemon::preparation::RetrievalMode::Literal)) = parsed else {
         let _ = output.emit(&protocol::failure(Error::Invalid), true);
         return ExitCode::from(2);
     };
