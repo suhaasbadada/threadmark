@@ -15,6 +15,26 @@ consent. Local servers can forward elsewhere; no network isolation is claimed.
 No environment keys, credentials, remotes, automatic retry or fallback exist.
 The old one-shot preview command remains unchanged.
 
+Optional `--terms` intentionally opts this retained Rust CLI review into the
+existing bounded ranked lexical selector. Without it, literal v1 selection and
+event shapes are unchanged. Before confirmation, inspect `query-terms PROJECT
+QUERY` (rather than `query`) with the exact query and expected registration and
+snapshot. Ranked validation rejects malformed terms and repeated/unknown flags
+before store access, stdin reading or provider invocation. All existing local
+inference confirmation, provider identity, data scope and budgets still apply.
+This is not a native UI mode or permission to invoke an arbitrary local server.
+
+`LocalReview::start` remains a literal wrapper; explicit
+`start_with_retrieval` freezes the algorithm through the existing
+`ReviewSession::capture_bound_with_retrieval` path. The same captured core Project,
+including root/identity/incarnation/snapshot/source policy, is passed to bound
+selection before source traversal. No unbound project-ID reload supplies sources.
+Ranked selection uses `Store::query_terms_bound`; subsequent core revalidation,
+consent, edit, approval and handoff retain that immutable mode. Coverage discloses
+ranked lexical selection and omissions; no new JSON fields, schema or version are
+needed. Mode cannot be supplied or changed in a capture/action frame. A different
+mode requires a new invocation and consent; challenges cannot cross sessions.
+
 ## Framing and closed input grammar
 
 UTF-8 JSON lines, exactly one object per LF-terminated frame. Size is checked
@@ -29,8 +49,9 @@ cannot introduce frames. Original is 1–4096 UTF-8 bytes. First frame only:
 ```
 
 No caller evidence, constraints, attachments, snapshot or destination is accepted
-in this frame. Core supplies evidence through reviewed `Store.query_bound` before
-source reads. Intent, evidence, attachment and destination fields stay immutable.
+in this frame. Core supplies evidence through reviewed `Store.query_bound` (or
+explicit ranked `Store.query_terms_bound`) before source reads. Intent, retrieval
+mode, evidence, attachment and destination fields stay immutable.
 Subsequent frames are externally tagged, single-action objects:
 
 ```json
@@ -66,7 +87,7 @@ handoff alone returns original as its selected text (successful proposed briefs
 also retain immutable intent as the existing engine requires).
 
 Every review event has a monotonic `revision` and SHA-256 `digest` over the full
-frozen request, brief, actual captured core registration/policy, expected binding,
+frozen request and retrieval mode, brief, actual captured core registration/policy, expected binding,
 query, provider identity, coverage, state, rendered proposal and process-session
 identity. Length-prefixed components avoid ambiguous concatenation. This is an
 equality guard, not a signature or authorization token. No approval object crosses
