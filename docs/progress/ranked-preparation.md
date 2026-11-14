@@ -103,8 +103,9 @@ owned, not passed gates claimed by this implementation child.
   `b64a83b3cad7df2768920ee5808d57895b285b68`. G's initial merge was not picked.
   The small freshness-helper conflict retained the primary's complete bound
   checks and G's helper/ranked implementation, not a wholesale side selection.
-- Full tested implementation SHA and final checks are recorded below after the
-  implementation commit. Evidence-only follow-up does not change runtime/tests.
+- Full tested implementation SHA:
+  `94f79c77c61ec927c3a980477407bd546941841b`. The evidence-only follow-up does not
+  change runtime/tests; its separate SHA is supplied at handoff.
 - Remote CI/run/head: **not run** for this unpushed lane. Independent review:
   **not run by this child**; primary-owned gate. No previous main/PR54 CI is claimed
   as evidence for this exact implementation head.
@@ -114,3 +115,31 @@ Docker, installs, user data, global config, secrets, external provider, spending
 deployment, push, PR creation or merge-to-main. Only the requested Git fetch was
 remote. The checkout and local commits remain intact for primary integration;
 cherry-pick only the new Lane I commits, not the merges or G/base prerequisites.
+
+### Final local verification
+
+Repeated against the clean implementation commit above:
+
+- `CARGO_NET_OFFLINE=true python3 scripts/check.py`: **PASS** — format, locked
+  workspace build, strict all-target Clippy, **186 Rust tests + two doctests**,
+  rustdoc, finite diagnostics, documentation links and intentional failure probe.
+- `cargo deny --offline --locked check`: **PASS** — advisories, bans, licenses,
+  sources, using cached data (no advisory refresh/network access).
+- `python3 scripts/secrets.py`: **PASS** after explicitly staging only owned
+  implementation/test/document changes, and again on the clean implementation
+  commit; tracked/history scan and synthetic-secret rejection pass.
+- `git diff --check` and `git diff --cached --check`: **PASS**. Implementation
+  commit status was clean. No unrelated changes or generated lockfiles edited.
+- Ten new tests: two deterministic core-boundary tests, five actual-CLI tests and
+  three retained-session tests. Inherited G tests and primary bound-literal-query
+  regressions pass with the complete workspace. Initial local compilation/test
+  mistakes were fixed before the passing gates; no safety limits were relaxed.
+
+Local ignored logs: `target/ranked-preparation-tested-head.log`,
+`target/ranked-preparation-tested-deny.log`,
+`target/ranked-preparation-tested-secrets.log`. These are local diagnostics, not
+public content-bearing artifacts. No Swift/native code changed; the documented
+Swift wrapper was not needed or invoked. Remote CI, independent integrated review,
+native H compatibility integration and any real-provider/host acceptance remain
+unrun primary gates. The linked Plum environment was reported unreachable, so its
+thread could not be read; no coordination message or scheduled follow-up was sent.
