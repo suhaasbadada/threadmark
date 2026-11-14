@@ -37,7 +37,8 @@ private actor SearchCore: CoreService {
         case .project: return .project(project)
         case .contexts: return .contexts(ContextList(project: "alpha", contexts: []))
         case .context(_, let id):
-            return .context(ContextHistory(project: "alpha", id: id, producer: "human-authored", authority: .string("human-declared"), history: []))
+            return .context(ContextHistory(project: "alpha", id: id, producer: "human-authored", authority: .string("human-declared"),
+                history: [ContextRevision(revision: 1, kind: "note", text: "Synthetic needle", retired: false)]))
         case .searchHumanContext:
             calls += 1; didStart = true; started?.resume(); started = nil
             if mode == "hold" { await withCheckedContinuation { held = $0 } }

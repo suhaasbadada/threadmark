@@ -43,6 +43,22 @@ the real adapter, and removes its data. It does not launch an app GUI or host.
 
 ## Product boundary
 
+- Existing human-note Save and Retire use the reviewed four-flag
+  [expected-revision contract](../../docs/contracts/human-context-revision-v1.md),
+  carrying the loaded registration root/identity/incarnation and exact revision
+  into core's atomic compare-and-append. Save requires the editor's explicitly
+  captured base and matching loaded history; Retire requires matching loaded
+  history. Missing legacy metadata fails closed without a child write. Add remains
+  namespace-bound creation, never revision zero or an update fallback.
+  Inspect/reload keeps the unsaved editor and its old base; **Edit loaded revision
+  (replace editor)** is an explicit replacement, not automatic conflict resolution.
+  Same-namespace rejection/cancellation retains loaded history, the human editor
+  and original request. A replaced registration still clears old drafts under the
+  existing namespace policy. Generic CLI failures with corroborating changed
+  history/suppression metadata explain the conflict; cancellation, timeout, invalid
+  receipts and post-commit read failures remain uncertain (not proof of no write).
+  Successful history is adopted only after namespace revalidation. This CAS
+  protection is not semantic conflict resolution or Phase 2/3 completion.
 - Source Query and Context-only preparation share an explicit, session-memory-only
   **Literal (default)** / **Ranked lexical terms (opt-in)** picker. Ranking matches
   any of 1–8 deduplicated Unicode-lowercase whitespace terms (64 UTF-8 bytes per

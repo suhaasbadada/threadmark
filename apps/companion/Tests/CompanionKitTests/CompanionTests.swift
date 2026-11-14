@@ -89,6 +89,18 @@ private actor ExplicitFakeCoreService: CoreService {
         calls += 1
         if let error = nextFailure { nextFailure = nil; throw error }
         switch operation {
+        case .updateContextRevisionBound(let binding, let kind, let text):
+            try binding.validate()
+            guard projects.contains(where: { $0.id == binding.project && $0.root == binding.root &&
+                $0.root_identity == .string(binding.rootIdentity) && $0.incarnation == binding.incarnation }),
+                revisions[binding.contextID]?.last?.revision == binding.revision else { throw ServiceError.failed }
+            return try await perform(.writeContext(binding.project, binding.contextID, kind, text, update: true))
+        case .retireContextRevisionBound(let binding):
+            try binding.validate()
+            guard projects.contains(where: { $0.id == binding.project && $0.root == binding.root &&
+                $0.root_identity == .string(binding.rootIdentity) && $0.incarnation == binding.incarnation }),
+                revisions[binding.contextID]?.last?.revision == binding.revision else { throw ServiceError.failed }
+            return try await perform(.retireContext(binding.project, binding.contextID))
         case .queryTermsBound, .prepareContextTermsBound: throw ServiceError.unavailable
         case .queryBound(let p, let q): return try await perform(.query(p.id, q))
         case .prepareContextBound(let p, let q, let original): return try await perform(.prepareContext(p.id, q, original))
@@ -177,6 +189,48 @@ private actor ExplicitFakeCoreService: CoreService {
 
 @Suite("Explicit fake-service model acceptance") @MainActor
 struct ModelTests {
+    @Test func existingNoteRequiresLoadedHistoryAndExplicitEditorBaseWithoutIO() async throws {
+        let (model, service) = await selected()
+        let before = await service.calls
+        model.writeContext(id: "memo", kind: "note", text: "Synthetic draft", update: true)
+        model.retireContext("memo")
+        #expect(await service.calls == before && model.lastError == .contextConflict)
+        model.writeContext(id: "memo", kind: "note", text: "Synthetic first", update: false)
+        await model.waitForOperation()
+        let base = try #require(model.humanContextRevisionBinding("memo"))
+        _ = try await service.perform(.writeContext("alpha", "memo", "note", "Synthetic peer", update: true))
+        model.openContext("memo"); await model.waitForOperation()
+        let calls = await service.calls
+        model.writeContext(id: "memo", kind: "note", text: "Synthetic unsaved", update: true, expected: base)
+        #expect(await service.calls == calls && model.lastError == .contextConflict)
+        #expect(model.history?.history.count == 2)
+    }
+    @Test(arguments: [false, true]) func rejectedHumanCASPreservesLoadedHistoryAndOriginal(retire: Bool) async throws {
+        let (model, service) = await selected()
+        model.writeContext(id: "memo", kind: "note", text: "Synthetic first", update: false)
+        await model.waitForOperation()
+        let base = try #require(model.humanContextRevisionBinding("memo")), editor = model.contextEditorRevision
+        model.editPreparation(query: "q", original: "Synthetic unrelated unsaved request")
+        _ = try await service.perform(.writeContext("alpha", "memo", "decision", "Synthetic peer", update: true))
+        if retire { model.retireContext("memo") }
+        else { model.writeContext(id: "memo", kind: "note", text: "Synthetic unsaved editor", update: true, expected: base) }
+        await model.waitForOperation()
+        #expect(model.lastError == .contextConflict && model.history?.history.count == 1)
+        #expect(model.contextEditorRevision == editor && model.originalDraft == "Synthetic unrelated unsaved request")
+        #expect(await service.revisions["memo"]?.count == 2)
+    }
+    @Test(arguments: [ServiceError.failed, .canceled, .timedOut, .outputLimit])
+    func unknownHumanFailureRetainsHistory(error: ServiceError) async throws {
+        let (model, service) = await selected()
+        model.writeContext(id: "memo", kind: "note", text: "Synthetic first", update: false)
+        await model.waitForOperation()
+        let base = try #require(model.humanContextRevisionBinding("memo")), editor = model.contextEditorRevision
+        await service.failNext(error)
+        model.writeContext(id: "memo", kind: "note", text: "Synthetic unsaved", update: true, expected: base)
+        await model.waitForOperation()
+        #expect(model.lastError == .mutationUncertain && model.sourceRequiresRefresh)
+        #expect(model.history?.history.count == 1 && model.contextEditorRevision == editor)
+    }
     @Test func historyReadRejectsReplacementBetweenBracketingInspections() async {
         let (model, service) = await selected()
         model.editPreparation(query: "q", original: "Synthetic unsaved original")
@@ -224,7 +278,7 @@ struct ModelTests {
         let revision = model.contextEditorRevision
         await service.replaceAlpha(root: "/synthetic/alpha")
         if retire { model.retireContext("memo") }
-        else { model.writeContext(id: "memo", kind: "note", text: "Synthetic stale note", update: true) }
+        else { model.writeContext(id: "memo", kind: "note", text: "Synthetic stale note", update: true, expected: model.humanContextRevisionBinding("memo")) }
         await model.waitForOperation()
         #expect(model.project == nil && model.history == nil && model.contextEditorRevision > revision)
         #expect(await service.revisions.isEmpty)
@@ -603,7 +657,7 @@ struct ModelTests {
         model.writeContext(id: "memo", kind: "note", text: "Synthetic note", update: false)
         await model.waitForOperation()
         #expect(model.history?.history.count == 1)
-        model.writeContext(id: "memo", kind: "decision", text: "Synthetic decision", update: true)
+        model.writeContext(id: "memo", kind: "decision", text: "Synthetic decision", update: true, expected: model.humanContextRevisionBinding("memo"))
         await model.waitForOperation()
         #expect(model.history?.history.count == 2 && model.history?.history.last?.kind == "decision")
         model.retireContext("memo"); await model.waitForOperation()
@@ -740,6 +794,24 @@ struct ModelTests {
 
 @Suite("Owned synthetic subprocess adapter")
 struct AdapterTests {
+    @Test func revisionBoundCASArgumentsAreExactAndTextIsOnlyStdin() async throws {
+        let project = Project(id: "alpha", root: "/synthetic/alpha", sources: [], rootIdentity: .string("r1"), incarnation: "0123456789abcdef0123456789abcdef")
+        let history = ContextHistory(project: "alpha", id: "memo", producer: "human-authored", authority: .string("human-declared"),
+            history: [ContextRevision(revision: 1, kind: "note", text: "Synthetic base", retired: false)])
+        let binding = try HumanContextRevisionBinding(project: project, history: history)
+        try await withAdapter("cas-update") { adapter in
+            _ = try await adapter.perform(.updateContextRevisionBound(binding, "note", "Synthetic original human text é\n"))
+        }
+        try await withAdapter("cas-retire") { adapter in
+            _ = try await adapter.perform(.retireContextRevisionBound(binding))
+        }
+        try await withAdapter("cas-update") { adapter in
+            for text in ["", "invalid\0text", String(repeating: "a", count: 4097)] {
+                await #expect(throws: ServiceError.invalid) { try await adapter.perform(.updateContextRevisionBound(binding, "note", text)) }
+            }
+            await #expect(throws: ServiceError.invalid) { try await adapter.perform(.updateContextRevisionBound(binding, "observed", "Synthetic text")) }
+        }
+    }
     @Test func strictBoundMutationArgumentsAndHumanTextOnlyOnStdin() async throws {
         let syntheticIncarnation = "0123456789abcdef0123456789abcdef"
         try await withAdapter("mutation-bound-sources") { adapter in

@@ -90,6 +90,13 @@ if mode.hasPrefix("markers-") {
     if mode == "markers-over" { response["forgotten"] = (0...4096).map { ["id": String(format: "id%04d", $0)] } }
     FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject: response)); exit(0)
 }
+if mode == "cas-update" || mode == "cas-retire" {
+    let prefix = mode == "cas-update" ? ["context", "update", "alpha", "memo", "note"] : ["context", "retire", "alpha", "memo"]
+    guard Array(args.dropFirst(2)) == prefix + ["--expected-root", "/synthetic/alpha", "--expected-root-identity", "r1",
+        "--expected-incarnation", "0123456789abcdef0123456789abcdef", "--expected-revision", "1"],
+        FileHandle.standardInput.readDataToEndOfFile() == (mode == "cas-update" ? Data("Synthetic original human text é\n".utf8) : Data()) else { exit(1) }
+    print(mode == "cas-update" ? #"{"project":"alpha","id":"memo","saved":true,"producer":"human-authored"}"# : #"{"project":"alpha","id":"memo","retired":true}"#); exit(0)
+}
 if mode.hasPrefix("index-bound-") {
     guard Array(args.dropFirst(2)) == ["index", "alpha", "--expected-root", "/synthetic/alpha", "--expected-root-identity", "r1", "--expected-incarnation", "0123456789abcdef0123456789abcdef", "--expected-sources", "a.rs"],
           FileHandle.standardInput.readDataToEndOfFile().isEmpty else { exit(1) }

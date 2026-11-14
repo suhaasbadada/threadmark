@@ -483,17 +483,24 @@ public final class CompanionModel: ObservableObject {
                 ? "Current at read — inspect coverage, not complete comprehension" : "Stale or unindexed — Build explicitly"
         }
     }
+    private var humanHistoryScope: Project?
+    /// Returns the revision currently displayed, not a fresh revision fetched at Save.
+    public func humanContextRevisionBinding(_ contextID: String) -> HumanContextRevisionBinding? {
+        guard let project, project.id == selectedID, let scope = humanHistoryScope,
+              Self.sameNamespace(project, scope), let history, history.id == contextID else { return nil }
+        return try? HumanContextRevisionBinding(project: scope, history: history)
+    }
     public func openContext(_ contextID: String) {
         guard let target = project, target.id == selectedID, !sourceRequiresRefresh else { return }
-        history = nil
-        start { service in
+        start(preserveHistory: true) { service in
             _ = try await Self.checkNamespace(service, target)
             let reply = try await service.perform(.context(target.id, contextID))
             _ = try await Self.checkNamespace(service, target)
             return [reply]
         } apply: { replies in
             guard case .context(let result) = replies[0], result.project == target.id, result.id == contextID else { throw ServiceError.scopeMismatch }
-            self.history = result; self.status = "Human context history loaded"
+            try result.validate(project: target.id, id: contextID)
+            self.history = result; self.humanHistoryScope = target; self.status = "Human context history loaded"
         }
     }
     public var canSearchHumanContext: Bool {
@@ -739,39 +746,89 @@ public final class CompanionModel: ObservableObject {
         }
     }
     public func dismissPreview() { cancel() }
-    public func writeContext(id contextID: String, kind: String, text: String, update: Bool) {
+    public func writeContext(id contextID: String, kind: String, text: String, update: Bool,
+                             expected: HumanContextRevisionBinding? = nil) {
+        guard !policyDirty else { fail(.invalid); return }
         guard !sourceRequiresRefresh, let target = project, target.id == selectedID,
               case .string(let identity) = target.root_identity, let token = target.incarnation, InputPolicy.incarnation(token) else { fail(.mutationUncertain); return }
         guard InputPolicy.identifier(contextID), !text.isEmpty,
-              text.utf8.count <= 4096, InputPolicy.contextKinds.contains(kind) else { fail(.invalid); return }
-        clearResults()
-        mutateContext(.writeContextBound(target.id, contextID, kind, text, update, target.root, identity, token), target: target, contextID: contextID)
+               text.utf8.count <= 4096, !text.contains("\0"), InputPolicy.contextKinds.contains(kind),
+               InputPolicy.removal(root: target.root, identity: identity) else { fail(.invalid); return }
+        if update {
+            guard let expected, expected.contextID == contextID,
+                  expected == humanContextRevisionBinding(contextID) else { fail(.contextConflict); return }
+            mutateContext(.updateContextRevisionBound(expected, kind, text), target: target, contextID: contextID, expected: expected)
+        } else {
+            guard expected == nil else { fail(.invalid); return }
+            mutateContext(.writeContextBound(target.id, contextID, kind, text, false, target.root, identity, token), target: target, contextID: contextID)
+        }
     }
     public func retireContext(_ contextID: String) {
+        guard !policyDirty else { fail(.invalid); return }
         guard !sourceRequiresRefresh, let target = project, target.id == selectedID,
               case .string(let identity) = target.root_identity, let token = target.incarnation, InputPolicy.incarnation(token) else { fail(.mutationUncertain); return }
-        clearResults()
-        mutateContext(.retireContextBound(target.id, contextID, target.root, identity, token), target: target, contextID: contextID)
+        guard InputPolicy.removal(root: target.root, identity: identity),
+              let expected = humanContextRevisionBinding(contextID) else { fail(.contextConflict); return }
+        mutateContext(.retireContextRevisionBound(expected), target: target, contextID: contextID, expected: expected)
     }
-    private func mutateContext(_ operation: Operation, target: Project, contextID: String) {
+    private func mutateContext(_ operation: Operation, target: Project, contextID: String,
+                               expected: HumanContextRevisionBinding? = nil) {
         let projectID = target.id
-        start { service in
+        clearResults(preserveHistory: true)
+        start(preserveHistory: true) { service in
+            var acknowledged = false
             do {
-                _ = try await Self.checkedMutation(service, operation, target)
+                // No precheck followed by a legacy write: all comparison is in core's transaction.
+                _ = try await service.perform(operation)
+                acknowledged = true
+                try Task.checkCancellation()
                 let list = try await service.perform(.contexts(projectID))
                 let history = try await service.perform(.context(projectID, contextID))
+                guard case .contexts(let metadata) = list, metadata.project == projectID,
+                      case .context(let loaded) = history else { throw ServiceError.invalid }
+                try loaded.validate(project: projectID, id: contextID)
+                if let expected {
+                    guard loaded.history.count > expected.revision else { throw ServiceError.mutationUncertain }
+                }
                 _ = try await Self.checkNamespace(service, target)
                 return [list, history]
             } catch {
                 if error as? ServiceError == .namespaceChanged { throw ServiceError.namespaceChanged }
                 if let reply = try? await service.perform(.project(projectID)), case .project(let current) = reply,
                    !Self.sameNamespace(current, target) { throw ServiceError.namespaceChanged }
+                // Only classify a rejected mutation with corroborating metadata.
+                // Timeout/cancel, receipt failures and post-commit read failures stay uncertain.
+                if !acknowledged, error as? ServiceError == .failed, let expected,
+                   let reply = try? await service.perform(.contexts(projectID)), case .contexts(let list) = reply,
+                   list.project == projectID,
+                   list.contexts.contains(where: { $0.id == contextID && ($0.revision > expected.revision && $0.revision <= 32) }) {
+                    do {
+                        _ = try await Self.checkNamespace(service, target)
+                        throw ServiceError.contextConflict
+                    } catch let classification as ServiceError where classification == .contextConflict || classification == .namespaceChanged {
+                        throw classification
+                    } catch { throw ServiceError.mutationUncertain }
+                }
+                if !acknowledged, error as? ServiceError == .failed, expected != nil,
+                   let reply = try? await service.perform(.forgottenContexts(projectID)), case .forgottenContexts(let markers) = reply {
+                    do { try markers.validate(project: projectID) }
+                    catch { throw ServiceError.mutationUncertain }
+                    if markers.forgotten.contains(where: { $0.id == contextID }) {
+                        do {
+                            _ = try await Self.checkNamespace(service, target)
+                            throw ServiceError.contextConflict
+                        } catch let classification as ServiceError where classification == .contextConflict || classification == .namespaceChanged {
+                            throw classification
+                        } catch { throw ServiceError.mutationUncertain }
+                    }
+                }
                 throw ServiceError.mutationUncertain
             }
         } apply: { replies in
             guard case .contexts(let list) = replies[0], list.project == projectID,
                   case .context(let history) = replies[1], history.project == projectID, history.id == contextID else { throw ServiceError.scopeMismatch }
-            self.contexts = list.contexts; self.history = history
+            try history.validate(project: projectID, id: contextID)
+            self.contexts = list.contexts; self.history = history; self.humanHistoryScope = target
             self.status = "Human context changed — dependent displayed evidence invalidated"
         }
     }

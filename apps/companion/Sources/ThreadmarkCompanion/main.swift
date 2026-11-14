@@ -297,6 +297,7 @@ struct ContextView: View {
     @ViewState<String> private var kind = "note"
     @ViewState<String> private var text = ""
     @ViewState<Bool> private var editing = false
+    @ViewState<HumanContextRevisionBinding?> private var editBinding = nil
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
@@ -310,7 +311,7 @@ struct ContextView: View {
                 TextField("Filter context IDs or kinds", text: $search)
                 ForEach(model.contexts.filter { search.isEmpty || $0.id.localizedCaseInsensitiveContains(search) || $0.kind.localizedCaseInsensitiveContains(search) }) { entry in
                     Button("\(entry.id) · \(entry.kind) · revision \(entry.revision) · \(entry.retired ? "retired" : "active") · \(entry.producer)") {
-                        editing = false; model.openContext(entry.id)
+                        model.openContext(entry.id) // Inspect without replacing an unsaved editor/base.
                     }.disabled(!model.manualActionsAvailable)
                 }
                 if let history = model.history {
@@ -322,17 +323,23 @@ struct ContextView: View {
                         }
                     }
                     HStack {
-                        Button("Edit latest revision") {
-                            if let latest = history.history.max(by: { $0.revision < $1.revision }) {
+                        Button("Edit loaded revision (replace editor)") {
+                            if let binding = model.humanContextRevisionBinding(history.id),
+                               let latest = history.history.last {
                                 id = history.id; kind = latest.kind; text = latest.text; editing = true
+                                editBinding = binding
                             }
-                        }
-                        Button("Retire (retain history)") { model.retireContext(history.id); editing = false }.disabled(!model.manualActionsAvailable || model.project?.incarnation == nil || model.sourceRequiresRefresh)
+                        }.disabled(!model.manualActionsAvailable || model.humanContextRevisionBinding(history.id) == nil)
+                        Button("Reload history (keep editor)") { model.openContext(history.id) }.disabled(!model.manualActionsAvailable || model.sourceRequiresRefresh)
+                        Button("Retire (retain history)") { model.retireContext(history.id) }.disabled(!model.manualActionsAvailable || model.humanContextRevisionBinding(history.id) == nil || model.sourceRequiresRefresh)
                         Button("Forget entry…", role: .destructive, action: model.requestForget).disabled(!model.canForgetContext)
                     }
                 }
                 Divider()
                 Text(editing ? "Edit human context" : "Add human context").font(.headline)
+                if let editBinding {
+                    Text("Edit base: \(editBinding.project) / \(editBinding.contextID) · revision \(editBinding.revision). Reload never replaces this draft or silently advances its base.").font(.caption)
+                }
                 TextField("Context ID", text: $id).disabled(editing)
                     .accessibilityIdentifier("human-context-id")
                 Picker("Kind", selection: $kind) {
@@ -343,10 +350,10 @@ struct ContextView: View {
                 Text("Human context is limited to 4 KiB of UTF-8 text; input is never truncated.").font(.caption)
                 HStack {
                     Button(editing ? "Save new revision" : "Add context") {
-                        model.writeContext(id: id, kind: kind, text: text, update: editing)
+                        model.writeContext(id: id, kind: kind, text: text, update: editing, expected: editBinding)
                     }.accessibilityIdentifier("human-context-save")
                         .disabled(model.project?.incarnation == nil || model.sourceRequiresRefresh || !model.manualActionsAvailable || !InputPolicy.identifier(id) || text.isEmpty || text.utf8.count > 4096)
-                    Button("New entry") { id = ""; text = ""; kind = "note"; editing = false }
+                    Button("New entry (discard editor)") { id = ""; text = ""; kind = "note"; editing = false; editBinding = nil }
                 }
                 Button("Inspect non-content suppression markers", action: model.inspectForgottenContexts)
                     .disabled(model.project?.incarnation == nil || !model.manualActionsAvailable)
@@ -355,7 +362,7 @@ struct ContextView: View {
                 }
                 Text("Retire retains history. Human Forget requires schema v3 or later and explicit confirmation. Source Forget is separate in Projects after v4 marker inspection. Restore and unforget are unavailable.").font(.caption)
             }.padding()
-        }.onChange(of: model.contextEditorRevision) { _ in id = ""; text = ""; editing = false; kind = "note" }
+        }.onChange(of: model.contextEditorRevision) { _ in id = ""; text = ""; editing = false; kind = "note"; editBinding = nil }
         .onChange(of: id) { _ in model.contextEditorChanged() }
         .onChange(of: kind) { _ in model.contextEditorChanged() }
         .onChange(of: text) { _ in model.contextEditorChanged() }

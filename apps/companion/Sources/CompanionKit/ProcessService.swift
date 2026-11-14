@@ -90,6 +90,8 @@ public struct ProcessService: CoreService {
         if case .removeProject = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 1024) }
         if case .forgetContext = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 1024) }
         if case .forgetSource = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 1024) }
+        if case .updateContextRevisionBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 1024) }
+        if case .retireContextRevisionBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 1024) }
         let boundedLimits = operationLimits
         let data = try await withTaskCancellationHandler {
             guard !Task.isCancelled else { throw ServiceError.canceled }
@@ -189,6 +191,18 @@ public struct ProcessService: CoreService {
                     $0.line > 0 && $0.kind == "observed-source-line" && Self.currentness($0.currentness) && InputPolicy.sources([$0.path])
                 }) else { throw ServiceError.invalid }
                 return .query(result)
+            case .updateContextRevisionBound(let binding, _, _):
+                let object = try decoder.decode([String: JSONValue].self, from: data)
+                guard Set(object.keys) == ["project", "id", "saved", "producer"],
+                      object["project"] == .string(binding.project), object["id"] == .string(binding.contextID),
+                      object["saved"] == .bool(true), object["producer"] == .string("human-authored") else { throw ServiceError.invalid }
+                return .acknowledged
+            case .retireContextRevisionBound(let binding):
+                let object = try decoder.decode([String: JSONValue].self, from: data)
+                guard Set(object.keys) == ["project", "id", "retired"],
+                      object["project"] == .string(binding.project), object["id"] == .string(binding.contextID),
+                      object["retired"] == .bool(true) else { throw ServiceError.invalid }
+                return .acknowledged
             case .contexts(let id):
                 let result = try decoder.decode(ContextList.self, from: data)
                 guard result.project == id else { throw ServiceError.scopeMismatch }
@@ -196,8 +210,7 @@ public struct ProcessService: CoreService {
                 return .contexts(result)
             case .context(let id, let context):
                 let result = try decoder.decode(ContextHistory.self, from: data)
-                guard result.project == id, result.id == context else { throw ServiceError.scopeMismatch }
-                guard result.producer == "human-authored", result.history.allSatisfy({ $0.revision > 0 }) else { throw ServiceError.invalid }
+                try result.validate(project: id, id: context)
                 return .context(result)
             default:
                 _ = try decoder.decode(JSONValue.self, from: data)
@@ -267,6 +280,19 @@ public struct ProcessService: CoreService {
                   !old.contains(where: { $0.hasPrefix("--") }), !new.contains(where: { $0.hasPrefix("--") }) else { throw ServiceError.invalid }
             args = ["project", "sources", try id(p), "--expected-root", root, "--expected-root-identity", identity,
                     "--expected-incarnation", token, "--expected-sources"] + (try sources(old)) + ["--new-sources"] + (try sources(new))
+        case .updateContextRevisionBound(let binding, let kind, let text):
+            try binding.validate()
+            guard InputPolicy.contextKinds.contains(kind), !text.isEmpty, text.utf8.count <= 4096,
+                  !text.contains("\0") else { throw ServiceError.invalid }
+            args = ["context", "update", binding.project, binding.contextID, kind,
+                    "--expected-root", binding.root, "--expected-root-identity", binding.rootIdentity,
+                    "--expected-incarnation", binding.incarnation, "--expected-revision", String(binding.revision)]
+            input = Data(text.utf8)
+        case .retireContextRevisionBound(let binding):
+            try binding.validate()
+            args = ["context", "retire", binding.project, binding.contextID,
+                    "--expected-root", binding.root, "--expected-root-identity", binding.rootIdentity,
+                    "--expected-incarnation", binding.incarnation, "--expected-revision", String(binding.revision)]
         case .writeContextBound(let p, let c, let kind, let text, let update, let root, let identity, let token):
             guard InputPolicy.removal(root: root, identity: identity), InputPolicy.incarnation(token),
                   InputPolicy.contextKinds.contains(kind), !text.isEmpty, text.utf8.count <= 4096, !text.contains("\0") else { throw ServiceError.invalid }
