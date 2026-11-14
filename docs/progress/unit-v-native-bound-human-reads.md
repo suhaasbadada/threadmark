@@ -1,5 +1,16 @@
 # Unit V — native registration-bound human reads
 
+## Publication outcome
+
+PR #72 passed all five required checks on
+`40b2a8a89c71f06d4830291c8c648c7aa749d452` (CI `43577023963`, integrated
+`43577024014`). Fresh exact-head/main/check/review/approval/discussion/rules
+verification found no blocker; merge completed as
+`73791de79e0a9c158091dac770a48018556faa31`. The watch was removed after merge.
+Separate exact post-merge CI remains unverified. Private-file export and the
+remaining marker-receipt binding are independently active; no GUI/AX, live-model
+quality, host delivery or phase closure is inferred from merge.
+
 ## Primary integration and independent review
 
 Primary committed only the eighteen owned files as `a22cb89` in the completed
