@@ -1,5 +1,23 @@
 # Unit AG — opt-in bounded incremental lexical index
 
+## Stack base publication and retarget preparation
+
+Parent PR #81 passed all five checks at
+`070654ab226f3487b60212d1318d53c18eb011ba` (CI `43590580220`, integrated
+`43590580246`) and fresh exact-head/main/review/discussion/rules gates preceded
+merge **`430294c001f8d40c7372299cd7839fe4a60204f6`**. Parent watch removed.
+Primary merged main normally as `0dc6e652eadf063898bd215966600928074802ea`.
+Compared `crates`, `apps` and `.github` against tested runtime
+`2192eb4d9b63786bf4035c956520b02fb01cf726`: **identical**, no conflict or runtime
+change. Documentation evidence updates are separate. #82 must target main and
+receive fresh exact-head CI after the update; the old stacked runs cannot serve
+as evidence for a new head. Parent post-merge CI remains unverified.
+
+PR #80 exact post-merge `43590490587`/`43590490702`, both targeting
+`6e4223cb7cd279086e2672ec5a16c07f89e4da42`, completed **PASS**. Native incremental
+controls and atomic note batches continue independently. All inherited edits,
+worktrees and parent reminders remain preserved; no phase/GUI/live-quality claim.
+
 ## Primary integration and independent review
 
 Primary committed only the eight owned files as `ca9f638` and applied cleanly as
