@@ -1,5 +1,23 @@
 # Unit AG — opt-in bounded incremental lexical index
 
+## Publication outcome
+
+After #81 landed, #82 was retargeted to main and updated normally. Superseded
+stack head `cfba6b1` was not used to authorize merge. Full current head
+`9f761c10a5eaf8dc4c3cd75a2dc8e82e278ce950` passed all five checks (CI
+`43591675265`, integrated `43591675250`); fresh exact-head/main/check/review/
+approval/discussion/rules verification found no blocker. Authorized merge:
+**`9c84f6a826d73b9e51f83151b4e6567e05de9753`**. Watch removed; separate exact
+post-merge CI remains unverified. Retarget Rust checks passed; runtime comparison
+against the tested integration remained identical as documented below.
+
+PR #81 exact post-merge runs `43591562020` and `43591561988`, both targeting
+`430294c001f8d40c7372299cd7839fe4a60204f6`, completed **PASS**. Native incremental
+controls continue in their existing lane. Atomic note batches have just reported
+implementation/local checks; independent review/integration remain later gates.
+Nine inherited progress edits/worktrees/parent reminders preserved. No GUI/AX,
+live-provider quality, host delivery, deployment or phase closure claimed.
+
 ## Stack base publication and retarget preparation
 
 Parent PR #81 passed all five checks at
