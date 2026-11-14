@@ -1,5 +1,29 @@
 # Unit R — explicit mounted Refine retrieval mode
 
+## PR #68 Swift 6.1.2 compiler repair
+
+Required CI [43572609882](https://github.com/suhaasbadada/threadmark/actions/runs/43572609882),
+macOS job [132380032306](https://github.com/suhaasbadada/threadmark/actions/runs/43572609882/job/132380032306),
+failed at `20e0512f5abeffdd15d89809fb1f5f42c8c55a12` before tests ran. Swift
+6.1.2 crashed during IR generation for `RefinementPreviewView.swift`, reporting
+SmallVector capacity overflow. The named SIL function demangles to an isolated
+Sendable `SourceRetrievalMode` callback reabstraction thunk, matching the new
+picker's direct actor-isolated setter method reference.
+
+Exact tested correction `491a83dc28458f80813536cb69b824bb5dad0bdd` replaces only
+that method reference with an explicit closure, matching the existing working
+Source Query/Context picker pattern. Selection still calls the same model setter;
+generation invalidation, cancel/join, consent and default mode are unchanged.
+No compiler flag, concurrency warning, test or validation gate is weakened.
+
+Primary complete strict serial actual-CLI/C-fixture suite **PASS**, 177 tests/24
+suites; ordinary-import model API gate, release app bundle build/plist lint, full
+workspace gate, dependency policy, staged secrets and whitespace **PASS**. Local
+Swift is 6.4, not CI's 6.1.2, so this is not a claimed local reproduction or proof
+the older compiler is fixed. New exact-head remote macOS CI remains mandatory;
+the failed run is not retried or waived. Native revision-protected editing Unit T
+has separately completed and awaits review/integration; Unit U remains active.
+
 ## Primary integration and review
 
 Primary committed only the five owned files as `fa13807` in the completed lane
