@@ -1,4 +1,8 @@
-//! Actual core-backed Context preparation. No provider, host or approval is invoked.
+//! Actual core-backed preparation. Context never invokes a provider; retained
+//! review sessions require explicit provider access and never perform delivery.
+
+mod session;
+pub use session::ReviewSession;
 
 use serde_json::{Value, json};
 use std::sync::atomic::{AtomicBool, Ordering};

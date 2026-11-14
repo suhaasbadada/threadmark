@@ -77,3 +77,17 @@ BrokenPipe and verifies collection/no store creation. No sleep/retry or producti
 parser change was used. Full local checks then passed 137 Rust tests plus two
 doctests and all 105 strict Swift tests against the actual core. A new exact-head
 remote run remains required; the failed run is retained, not blindly retried.
+
+## PR #51 publication outcome
+
+Repair head `ccca3bb751afc69e592f8eefb1ae4aaddcd4d588` passed all five checks:
+CI [43547965893](https://github.com/suhaasbadada/threadmark/actions/runs/43547965893)
+and integrated [43547965912](https://github.com/suhaasbadada/threadmark/actions/runs/43547965912).
+Fresh exact-head/main/rules/discussion checks found no blocker; the recorded
+independent review and acceptance applied. PR
+[#51](https://github.com/suhaasbadada/threadmark/pull/51) merged at
+`2026-11-14T02:49:00Z` as `530fe81c396d6984637fd00bb980bfa034e02478`.
+Its watch was removed. Exact post-merge CI
+[43548355679](https://github.com/suhaasbadada/threadmark/actions/runs/43548355679)
+and integrated [43548355730](https://github.com/suhaasbadada/threadmark/actions/runs/43548355730)
+both passed. GUI/live-provider/host and whole-phase gates remain separate.

@@ -5,7 +5,8 @@ use threadmark_core::{Clock, Error, Extractor, Scope, ScopeGuard};
 /// Manual local knowledge orchestration. One operation at a time, no listener or worker.
 pub mod knowledge;
 
-/// Memory-only context preparation over revalidated core evidence; never delivery.
+/// Memory-only preparation and retained review over revalidated core evidence;
+/// explicit provider access only, never delivery.
 pub mod preparation;
 
 /// Metadata-only successful check; not a persisted knowledge snapshot.
