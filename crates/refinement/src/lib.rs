@@ -2,8 +2,10 @@
 //!
 //! The host supplies a trusted [`EvidenceAuthority`] backed by core authorization
 //! and currentness checks, plus explicit [`ProviderAccess`] for Refine. Caller IDs
-//! and source text are never authorization. There is no concrete inference client,
-//! credential discovery, persistence, logging, network or host transport here.
+//! and source text are never authorization. Explicit profiles and a bounded
+//! chat-completions codec use an injected transport. The supplied [`LoopbackHttp`]
+//! only contacts numeric local loopback after explicit access/consent. There is no
+//! credential discovery, persistence, logging, remote TLS or host delivery here.
 //!
 //! Providers are cooperative: cancellation/deadline are supplied and results are
 //! checked again on return. This synchronous library cannot interrupt or bound the
@@ -44,6 +46,10 @@
 
 mod engine;
 mod model;
+mod provider;
+mod provider_http;
 
 pub use engine::*;
 pub use model::*;
+pub use provider::*;
+pub use provider_http::*;

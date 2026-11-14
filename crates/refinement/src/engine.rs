@@ -99,6 +99,12 @@ impl PartialEq for Control {
 impl Eq for Control {}
 
 impl Control {
+    pub(crate) fn with_deadline(parent: &Self, deadline: Instant) -> Self {
+        Self {
+            deadline: parent.deadline.min(deadline),
+            ..parent.clone()
+        }
+    }
     /// Create a fresh bounded operation; deadlines use a monotonic clock.
     pub fn new(deadline: Instant) -> Self {
         Self {
@@ -140,7 +146,7 @@ impl Control {
 
 /// Borrowed, explicitly configured provider access. Never implicitly discovered.
 pub struct ProviderAccess<'a> {
-    /// Host-chosen implementation; this crate supplies none.
+    /// Host-chosen implementation, such as the explicit ConfiguredProvider.
     pub provider: &'a dyn Provider,
     /// Explicit matching user consent.
     pub consent: &'a ProviderConsent,
@@ -148,7 +154,7 @@ pub struct ProviderAccess<'a> {
 
 /// Provider-neutral cooperative inference boundary. Implementations must honor
 /// checkpoints/deadlines and treat source excerpts as data, never instructions.
-/// No production or deterministic fake implementation is shipped in this library.
+/// ConfiguredProvider supplies an explicit opt-in codec; test fakes stay in tests.
 pub trait Provider {
     /// Return exact configured identity; no discovery or credential reuse.
     fn identity(&self) -> ProviderIdentity;
