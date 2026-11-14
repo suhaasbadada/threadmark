@@ -109,8 +109,37 @@ branches. Provider bases were not ancestors and were cherry-picked once:
 No provider/native/human-search implementation, dependency or lock was edited in
 this lane. The primary owns PR53, integrated-head review, publication and CI.
 
-Verification: dedicated CLI/session tests pass. Full workspace/policy/secrets/
-whitespace checks and exact tested implementation SHA are recorded in the final
-evidence update. Remote CI/run/head: **not run for this lane**. Independent review:
-**not run by this child**. These are explicit remaining integration gates, not
-inferred from previous main/provider CI.
+Exact tested implementation SHA:
+`db953f0a28ac64cb08768957c4464520cf001743`. The evidence-only follow-up changes no
+runtime or test code; its final head is separately identified at handoff.
+
+Repeated against that clean implementation commit:
+
+- `CARGO_NET_OFFLINE=true python3 scripts/check.py`: **PASS**, workspace format,
+  build, strict all-target Clippy, **160 Rust tests + two doctests**, rustdoc,
+  finite diagnostics, documentation links and intentional failing-test gate.
+- `cargo deny --offline --locked check`: **PASS**, advisories/bans/licenses/sources.
+- `python3 scripts/secrets.py`: **PASS**, after staging only the four owned new
+  files, and again after the implementation commit. Synthetic secret rejected.
+- `git diff --check`: **PASS**; tested implementation commit status **clean**.
+- The six dedicated real-CLI tests and eight retained-session tests pass; the
+  latter include two new bound-capture/outer-envelope regressions. The envelope
+  fixture separately proves the engine preview fits while even minimal JSON
+  repeating original/proposed exceeds 8192 bytes, then the CLI rejects it whole.
+
+Local logs are ignored `target/local-refinement-check.log` and
+`target/local-refinement-tested-head.log`, not public evidence artifacts. No Swift
+or native code changed; native/UI tests were not run in this lane.
+
+For integration, cherry-pick only the owned implementation commit and evidence
+follow-up, **not** this branch's merge/base cherry-picks. The primary already owns
+the original provider commits. Locally the inherited provider bases are
+`efb69b876743c4afbf2b9cf7f77eb5fe7bb7794d`,
+`af718a0f93f77cc824522fce1f210810059cf217`,
+`ac07b7e8f8425e2d2fb22159776ff24fa9be7a7e`; main was merged by
+`89979ad08aac5f6495d352a5a2187f0436e7b486`.
+
+Remote CI/run/head: **not run for this lane**. Independent review: **not run by
+this child**. These are explicit remaining integration gates, not inferred from
+previous main/provider CI. Linked Plum coordination was unavailable (environment
+reported unreachable); no agent messages or scheduled follow-ups were sent.
