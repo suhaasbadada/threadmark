@@ -1097,9 +1097,17 @@ impl Fixture {
             .unwrap();
         Self::finish(process, input)
     }
-    fn finish(mut process: std::process::Child, input: Option<&[u8]>) -> Output {
+    fn finish(process: std::process::Child, input: Option<&[u8]>) -> Output {
+        Self::finish_with_writer(process, input, |stdin, bytes| stdin.write_all(bytes))
+    }
+    fn finish_with_writer(
+        mut process: std::process::Child,
+        input: Option<&[u8]>,
+        write: impl FnOnce(&mut std::process::ChildStdin, &[u8]) -> std::io::Result<()>,
+    ) -> Output {
         let input_closed_early = if let Some(bytes) = input {
-            match process.stdin.take().unwrap().write_all(bytes) {
+            let mut stdin = process.stdin.take().unwrap();
+            match write(&mut stdin, bytes) {
                 Ok(()) => false,
                 Err(error) if error.kind() == std::io::ErrorKind::BrokenPipe => true,
                 Err(error) => panic!("stdin write failed: {:?}", error.kind()),
@@ -1111,7 +1119,10 @@ impl Fixture {
         let output = process.wait_with_output().unwrap();
         // Early argument rejection intentionally need not consume stdin. Never
         // hide a successful child that failed to receive the supplied input.
-        assert!(!input_closed_early || !output.status.success());
+        assert!(
+            !input_closed_early || !output.status.success(),
+            "successful child must receive all supplied input"
+        );
         output
     }
     fn ok(&self, args: &[&str], input: Option<&[u8]>) -> Value {
@@ -1130,7 +1141,16 @@ impl Drop for Fixture {
 #[test]
 fn rejected_child_may_close_stdin_before_the_fixture_writes() {
     let f = Fixture::new();
-    let mut child = Command::new(env!("CARGO_BIN_EXE_threadmark"))
+    // A real early rejection may race either a successful small pipe write or
+    // BrokenPipe. Waiting for one child cannot exclude reader handles inherited
+    // transiently by other concurrently spawning processes.
+    let actual = f.run(&["--invalid-command"], Some(b"synthetic"));
+    assert!(!actual.status.success() && actual.stdout.is_empty());
+    assert!(!f.0.join("store").exists());
+
+    // Deterministically exercise the same classifier/failed-child guard without
+    // relying on OS pipe closure ordering. The normal fixture uses real writes.
+    let child = Command::new(env!("CARGO_BIN_EXE_threadmark"))
         .arg("--data-dir")
         .arg(f.0.join("store"))
         .arg("--invalid-command")
@@ -1139,24 +1159,26 @@ fn rejected_child_may_close_stdin_before_the_fixture_writes() {
         .stderr(Stdio::piped())
         .spawn()
         .unwrap();
-    // Retain our pipe while waiting for known finite argument rejection. This
-    // forces the early-close ordering without timing or platform assumptions.
-    let input = child.stdin.take();
-    assert!(!child.wait().unwrap().success());
-    child.stdin = input;
-    assert_eq!(
-        child
-            .stdin
-            .as_mut()
-            .unwrap()
-            .write_all(b"synthetic")
-            .unwrap_err()
-            .kind(),
-        std::io::ErrorKind::BrokenPipe
-    );
-    let result = Fixture::finish(child, Some(b"synthetic"));
+    let result = Fixture::finish_with_writer(child, Some(b"synthetic"), |_, _| {
+        Err(std::io::ErrorKind::BrokenPipe.into())
+    });
     assert!(!result.status.success() && result.stdout.is_empty());
     assert!(!f.0.join("store").exists());
+}
+
+#[test]
+#[should_panic(expected = "successful child must receive all supplied input")]
+fn successful_child_cannot_mask_an_early_stdin_close() {
+    let child = Command::new(env!("CARGO_BIN_EXE_threadmark"))
+        .arg("--version")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    Fixture::finish_with_writer(child, Some(b"synthetic"), |_, _| {
+        Err(std::io::ErrorKind::BrokenPipe.into())
+    });
 }
 
 #[test]
