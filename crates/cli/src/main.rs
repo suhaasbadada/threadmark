@@ -62,6 +62,9 @@ fn usage() -> std::process::ExitCode {
         "optional exact Forget approval: --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-revision N (all four required together; N=1..32; native always binds; not credentials)"
     );
     eprintln!(
+        "opt-in human revision guard v1: context update PROJECT ID KIND (bounded stdin) or context retire PROJECT ID, followed by --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-revision N (all four, exact order, N=1..32). Existing store required; stale revision appends nothing. CAS only, not semantic conflict resolution; trusted forms unchanged."
+    );
+    eprintln!(
         "explicit compatibility change: store upgrade --confirm-local-schema-upgrade (existing store only; older binaries cannot open schema v2; no automatic downgrade)"
     );
     eprintln!(
@@ -369,6 +372,51 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
                 Command::PrepareContext((*project).into(), (*query).into(), original)
             }
         }
+        ["context", "update", project, id, kind, binding @ ..]
+            if binding.contains(&"--expected-revision") =>
+        {
+            let Some(bound) = revision_binding(project, id, binding) else {
+                return usage();
+            };
+            if threadmark_core::knowledge::validate_context_kind(kind).is_err() {
+                return usage();
+            }
+            let mut bytes = Vec::new();
+            if std::io::stdin().take(4097).read_to_end(&mut bytes).is_err() || bytes.len() > 4096 {
+                return failure();
+            }
+            let Ok(text) = String::from_utf8(bytes) else {
+                return failure();
+            };
+            if threadmark_core::knowledge::validate_context_text(&text).is_err() {
+                return failure();
+            }
+            Command::UpdateContextRevisionBound(
+                (*project).into(),
+                (*id).into(),
+                (*kind).into(),
+                text,
+                bound.root.into(),
+                bound.root_identity.into(),
+                bound.incarnation.into(),
+                bound.revision,
+            )
+        }
+        ["context", "retire", project, id, binding @ ..]
+            if binding.contains(&"--expected-revision") =>
+        {
+            let Some(bound) = revision_binding(project, id, binding) else {
+                return usage();
+            };
+            Command::RetireContextRevisionBound(
+                (*project).into(),
+                (*id).into(),
+                bound.root.into(),
+                bound.root_identity.into(),
+                bound.incarnation.into(),
+                bound.revision,
+            )
+        }
         [
             "context",
             op @ ("add" | "update"),
@@ -473,6 +521,38 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
 fn failure() -> std::process::ExitCode {
     eprintln!("local knowledge operation failed; no content published");
     std::process::ExitCode::FAILURE
+}
+
+// Closed, ordered grammar rejects partial, repeated and unknown flags before stdin.
+fn revision_binding<'a>(
+    project: &str,
+    id: &str,
+    words: &[&'a str],
+) -> Option<threadmark_core::knowledge::ContextRevisionBinding<'a>> {
+    let [
+        "--expected-root",
+        root,
+        "--expected-root-identity",
+        identity,
+        "--expected-incarnation",
+        token,
+        "--expected-revision",
+        revision,
+    ] = words
+    else {
+        return None;
+    };
+    if revision.is_empty() || !revision.bytes().all(|b| b.is_ascii_digit()) {
+        return None;
+    }
+    let bound = threadmark_core::knowledge::ContextRevisionBinding {
+        root,
+        root_identity: identity,
+        incarnation: token,
+        revision: revision.parse().ok()?,
+    };
+    bound.validate(project, id).ok()?;
+    Some(bound)
 }
 
 // Sources are last, so no path can be confused with a later option. No filesystem
