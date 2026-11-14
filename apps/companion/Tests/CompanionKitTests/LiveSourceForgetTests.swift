@@ -50,7 +50,7 @@ struct LiveSourceForgetTests {
                 }
                 switch action {
                 case "sources": model.stageSources([]); model.applySources()
-                case "write": model.writeContext(id: "memo", kind: "note", text: "Synthetic stale editor text", update: true)
+                case "write": model.writeContext(id: "memo", kind: "note", text: "Synthetic stale editor text", update: true, expected: model.humanContextRevisionBinding("memo"))
                 default: model.retireContext("memo")
                 }
                 await model.waitForOperation()

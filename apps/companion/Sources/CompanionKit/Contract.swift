@@ -182,6 +182,38 @@ public struct ContextHistory: Codable, Sendable {
     public let producer: String
     public let authority: JSONValue
     public let history: [ContextRevision]
+
+    public func validate(project target: String, id contextID: String) throws {
+        guard project == target, id == contextID else { throw ServiceError.scopeMismatch }
+        guard InputPolicy.identifier(project), InputPolicy.identifier(id), producer == "human-authored",
+              !history.isEmpty, history.count <= 32,
+              history.map(\.revision) == Array(1...history.count),
+              history.allSatisfy({ InputPolicy.contextKinds.contains($0.kind) && !$0.text.isEmpty &&
+                  $0.text.utf8.count <= 4096 && !$0.text.contains("\0") }) else { throw ServiceError.invalid }
+    }
+}
+/// Captured when an existing human note is opened for editing, never refreshed
+/// implicitly from a newer list/history. Metadata, not authorization.
+public struct HumanContextRevisionBinding: Equatable, Sendable {
+    public let project: String
+    public let contextID: String
+    public let root: String
+    public let rootIdentity: String
+    public let incarnation: String
+    public let revision: Int
+
+    public init(project: Project, history: ContextHistory) throws {
+        try history.validate(project: project.id, id: history.id)
+        guard case .string(let identity) = project.root_identity, let token = project.incarnation,
+              InputPolicy.removal(root: project.root, identity: identity), InputPolicy.incarnation(token) else { throw ServiceError.invalid }
+        self.project = project.id; contextID = history.id; root = project.root
+        rootIdentity = identity; incarnation = token; revision = history.history.count
+    }
+    public func validate() throws {
+        guard InputPolicy.identifier(project), InputPolicy.identifier(contextID),
+              InputPolicy.removal(root: root, identity: rootIdentity), InputPolicy.incarnation(incarnation),
+              (1...32).contains(revision) else { throw ServiceError.invalid }
+    }
 }
 public struct ContextRevision: Codable, Sendable {
     public let revision: Int
@@ -283,9 +315,10 @@ public struct ContextPreview: Codable, Equatable, Sendable {
 }
 
 public enum ServiceError: String, Error, Sendable, LocalizedError {
-    case invalid, unavailable, canceled, scopeMismatch, stale, timedOut, outputLimit, failed, removalUncertain, forgetUncertain, sourceForgetUncertain, sourceInspectionUnavailable, namespaceChanged, mutationUncertain, readRequiresRefresh
+    case invalid, unavailable, canceled, scopeMismatch, stale, timedOut, outputLimit, failed, removalUncertain, forgetUncertain, sourceForgetUncertain, sourceInspectionUnavailable, namespaceChanged, mutationUncertain, readRequiresRefresh, contextConflict
     public var errorDescription: String? {
         switch self {
+        case .contextConflict: "Human history no longer matches the captured edit revision, or matching history was not loaded. Unsaved editor and loaded history retained; mutation outcome not confirmed. Inspect/reload history explicitly, compare your draft, then choose Edit again before saving. No automatic retry or conflict resolution."
         case .readRequiresRefresh: "Requires Refresh — cached source policy/snapshot unavailable or changed. Human drafts retained. Native source operations require schema v3/v4; explicitly upgrade legacy storage after stopping older workers."
         case .invalid: "Invalid input or core response. Review the selected configuration."
         case .namespaceChanged: "Requires Refresh — project registration changed. Old drafts and displayed context cleared; replacement not adopted."
@@ -306,6 +339,8 @@ public enum ServiceError: String, Error, Sendable, LocalizedError {
 }
 
 public enum Operation: Sendable {
+    case updateContextRevisionBound(HumanContextRevisionBinding, String, String)
+    case retireContextRevisionBound(HumanContextRevisionBinding)
     case queryBound(Project, String)
     case prepareContextBound(Project, String, String)
     case queryTermsBound(Project, String)
