@@ -1,5 +1,32 @@
 # Unit R — explicit mounted Refine retrieval mode
 
+## Primary integration and review
+
+Primary committed only the five owned files as `fa13807` in the completed lane
+and applied them without conflicts as
+`ade43b54b0446b961521e4c932fa3e3447438a15`, the exact combined tested runtime.
+No baseline/site merges or concurrent native context-edit changes were replayed.
+Joffrey independently reviewed the fingerprint **CLEAR**, passed all nine new
+tests plus the full 177-test/24-suite strict native debug and serial-release
+suites and the ordinary-import API gate. He used existing lane CLI/C artifacts;
+no independent Rust/artifact rebuild is inferred.
+
+Primary full combined workspace gate (237 Rust/two doctests), strict serial
+actual-CLI/C-fixture suite (177 tests/24 suites), model API compiler gate,
+dependency policy, staged secrets and whitespace **PASS**. Original lane/reviewer
+release evidence remains separate from the primary exact integrated debug pass.
+Core expected-revision APIs remain unchanged; native human CAS integration is
+separately owned by Unit T, not claimed by this feature.
+
+PR #67 passed all five checks at
+`a44df02e2a60c67dfb5e6d6be70c99a374a54617` (CI `43571746083`, integrated
+`43571746040`); fresh clean main, exact head, required checks, review/approval,
+discussion and rules gates preceded merge
+`37f44a41b465b055ad5689bd7d268e3af42ec113`. Its separate exact post-merge CI and
+this feature's publication CI remain later gates. Nine inherited progress edits,
+all worktrees and parent reminders remain intact. No GUI/AX/live-quality/host-
+delivery or phase closure follows from these local/runtime tests.
+
 **TM-04–TM-07, TM-10; partial P4-A1–A4, inherited P2-A1/A6 and P3-A5.**
 Mounts the immutable [Unit P](unit-p-native-ranked-inference-boundary.md) mode
 through the [Unit O](unit-o-mounted-retained-review.md) model lifecycle and
