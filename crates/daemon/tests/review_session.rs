@@ -364,6 +364,9 @@ fn actual_sqlite_and_configured_loopback_provider_keep_review_and_delivery_separ
                 Err(_) => panic!("synthetic accept failed"),
             }
         };
+        // macOS can inherit the listener's nonblocking flag on accept. Restore
+        // bounded blocking fixture I/O explicitly instead of racing WouldBlock.
+        socket.set_nonblocking(false).unwrap();
         socket
             .set_read_timeout(Some(Duration::from_secs(2)))
             .unwrap();
