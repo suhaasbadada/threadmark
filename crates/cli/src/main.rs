@@ -64,6 +64,9 @@ fn usage() -> std::process::ExitCode {
         "source forget PROJECT PATH --confirm-forget-source [--expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-sources FILE ...]; source forgotten PROJECT; requires existing schema v4; source files and human context untouched; no forensic erasure. Upgrade with store upgrade --to-version 4 --confirm-local-schema-upgrade --confirm-legacy-workers-stopped (stop all legacy workers first; not universal worker fencing)."
     );
     eprintln!("{}", local_refinement::USAGE);
+    eprintln!(
+        "cached source reads: query PROJECT TEXT or context prepare PROJECT QUERY (original only on bounded stdin), followed by --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-snapshot HASH|none --expected-sources [FILE ...] (exact list last, at most 64; all flags required together; current registration alone authorizes source reads, not these metadata values)"
+    );
     std::process::ExitCode::from(2)
 }
 
@@ -283,6 +286,25 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
             files.iter().map(|s| (*s).into()).collect(),
         ),
         ["query", id, text] => Command::Query((*id).into(), (*text).into()),
+        ["query", id, text, binding @ ..] => {
+            let Some(expected) = read_binding(id, text, binding) else {
+                return usage();
+            };
+            Command::QueryBound(expected, (*text).into())
+        }
+        ["context", "prepare", id, query, binding @ ..] if !binding.is_empty() => {
+            let Some(expected) = read_binding(id, query, binding) else {
+                return usage();
+            };
+            let mut bytes = Vec::new();
+            if std::io::stdin().take(4097).read_to_end(&mut bytes).is_err() || bytes.len() > 4096 {
+                return failure();
+            }
+            let Ok(original) = String::from_utf8(bytes) else {
+                return failure();
+            };
+            Command::PrepareContextBound(expected, (*query).into(), original)
+        }
         ["context", "search", project, query] => {
             Command::SearchContext((*project).into(), (*query).into())
         }
@@ -400,4 +422,45 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
 fn failure() -> std::process::ExitCode {
     eprintln!("local knowledge operation failed; no content published");
     std::process::ExitCode::FAILURE
+}
+
+// Sources are last, so no path can be confused with a later option. No filesystem
+// lookup uses these arguments; only the current core registration authorizes reads.
+fn read_binding(
+    id: &str,
+    query: &str,
+    words: &[&str],
+) -> Option<threadmark_core::knowledge::Project> {
+    let [
+        "--expected-root",
+        root,
+        "--expected-root-identity",
+        identity,
+        "--expected-incarnation",
+        token,
+        "--expected-snapshot",
+        snapshot,
+        "--expected-sources",
+        sources @ ..,
+    ] = words
+    else {
+        return None;
+    };
+    if sources.iter().any(|s| s.starts_with("--")) {
+        return None;
+    }
+    let expected = threadmark_core::knowledge::Project {
+        id: id.into(),
+        root: (*root).into(),
+        root_identity: (*identity).into(),
+        incarnation: Some((*token).into()),
+        sources: sources.iter().map(|s| (*s).into()).collect(),
+        snapshot: if *snapshot == "none" {
+            None
+        } else {
+            Some((*snapshot).into())
+        },
+    };
+    threadmark_core::knowledge::validate_query_binding(&expected, query).ok()?;
+    Some(expected)
 }

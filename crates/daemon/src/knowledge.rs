@@ -34,10 +34,14 @@ pub enum Command {
     IndexIncarnationBound(String, String, String, Vec<String>, String),
     /// Bounded source-backed lexical inspection.
     Query(String, String),
+    /// Cached read bound before source traversal to all captured metadata.
+    QueryBound(threadmark_core::knowledge::Project, String),
     /// Bounded human-only active latest context search; never source evidence.
     SearchContext(String, String),
     /// Prepare a memory-only context preview (project, query, unchanged original).
     PrepareContext(String, String, String),
+    /// Context selection and revalidation use the same captured project.
+    PrepareContextBound(threadmark_core::knowledge::Project, String, String),
     /// Create/revise human context (project, ID, kind, content, update).
     WriteContext(String, String, String, String, bool),
     /// Append a retirement revision.
@@ -80,6 +84,9 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         threadmark_core::knowledge::validate_removal_binding(id, root, identity)?;
     }
     match &command {
+        Command::QueryBound(expected, query) | Command::PrepareContextBound(expected, query, _) => {
+            threadmark_core::knowledge::validate_query_binding(expected, query)?;
+        }
         Command::SearchContext(project, query) => {
             threadmark_core::knowledge::validate_human_search(project, query)?;
         }
@@ -94,6 +101,11 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
             threadmark_core::knowledge::validate_incarnation(token)?;
         }
         _ => {}
+    }
+    if let Command::PrepareContextBound(_, _, original) = &command
+        && (original.is_empty() || original.len() > 4096 || original.contains('\0'))
+    {
+        return Err(Error::InvalidExtraction);
     }
     if let Command::IndexBound(id, root, identity, sources) = &command {
         threadmark_core::knowledge::validate_index_binding(id, root, identity, sources)?;
@@ -138,6 +150,8 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
     } else if matches!(
         &command,
         Command::IndexBound(..)
+            | Command::QueryBound(..)
+            | Command::PrepareContextBound(..)
             | Command::SourcesBound(..)
             | Command::WriteContextBound(..)
             | Command::RetireContextBound(..)
@@ -243,6 +257,10 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
             store.index_bound(&id, &root, &identity, &sources, cancel)?
         }
         Command::Query(id, text) => store.query(&id, &text, cancel)?,
+        Command::QueryBound(expected, text) => store.query_bound(&expected, &text, cancel)?,
+        Command::PrepareContextBound(expected, query, original) => {
+            crate::preparation::context_bound(&store, &expected, &query, original, cancel)?
+        }
         Command::SearchContext(project, query) => store.search_context(&project, &query, cancel)?,
         Command::PrepareContext(id, query, original) => {
             crate::preparation::context(&store, &id, &query, original, cancel)?

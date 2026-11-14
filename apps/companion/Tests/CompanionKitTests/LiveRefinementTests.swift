@@ -260,7 +260,13 @@ struct LiveRefinementTests {
                     #expect(model.refinementPreview == nil)
                 }
             }
-            #expect(peer.connectionCount() == 0 && model.originalDraft == "Do NOT deploy 👋")
+            #expect(peer.connectionCount() == 0)
+            if change == "namespace" {
+                #expect(model.originalDraft.isEmpty && model.lastError == .namespaceChanged && model.project == nil)
+            } else {
+                #expect(model.originalDraft == "Do NOT deploy 👋")
+                if change == "snapshot" { #expect(model.lastError == .readRequiresRefresh && model.sourceRequiresRefresh) }
+            }
             await model.shutdown()
         }
     }

@@ -322,6 +322,32 @@ pub struct Project {
     pub snapshot: Option<String>,
 }
 
+/// Validate cached source-read metadata without opening storage or source paths.
+/// This is stale-approval protection, not source authorization.
+pub fn validate_query_binding(expected: &Project, text: &str) -> Result<()> {
+    validate_removal_binding(&expected.id, &expected.root, &expected.root_identity)?;
+    validate_incarnation(
+        expected
+            .incarnation
+            .as_deref()
+            .ok_or(Error::ScopeMismatch)?,
+    )?;
+    validate_paths(&expected.sources)?;
+    if text.is_empty()
+        || text.len() > 256
+        || text.contains('\0')
+        || expected.snapshot.as_ref().is_some_and(|s| {
+            s.len() != 64
+                || !s
+                    .bytes()
+                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        })
+    {
+        return Err(invalid());
+    }
+    Ok(())
+}
+
 /// Private SQLite store, with no ambient location or credential discovery.
 pub struct Store {
     db: Connection,
@@ -1104,7 +1130,7 @@ impl Store {
         text: &str,
         cancel: &AtomicBool,
     ) -> Result<Value> {
-        validate_paths(&expected.sources)?;
+        validate_query_binding(expected, text)?;
         self.query_scoped(&expected.id, text, cancel, Some(expected), || {})
     }
 

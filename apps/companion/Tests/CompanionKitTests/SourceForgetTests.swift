@@ -19,6 +19,7 @@ private actor SourceForgetCore: CoreService {
     var observer: CheckedContinuation<Void, Never>?
     var indexWaiter: CheckedContinuation<Reply, any Error>?
     var indexObserver: CheckedContinuation<Void, Never>?
+    var holdIndex = false
     var events: [String] = []
     var holdProject = false
     var projectPending: CheckedContinuation<Reply, any Error>?
@@ -37,6 +38,7 @@ private actor SourceForgetCore: CoreService {
     func changePolicy() { sources = ["a.rs"] }
     func replace(root: String? = nil) { token = String(repeating: "f", count: 32); if let root { self.root = root } }
     func holdReceipt() { holding = true }
+    func holdNextIndex() { holdIndex = true }
     func waitUntilForget() async {
         if forgetCalls > 0 { return }
         await withCheckedContinuation { observer = $0 }
@@ -60,6 +62,8 @@ private actor SourceForgetCore: CoreService {
     func perform(_ operation: CompanionKit.Operation) async throws -> Reply {
         calls += 1
         switch operation {
+        case .queryBound(let p, let q): return try await perform(.query(p.id, q))
+        case .prepareContextBound(let p, let q, let original): return try await perform(.prepareContext(p.id, q, original))
         case .project(let id):
             if holdProject {
                 holdProject = false; events.append("authority-start"); projectObserver?.resume(); projectObserver = nil
@@ -90,8 +94,12 @@ private actor SourceForgetCore: CoreService {
             if mode == "ack" { return .acknowledged }
             return receipt()
         case .indexBound:
-            events.append("index-start"); indexObserver?.resume(); indexObserver = nil
-            return try await withCheckedThrowingContinuation { indexWaiter = $0 }
+            if holdIndex {
+                holdIndex = false
+                events.append("index-start"); indexObserver?.resume(); indexObserver = nil
+                return try await withCheckedThrowingContinuation { indexWaiter = $0 }
+            }
+            return .indexed(IndexReport(project: "alpha", snapshot: .string("s1"), files: sources.count, anchors: 2, coverage: .string("lexical"), empty: false))
         case .index:
             return .indexed(IndexReport(project: "alpha", snapshot: .string("s1"), files: sources.count, anchors: 2, coverage: .string("lexical"), empty: false))
         case .query(let id, _): return .query(QueryReport(project: id, snapshot: .string("s1"), currentness: "current-at-read", coverage: .string("lexical"), results: []))
@@ -233,6 +241,7 @@ struct SourceForgetTests {
     }
     @Test func preemptsAutomaticIndexAndJoinsTeardownBeforeMutation() async throws {
         let service = SourceForgetCore(), driver = ManualRefreshDriver(), model = await loaded(service, driver: driver)
+        await service.holdNextIndex()
         model.enableAutomaticRefresh(try #require(model.automaticRefreshProposal))
         driver.fire(); await service.waitUntilIndex()
         model.requestSourceForget("a.rs"); let confirmation = try #require(model.pendingSourceForget)

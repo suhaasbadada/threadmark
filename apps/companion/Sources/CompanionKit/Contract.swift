@@ -271,9 +271,10 @@ public struct ContextPreview: Codable, Equatable, Sendable {
 }
 
 public enum ServiceError: String, Error, Sendable, LocalizedError {
-    case invalid, unavailable, canceled, scopeMismatch, stale, timedOut, outputLimit, failed, removalUncertain, forgetUncertain, sourceForgetUncertain, sourceInspectionUnavailable, namespaceChanged, mutationUncertain
+    case invalid, unavailable, canceled, scopeMismatch, stale, timedOut, outputLimit, failed, removalUncertain, forgetUncertain, sourceForgetUncertain, sourceInspectionUnavailable, namespaceChanged, mutationUncertain, readRequiresRefresh
     public var errorDescription: String? {
         switch self {
+        case .readRequiresRefresh: "Requires Refresh — cached source policy/snapshot unavailable or changed. Human drafts retained. Native source operations require schema v3/v4; explicitly upgrade legacy storage after stopping older workers."
         case .invalid: "Invalid input or core response. Review the selected configuration."
         case .namespaceChanged: "Requires Refresh — project registration changed. Old drafts and displayed context cleared; replacement not adopted."
         case .mutationUncertain: "Requires Refresh — mutation not confirmed. Drafts retained but cannot be saved until Refresh. Native cached mutations require schema v3/v4; stop legacy workers and explicitly upgrade using the CLI."
@@ -293,6 +294,8 @@ public enum ServiceError: String, Error, Sendable, LocalizedError {
 }
 
 public enum Operation: Sendable {
+    case queryBound(Project, String)
+    case prepareContextBound(Project, String, String)
     case refinePreview(RefinementConsent)
     case searchHumanContext(String, String)
     case setSourcesBound(String, String, String, String, [String], [String])

@@ -106,6 +106,7 @@ struct CoreAuthority<'a> {
     project: &'a str,
     query: &'a str,
     cancel: &'a AtomicBool,
+    expected: Option<&'a threadmark_core::knowledge::Project>,
 }
 impl EvidenceAuthority for CoreAuthority<'_> {
     fn current(
@@ -115,7 +116,11 @@ impl EvidenceAuthority for CoreAuthority<'_> {
         if request.data().project != self.project {
             return Err(threadmark_refinement::Error::ScopeMismatch);
         }
-        selection(self.store, self.project, self.query, self.cancel).map_err(|error| match error {
+        let selected = match self.expected {
+            Some(expected) => selection_bound(self.store, expected, self.query, self.cancel),
+            None => selection(self.store, self.project, self.query, self.cancel),
+        };
+        selected.map_err(|error| match error {
             Error::Canceled => threadmark_refinement::Error::Canceled,
             Error::ScopeMismatch => threadmark_refinement::Error::ScopeMismatch,
             _ => threadmark_refinement::Error::Unavailable,
@@ -133,10 +138,35 @@ pub fn context(
     original: String,
     cancel: &AtomicBool,
 ) -> Result<Value, Error> {
+    context_scoped(store, project, query, original, cancel, None)
+}
+
+/// Cached native Context selection, including every engine revalidation.
+pub fn context_bound(
+    store: &Store,
+    expected: &threadmark_core::knowledge::Project,
+    query: &str,
+    original: String,
+    cancel: &AtomicBool,
+) -> Result<Value, Error> {
+    context_scoped(store, &expected.id, query, original, cancel, Some(expected))
+}
+
+fn context_scoped(
+    store: &Store,
+    project: &str,
+    query: &str,
+    original: String,
+    cancel: &AtomicBool,
+    expected: Option<&threadmark_core::knowledge::Project>,
+) -> Result<Value, Error> {
     if cancel.load(Ordering::SeqCst) {
         return Err(Error::Canceled);
     }
-    let selected = selection(store, project, query, cancel)?;
+    let selected = match expected {
+        Some(expected) => selection_bound(store, expected, query, cancel)?,
+        None => selection(store, project, query, cancel)?,
+    };
     let needs_input = selected.snapshot.is_none() || selected.evidence.is_empty();
     let request = Request::new(RequestData {
         request_id: "local-context-preview".into(),
@@ -156,6 +186,7 @@ pub fn context(
         Control::new(Instant::now() + Duration::from_secs(30)),
     );
     let authority = CoreAuthority {
+        expected,
         store,
         project,
         query,

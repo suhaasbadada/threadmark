@@ -126,6 +126,26 @@ public final class CompanionModel: ObservableObject {
               sameNamespace(current, captured) else { throw ServiceError.namespaceChanged }
         return current
     }
+    nonisolated private static func checkedSourceRead(_ service: any CoreService, _ operation: Operation, _ captured: Project) async throws -> Reply {
+        guard captured.incarnation.map(InputPolicy.incarnation) == true else { throw ServiceError.readRequiresRefresh }
+        do {
+            try Task.checkCancellation()
+            let before = try await checkNamespace(service, captured)
+            try Task.checkCancellation()
+            guard before == captured else { throw ServiceError.readRequiresRefresh }
+            let reply = try await service.perform(operation)
+            try Task.checkCancellation()
+            let after = try await checkNamespace(service, captured)
+            guard after == captured else { throw ServiceError.readRequiresRefresh }
+            return reply
+        } catch {
+            if error as? ServiceError == .namespaceChanged { throw error }
+            if error is CancellationError || error as? ServiceError == .canceled { throw error }
+            if let reply = try? await service.perform(.project(captured.id)), case .project(let p) = reply,
+               !sameNamespace(p, captured) { throw ServiceError.namespaceChanged }
+            throw ServiceError.readRequiresRefresh
+        }
+    }
     nonisolated private static func checkedMutation(_ service: any CoreService, _ operation: Operation, _ captured: Project, sources: [String]? = nil) async throws -> Project {
         do {
             _ = try await service.perform(operation) // Core checks the captured binding inside its write transaction.
@@ -376,26 +396,54 @@ public final class CompanionModel: ObservableObject {
         }
     }
     public var manualActionsAvailable: Bool { !busy || automaticTicket != nil }
-    public var canBuild: Bool { configured && project != nil && !policyDirty && !sourceRequiresRefresh && !sourceDraft.isEmpty && manualActionsAvailable && !quitting && pendingSourceForget == nil }
+    public var canBuild: Bool { canRemoveProject && !policyDirty && !sourceRequiresRefresh && !sourceDraft.isEmpty && pendingSourceForget == nil }
     public func build() {
         pendingSourceForget = nil
         guard !sourceRequiresRefresh else { fail(refreshRequiredError); return }
-        guard canBuild, let id = selectedID else { fail(.invalid); return }
-        clearResults()
-        start(status: "Updating — bounded local source-evidence Build; Cancel available") { service in
-            [try await service.perform(.index(id))]
+        guard let target = project, target.id == selectedID,
+              case .string(let identity) = target.root_identity,
+              let token = target.incarnation, InputPolicy.incarnation(token),
+              InputPolicy.removal(root: target.root, identity: identity) else {
+            sourceRequiresRefresh = true; mutationRefreshError = .readRequiresRefresh
+            fail(.readRequiresRefresh); return
+        }
+        guard canBuild else { fail(.invalid); return }
+        let id = target.id
+        clearResults(preserveHistory: true)
+        start(status: "Updating — bounded local source-evidence Build; Cancel available", preserveHistory: true) { service in
+            do {
+                // Snapshot may legitimately change during Build; registration
+                // and exact approved sources may not. Core rechecks both before
+                // reading files and transactionally before publishing its index.
+                let indexed = try await service.perform(.indexBound(id, target.root, identity, target.sources, token))
+                let fresh = try await Self.checkNamespace(service, target)
+                guard fresh.sources == target.sources else { throw ServiceError.readRequiresRefresh }
+                return [indexed, .project(fresh)]
+            } catch {
+                if error as? ServiceError == .namespaceChanged || error is CancellationError || error as? ServiceError == .canceled { throw error }
+                if let reply = try? await service.perform(.project(id)), case .project(let current) = reply {
+                    guard Self.sameNamespace(current, target) else { throw ServiceError.namespaceChanged }
+                    guard current.sources == target.sources else { throw ServiceError.readRequiresRefresh }
+                    throw error
+                }
+                throw ServiceError.readRequiresRefresh
+            }
         } apply: { replies in
             guard case .indexed(let report) = replies[0], report.project == id else { throw ServiceError.scopeMismatch }
+            guard case .project(let fresh) = replies[1] else { throw ServiceError.invalid }
+            guard Self.sameNamespace(fresh, target) else { throw ServiceError.namespaceChanged }
+            guard fresh.sources == target.sources else { throw ServiceError.readRequiresRefresh }
             self.indexReport = report
+            self.project = fresh
             self.status = report.empty ? "Partial — empty snapshot; inspect coverage" : "Build completed — inspect coverage; currentness not checked"
         }
     }
     public func query(_ text: String) {
         guard !sourceRequiresRefresh else { fail(refreshRequiredError); return }
         guard !text.isEmpty, text.utf8.count <= 256 else { fail(.invalid); return }
-        guard let id = selectedID, project != nil, !policyDirty, !sourceRequiresRefresh else { fail(.invalid); return }
+        guard let id = selectedID, let target = project, !policyDirty, !sourceRequiresRefresh else { fail(.invalid); return }
         evidence = nil
-        start { service in [try await service.perform(.query(id, text))] } apply: { replies in
+        start(preserveHistory: true) { service in [try await Self.checkedSourceRead(service, .queryBound(target, text), target)] } apply: { replies in
             guard case .query(let result) = replies[0], result.project == id,
                   result.results.allSatisfy({ $0.project == id && self.sourceDraft.contains($0.path) }) else { throw ServiceError.scopeMismatch }
             self.evidence = result
@@ -463,11 +511,8 @@ public final class CompanionModel: ObservableObject {
         let query = preparationQuery, original = originalDraft, revision = scopeRevision
         disableAutomaticRefresh()
         start(status: "Inspecting exact local inference data — no provider call", preserveHistory: true) { service in
-            guard case .project(let current) = try await service.perform(.project(target.id)),
-                  Self.sameForgetScope(current, target) else { throw ServiceError.scopeMismatch }
-            let selection = try await service.perform(.query(target.id, query))
-            guard case .project(let after) = try await service.perform(.project(target.id)), after == current else { throw ServiceError.scopeMismatch }
-            return [.project(current), selection]
+            let selection = try await Self.checkedSourceRead(service, .queryBound(target, query), target)
+            return [.project(target), selection]
         } apply: { replies in
             guard case .project(let current) = replies[0], case .query(let selection) = replies[1] else { throw ServiceError.invalid }
             let consent = RefinementConsent(id: UUID(), project: current, query: query, original: original,
@@ -489,7 +534,7 @@ public final class CompanionModel: ObservableObject {
         start(status: "Preparing local refinement preview — one call; no Send", preserveHistory: true) { service in
             try await Self.checkRefinementScope(service, consent)
             // Re-inspect the exact selection before giving the CLI the confirmation flag.
-            guard case .query(let selection) = try await service.perform(.query(consent.project.id, consent.query)),
+            guard case .query(let selection) = try await Self.checkedSourceRead(service, .queryBound(consent.project, consent.query), consent.project),
                   selection == consent.selection else { throw ServiceError.scopeMismatch }
             try await Self.checkRefinementScope(service, consent)
             try Task.checkCancellation()
@@ -505,8 +550,8 @@ public final class CompanionModel: ObservableObject {
         }
     }
     nonisolated private static func checkRefinementScope(_ service: any CoreService, _ consent: RefinementConsent) async throws {
-        guard case .project(let current) = try await service.perform(.project(consent.project.id)),
-              current == consent.project else { throw ServiceError.scopeMismatch }
+        let current = try await checkNamespace(service, consent.project)
+        guard current == consent.project else { throw ServiceError.readRequiresRefresh }
     }
     public var canPrepareContext: Bool {
         configured && project?.id == selectedID && project != nil && !policyDirty && !sourceRequiresRefresh && pendingSourceForget == nil &&
@@ -515,10 +560,10 @@ public final class CompanionModel: ObservableObject {
     }
     public func prepareContext() {
         guard !sourceRequiresRefresh else { cancel(); fail(refreshRequiredError); return }
-        guard canPrepareContext, let id = selectedID else { cancel(); fail(.invalid); return }
+        guard canPrepareContext, let id = selectedID, let target = project else { cancel(); fail(.invalid); return }
         let query = preparationQuery, original = originalDraft
-        start(status: "Preparing Context-only preview — no AI or handoff") { service in
-            [try await service.perform(.prepareContext(id, query, original))]
+        start(status: "Preparing Context-only preview — no AI or handoff", preserveHistory: true) { service in
+            [try await Self.checkedSourceRead(service, .prepareContextBound(target, query, original), target)]
         } apply: { replies in
             guard case .preview(let result) = replies[0] else { throw ServiceError.invalid }
             try result.validate(project: id, original: original)
@@ -623,13 +668,27 @@ public final class CompanionModel: ObservableObject {
     private func automaticRefreshTick() {
         guard !paused, !quitting, let consent = automaticRefreshConsent else { return }
         guard consent == automaticRefreshProposal else { disableAutomaticRefresh(); return }
-        guard !busy, ownedOperations.isEmpty, pendingRemoval == nil, pendingForget == nil, pendingSourceForget == nil, !forgetRequiresRefresh, !sourceRequiresRefresh else { return }
+        guard !busy, ownedOperations.isEmpty, pendingRemoval == nil, pendingForget == nil, pendingSourceForget == nil, !forgetRequiresRefresh, !sourceRequiresRefresh, let target = project else { return }
         evidence = nil; indexReport = nil
-        start(status: "Updating — file-event/periodic bounded full lexical reconciliation", automatic: true) { service in
-            [try await service.perform(.indexBound(consent.projectID, consent.root, consent.rootIdentity, consent.sources, consent.incarnation))]
+        start(status: "Updating — file-event/periodic bounded full lexical reconciliation", automatic: true, preserveHistory: true) { service in
+            do {
+                let indexed = try await service.perform(.indexBound(consent.projectID, consent.root, consent.rootIdentity, consent.sources, consent.incarnation))
+                try Task.checkCancellation()
+                let fresh = try await Self.checkNamespace(service, target)
+                guard consent.matches(fresh) else { throw ServiceError.readRequiresRefresh }
+                let checked = try await Self.checkedSourceRead(service, .queryBound(fresh, "threadmark-refresh-currentness"), fresh)
+                return [indexed, .project(fresh), checked]
+            } catch {
+                if error is CancellationError || error as? ServiceError == .canceled { throw error }
+                if let reply = try? await service.perform(.project(target.id)), case .project(let current) = reply,
+                   !Self.sameNamespace(current, target) { throw ServiceError.namespaceChanged }
+                throw ServiceError.readRequiresRefresh
+            }
         } apply: { replies in
             guard case .indexed(let report) = replies[0], report.project == consent.projectID else { throw ServiceError.scopeMismatch }
             self.indexReport = report
+            guard case .project(let fresh) = replies[1], case .query(let checked) = replies[2], checked.project == consent.projectID else { throw ServiceError.invalid }
+            self.project = fresh
             self.status = report.empty ? "Partial — lexical snapshot empty; inspect coverage" : "File-event/periodic lexical refresh completed — currentness checked only at Build"
         }
     }
@@ -755,6 +814,9 @@ public final class CompanionModel: ObservableObject {
                 } else if error as? ServiceError == .mutationUncertain {
                     self.sourceRequiresRefresh = true
                     self.mutationRefreshError = .mutationUncertain
+                } else if error as? ServiceError == .readRequiresRefresh {
+                    self.sourceRequiresRefresh = true
+                    self.mutationRefreshError = .readRequiresRefresh
                 }
                 if self.sourceRequiresRefresh {
                     self.evidence = nil; self.indexReport = nil; self.preview = nil
