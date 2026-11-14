@@ -1,0 +1,1844 @@
+{
+  "baseHead": "693fa8a4d394da29e18788ea188b13d47785b6c0",
+  "compilerDescriptor": null,
+  "counts": {
+    "archives": 9,
+    "compressedBytes": 5246943,
+    "declarations": 338,
+    "declaredBytes": 27671448,
+    "expandedBytes": 28210688,
+    "packagesMissingArchiveNotices": 3,
+    "packagesWithArchiveNotices": 6,
+    "unselectedTypeSources": 11
+  },
+  "execution": "NONE: inert inspection only; not an executable descriptor",
+  "executionApproved": false,
+  "explicitAmbientProposal": [
+    "node_modules/@types/emscripten/index.d.ts"
+  ],
+  "fixtureDraftHashes": {
+    "negative.draft.ts": "ebe4c68a000df6d7457e441e81b5e2dfa45b933d97a6e58acd26a78e5d1287ef",
+    "positive.draft.tsx": "b785c8b6e2edddccb42ec8e8cd96393242b9b88b560524e67dd45a88058a2539"
+  },
+  "fixtureStatus": "NOT COMPILED; member/JSX review pending",
+  "hasBlockingRequirements": true,
+  "inputArchiveRevalidation": "all nine before/after SHA256 unchanged",
+  "kind": "inert-sdk-selection-planning",
+  "knownMissing": [
+    {
+      "id": "SDK-GRAPH-1",
+      "requirement": "Transitive official Bundler consumed-declaration closure and nested package identities for full client/plugin/TUI/theme/OpenTUI/Solid/web-tree-sitter surfaces are NOT established. Direct discovery inventory is not a resolution graph."
+    },
+    {
+      "id": "SDK-AMBIENT-1",
+      "requirement": "Explicitly bind authentic @types/emscripten/index.d.ts in files for web-tree-sitter global EmscriptenModule; types:[] and empty typeRoots do not include it automatically. Review Node and ws reference closure separately."
+    },
+    {
+      "id": "SDK-FIXTURE-1",
+      "requirement": "Review exact positive/negative fixture drafts against declarations; expected real-API wrong-argument diagnostic TS2345 is NOT observed. No suppressions, any, aliases or stubs allowed."
+    },
+    {
+      "id": "SDK-CONFIG-1",
+      "requirement": "Actual OpenTUI JSX namespace needs official JSX binding; proposed react-jsx + jsxImportSource:@opentui/solid requires a separate fixed design review. Existing compiler_plan permits preserve only and cannot express explicit upstream ambient files as roots."
+    },
+    {
+      "id": "SDK-GUARD-1",
+      "requirement": "Future SDK-only retained-owner/private-evidence fixed candidate and exact read/config/policy inventory need independent review and explicit execution authorization; successful standalone candidate is NOT an SDK launcher."
+    },
+    {
+      "id": "SDK-NOTICE-REVIEW-1",
+      "requirement": "Package-specific measured cryptographic/source notice mapping available; independent review required before projection. No transitive notice scope established."
+    }
+  ],
+  "lockSha256": "20571ff490c60ed12a0e6b7eefb54138f9292778d2f4be1a2b874f5db1ed6651",
+  "materialized": false,
+  "noticeProvenanceSha256": "8045ca38b56644bed92347390e4a6d70a49ee989a2bc91d650744f000398377e",
+  "optionsProposal": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "@opentui/solid",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "skipDefaultLibCheck": false,
+    "skipLibCheck": false,
+    "strict": true,
+    "target": "ESNext",
+    "types": []
+  },
+  "packages": [
+    {
+      "archiveGitHead": null,
+      "archiveRoot": "package",
+      "archiveSha256": "636641fb5f319e273419c5fa38e95175b7cc35f5e09b0adc14100736a46c83e7",
+      "compressedBytes": 128089,
+      "declarations": {
+        "dist/contract.d.ts": {
+          "bytes": 127,
+          "sha256": "642f73dc292c88b87167228e841c5a4c4b0c50cf69ee66df50533fcbb7fb3edf"
+        },
+        "dist/effect/api.d.ts": {
+          "bytes": 249,
+          "sha256": "4b8240efebba326e1be181ccfe0d026c83e0ece4067cd3f344b36e22c7550d46"
+        },
+        "dist/effect/api/api.d.ts": {
+          "bytes": 138726,
+          "sha256": "59c2a31cbeb8184f3b4059ef3262a3c95546de85c3b409e9ae276124a4427e93"
+        },
+        "dist/effect/client.d.ts": {
+          "bytes": 225985,
+          "sha256": "7f142cad8755288535866218aafff59eec487a44dd0b8d829f0ddbe8f6ca57cc"
+        },
+        "dist/effect/generated/client-error.d.ts": {
+          "bytes": 280,
+          "sha256": "d4b0f51a76ff472325f2e6d42362c334125d029ad8cc6416d3320892034e1e9f"
+        },
+        "dist/effect/generated/client.d.ts": {
+          "bytes": 212714,
+          "sha256": "059c0bab71282528a1e2a8ebdd46d63ad0a1e223089f5d3e31ac1c9823af2b83"
+        },
+        "dist/effect/generated/index.d.ts": {
+          "bytes": 90,
+          "sha256": "9fef368580a3a621bb10c3a586847e738ca049067eb399cf35471e22f0bbc543"
+        },
+        "dist/effect/index.d.ts": {
+          "bytes": 2039,
+          "sha256": "17c4cbaab4e75b238c11baa5410f1f6da1de88c9376a804d2f4f1da30741cec7"
+        },
+        "dist/effect/rpc.d.ts": {
+          "bytes": 1655,
+          "sha256": "bd8e12167dff4921e4dc53b2ddfa71f659c54bf3eebeea4d97d4f24ac44bf4b2"
+        },
+        "dist/effect/service.d.ts": {
+          "bytes": 3349,
+          "sha256": "c4404cc3b54ec5e9e03a6f21a19ebd100f410cb94a1fa3a3297757b4ba402e0c"
+        },
+        "dist/mcp.d.ts": {
+          "bytes": 1861,
+          "sha256": "5caa37faf2f33465f9faa85840142cfa4227d3d60d119424c69b371b2cb00d15"
+        },
+        "dist/promise/api.d.ts": {
+          "bytes": 1266,
+          "sha256": "df7a73408ca9efd9e394093147a28f178becc90e09fa02b65e0a01d0cbb824b2"
+        },
+        "dist/promise/client.d.ts": {
+          "bytes": 47627,
+          "sha256": "85592db0dc216b7f9d8eb0dc42e5e29a9a2f74879a3a8af12629dcf37fe685b8"
+        },
+        "dist/promise/generated/client-error.d.ts": {
+          "bytes": 381,
+          "sha256": "5bc199b8f03941f69481fac2db6bbab57c721fb65234d8eab9ba9fce879bcaf4"
+        },
+        "dist/promise/generated/client.d.ts": {
+          "bytes": 34295,
+          "sha256": "7987cdf04319554b9b4e2a2564151e75ab25649162b20a2b53e153a360870dfc"
+        },
+        "dist/promise/generated/index.d.ts": {
+          "bytes": 142,
+          "sha256": "5eed0364c0a83f4704bdc176cd53d2dd44b953a34f60fcd5813e851fc9a514c1"
+        },
+        "dist/promise/generated/types.d.ts": {
+          "bytes": 168495,
+          "sha256": "aa38c14dcc2861e89fa7837712217d424e76e0b92a277ec3b721620d51d60c6a"
+        },
+        "dist/promise/index.d.ts": {
+          "bytes": 715,
+          "sha256": "23be4a22759ebdb04c64f7db20401edbcec7d4501d8002cfb7c81e0260cf924a"
+        },
+        "dist/promise/media.d.ts": {
+          "bytes": 46566,
+          "sha256": "999c840dd07917d3c0f11acfc824405563d017747e67fe75787283046ce8bfce"
+        },
+        "dist/promise/rpc.d.ts": {
+          "bytes": 1995,
+          "sha256": "0273b87455d2da88774589ded183eb7d164c6b0527b496310265552d26ee57a0"
+        },
+        "dist/promise/service.d.ts": {
+          "bytes": 944,
+          "sha256": "41057aac0491678f13edc9ae98a9cc6cd79ca457935b121a1ab17f31a6f1de76"
+        },
+        "dist/pty-handoff.d.ts": {
+          "bytes": 667,
+          "sha256": "45f5072fc7c9710c48a2555ca6352b2ff2704078a704012f1fd88ad66b7c3fe5"
+        },
+        "dist/rpc-runtime.d.ts": {
+          "bytes": 1159,
+          "sha256": "7a0efe72d908fb202267d96c44e171ab5e445cc7214b27b59cea857918a7d8b5"
+        },
+        "dist/service-contender.d.ts": {
+          "bytes": 1751,
+          "sha256": "8f93ca0b3a2cd11d4aa6facb29f371e271d32facf86c147fa77b97e4e9757ae7"
+        },
+        "dist/service-probe.d.ts": {
+          "bytes": 2096,
+          "sha256": "023d49aba93abcfb258ff8f195e70ab25bf04215bb4c949c7f6ed078755f4e0e"
+        },
+        "dist/service-timing.d.ts": {
+          "bytes": 522,
+          "sha256": "a8009c2570dbe1160c4373e0a5a5cd89e7560fd3890ef2271b830088fa0afabc"
+        },
+        "dist/service-version.d.ts": {
+          "bytes": 157,
+          "sha256": "a84ccee386e6b202425c2670544a175c1a4a7997630f881bba47f36ff19ce0ec"
+        },
+        "dist/service.d.ts": {
+          "bytes": 2259,
+          "sha256": "967ed3f5b686e7c9dc2643552eb01e62a51d6fec029f0bcd7871be23ec1d11b6"
+        },
+        "dist/shared-events.d.ts": {
+          "bytes": 970,
+          "sha256": "e59bec8e95a1fc9a1062691f4931d091e8a3df0f2f9630685e804677735a292d"
+        },
+        "dist/solid/connection.d.ts": {
+          "bytes": 1575,
+          "sha256": "eb57294fd319d94ca5e1e11dda3e84625ce83c53ba13ff75635795de5125a65d"
+        },
+        "dist/solid/data.d.ts": {
+          "bytes": 9752,
+          "sha256": "e975a41dd91b0e044ac8c45c9b99116726151a51d1eae026ad3f797e94556090"
+        },
+        "dist/solid/index.d.ts": {
+          "bytes": 131,
+          "sha256": "70d83bf8b72701e4ed378877bd20875d54fde461827033c045443ac0389a9bba"
+        },
+        "dist/solid/pty.d.ts": {
+          "bytes": 2958,
+          "sha256": "a4acbec6c4516d7b004933891a30a8e5ee0cbb565f860ac234197a2080d6af60"
+        },
+        "dist/solid/retention.d.ts": {
+          "bytes": 378,
+          "sha256": "efb9c05088c5e1f6b3b08d496656b3e87bd76e98d27d8035e1cf44b01a661e52"
+        },
+        "dist/solid/usage.d.ts": {
+          "bytes": 550,
+          "sha256": "7c070af92ea5b392ac6ab9637243fe1f091acacf92c747abac8a2fabd52f0e6b"
+        }
+      },
+      "declaredBytes": 1196616,
+      "expandedBytes": 1274368,
+      "graphClosure": "NOT established",
+      "integrity": "sha512-EjYrFGWHURsIbjtmQdIsGSPmYZGaulxqwEfYxQH5t9838508BCIvDX9f7/ZsgNGHYXM0punA3W8hTt6GjxIEaw==",
+      "metadata": {
+        "bytes": 2362,
+        "sha256": "7d295f0f71a9c78e1868f4393418157114106061eb1f86d1862c764577140cbf"
+      },
+      "name": "@opencode/client",
+      "nestedMetadata": {},
+      "noticeEvidence": "sdk-notice-provenance.json: measured gh verification and source notice scope; independent review pending",
+      "noticeMappingApproved": false,
+      "noticeMappingStatus": "EVIDENCE_COMPLETE_REVIEW_PENDING",
+      "notices": {},
+      "packagePath": "node_modules/@opencode/client",
+      "repository": {
+        "directory": "packages/client",
+        "type": "git",
+        "url": "git+https://github.com/anomalyco/opencode.git"
+      },
+      "resolved": "https://registry.npmjs.org/@opencode/client/-/client-2.2.5.tgz",
+      "selectionApproved": false,
+      "sourceCommitBinding": "958f965d35ed44d32b018fd55b02a5357a7748fd",
+      "unselectedTypeSources": {},
+      "version": "2.2.5"
+    },
+    {
+      "archiveGitHead": null,
+      "archiveRoot": "package",
+      "archiveSha256": "0a7905691259b790a0962a02f62661fb9c464d2b8b5f5daa5390408e8789944f",
+      "compressedBytes": 92477,
+      "declarations": {
+        "dist/app.d.ts": {
+          "bytes": 112,
+          "sha256": "c461e171de85c361b83c89c6ad1f081a6f6a2a9af6b129efb8e4a95558a7c77d"
+        },
+        "dist/effect/agent.d.ts": {
+          "bytes": 676,
+          "sha256": "4924df50a026e0dd2a69ec5b5efbfd7904eedfacd29ede5e2f42ad516090f2da"
+        },
+        "dist/effect/aisdk.d.ts": {
+          "bytes": 594,
+          "sha256": "76e3f66209ff257d7fbe04e132dae9aa00ffebf4c5ef796419f7b5a9873a83a9"
+        },
+        "dist/effect/artifact.d.ts": {
+          "bytes": 1689,
+          "sha256": "b873dd56ee07947da3669ba90091dc9c83e601469b528e032a032123e3b92f4c"
+        },
+        "dist/effect/command.d.ts": {
+          "bytes": 945,
+          "sha256": "2b19c1f0aaa022725b738745d21b261244251fa3c8bcb9086e2ebfc47d6cc0a2"
+        },
+        "dist/effect/event.d.ts": {
+          "bytes": 453,
+          "sha256": "20be1d30cbe9cbcad274cc61ff88f3778579725e433d3b3b0aedb72a46999a13"
+        },
+        "dist/effect/index.d.ts": {
+          "bytes": 1026,
+          "sha256": "1d73e76d45d30b3cf84c2dd2181809daa054fe798964d1306f45e09ec2d3790a"
+        },
+        "dist/effect/integration.d.ts": {
+          "bytes": 3784,
+          "sha256": "d8c73a1f78ca7d1be876181d2a0613d54afdfc0b46e4aae614d47d046a6c23b3"
+        },
+        "dist/effect/mcp.d.ts": {
+          "bytes": 723,
+          "sha256": "a48cc847148473304aadbaeaf9ac2465be218cef6712e5d08a836183c750f52f"
+        },
+        "dist/effect/model.d.ts": {
+          "bytes": 1371,
+          "sha256": "a37bd42eb580f844c2628700efdfb3fc9eb17eb73633cc85f924f414e5a0a860"
+        },
+        "dist/effect/permission.d.ts": {
+          "bytes": 1357,
+          "sha256": "fe27d2a6f0d84dec10cdf93980559d521d5d7912058a8e510ed67f62fd4347ca"
+        },
+        "dist/effect/plugin.d.ts": {
+          "bytes": 2923,
+          "sha256": "6223e584b6c50a1933f092d96e985c13a09657aaea9386220a7e40399d41be9c"
+        },
+        "dist/effect/provider.d.ts": {
+          "bytes": 1605,
+          "sha256": "d0d4df90c4cbad16f356dc30c45752a6b9442085acb2db0bff4874f7f20e9d7e"
+        },
+        "dist/effect/reference.d.ts": {
+          "bytes": 718,
+          "sha256": "a906422e01b279d903a70dabb6260a797da6e0600705a6bac8d3cc62b202b325"
+        },
+        "dist/effect/registration.d.ts": {
+          "bytes": 1011,
+          "sha256": "3fdfc0d2d87c2c958ef2e8683d7ed27fd60072940e842b0f8864ce550d5d3d80"
+        },
+        "dist/effect/rpc.d.ts": {
+          "bytes": 1112,
+          "sha256": "f57174ca2b117e02621bb85359611d3e6b199a8c4143596a0d6bffddbf3c2b84"
+        },
+        "dist/effect/session.d.ts": {
+          "bytes": 7614,
+          "sha256": "a27ccea0e0a4e082c703bf6b922abf5b7c5cb473e6dae96ed73311051aafd0e0"
+        },
+        "dist/effect/shell.d.ts": {
+          "bytes": 362,
+          "sha256": "38168a362cbc5a714efe7d7df75cd75b7896a8feb261d2b5e869c218f29041a3"
+        },
+        "dist/effect/skill.d.ts": {
+          "bytes": 662,
+          "sha256": "f9aeb3d79b3758a88367b670357b756ce3cf88c979f50e8c53dcd6e227ec717a"
+        },
+        "dist/effect/storage.d.ts": {
+          "bytes": 453,
+          "sha256": "956504db7405872d9ec39083343d7e76dba82831cd93dd0ebc921d5b4c9fedc8"
+        },
+        "dist/effect/tool.d.ts": {
+          "bytes": 2081,
+          "sha256": "84a4655b80d5dce02b55939dd4937d267b469e4aeb1a86d7bbbce88c1671cb2e"
+        },
+        "dist/effect/vcs.d.ts": {
+          "bytes": 1674,
+          "sha256": "b90b04796f341c0da7ce149e7323885891967b172ce3b97e4c6999dc4f5a5ec1"
+        },
+        "dist/effect/websearch.d.ts": {
+          "bytes": 792,
+          "sha256": "4011f6ca162e5603fa86274cfe41de0907a980baca7e001b7c9386f2272b0f4f"
+        },
+        "dist/effect/worktree.d.ts": {
+          "bytes": 953,
+          "sha256": "514ec5cb44c52f56be460de22eeeb69c3c1f1d068086a14fefe65b0e51f92f46"
+        },
+        "dist/gui/browser.d.ts": {
+          "bytes": 1625,
+          "sha256": "c65defee5c7d5df17b86c1475b8df91e317c4651fe7f656e0bbbb1d6b2dc5278"
+        },
+        "dist/gui/context.d.ts": {
+          "bytes": 9327,
+          "sha256": "fca14373fa754f4d0a8ee8374b0ebc3699e9bc2dcc5b9f5ac9a1af1173a60c0e"
+        },
+        "dist/gui/core.d.ts": {
+          "bytes": 23367,
+          "sha256": "d16969807d2014be795ff932237a373fe6e3d85107841a64bea4f93c6ee77a5f"
+        },
+        "dist/gui/declarations.d.ts": {
+          "bytes": 1383,
+          "sha256": "ffd60965a6c9f499a820c5ca66c1e605713fcf630a667df613068b86410b31f9"
+        },
+        "dist/gui/file.d.ts": {
+          "bytes": 5057,
+          "sha256": "8491df280a28b857f7d91a40de88f57ca8552ee1153c8eb51bb6b6b8b5085d14"
+        },
+        "dist/gui/host-apis.d.ts": {
+          "bytes": 81671,
+          "sha256": "cca9afd8fc4ae195dee1436ec5fa7e946d3d82ac36a0b8518be4f74dac975cfe"
+        },
+        "dist/gui/icon-name.d.ts": {
+          "bytes": 2795,
+          "sha256": "7a710bc93639846c34d2afa0dadc60da5f812056c986252406c3f3e8cb7ba1ba"
+        },
+        "dist/gui/index.d.ts": {
+          "bytes": 249,
+          "sha256": "005f80d1a9fd51aadccdcaf0e98f28a19dc9b084609578bdfbbda864ce07219d"
+        },
+        "dist/gui/internal.d.ts": {
+          "bytes": 2098,
+          "sha256": "d0ad55d06cf996493abc84a27e054ef0120525a4afb3abbe21c6e5036bb2cd93"
+        },
+        "dist/gui/main.d.ts": {
+          "bytes": 10347,
+          "sha256": "58887bffd5f9bb855c5a842fe55596e6dd07ce6c4fa9c457d4a7db22e7a1029c"
+        },
+        "dist/gui/modules.d.ts": {
+          "bytes": 1233,
+          "sha256": "8c674dd0dda317a2d4e8ba688b78e09eb21fe286ba11b8f87d99f5dda9bd9f9c"
+        },
+        "dist/gui/plugin.d.ts": {
+          "bytes": 3543,
+          "sha256": "0b42ae162b8b5b14c49bfc66872f0b5fa7746979b11edd390613aa43e46bad76"
+        },
+        "dist/gui/reactive.d.ts": {
+          "bytes": 5008,
+          "sha256": "bc3c71ee8f308b9c2564c59288066454d763f57db9e7325dc9a458cef1c63712"
+        },
+        "dist/gui/registries.d.ts": {
+          "bytes": 35013,
+          "sha256": "965ccda4acd275dead7b7fac347f170cc5a10d9c667b0b4b14bb2cfb9a696be0"
+        },
+        "dist/gui/review.d.ts": {
+          "bytes": 3009,
+          "sha256": "28a8996a3b4e1ece64e97bd33443646a702b0d5096052bdd8cd2afa6cd81d8da"
+        },
+        "dist/gui/scope.d.ts": {
+          "bytes": 2539,
+          "sha256": "c55203f4886174f0b84478542336fcf5736e7b02947c652da58dfa29aa2f2d5d"
+        },
+        "dist/gui/solid.d.ts": {
+          "bytes": 3824,
+          "sha256": "cfd02d9befbaba9d3da33a82885d8a19f2436fd54fd122133e1e6a52ec3fd47a"
+        },
+        "dist/gui/vite.d.ts": {
+          "bytes": 1118,
+          "sha256": "e17f12931527475335ba2b6d0547cc66738e8f281fe385376540871c34210248"
+        },
+        "dist/host.d.ts": {
+          "bytes": 939,
+          "sha256": "47032e36e05f739fb11ad8d506c135236888768e3ebd39465239fcb2d1c211ad"
+        },
+        "dist/options.d.ts": {
+          "bytes": 59,
+          "sha256": "da083f4e23582702a9df1025ef44123720198cd94b27a54f4c840ad87d6280c6"
+        },
+        "dist/permission.d.ts": {
+          "bytes": 1301,
+          "sha256": "b9d4f61e4af438116d34af2b383127ac76b9c24d991a52349f996bc4b6515755"
+        },
+        "dist/promise/adapter.d.ts": {
+          "bytes": 579,
+          "sha256": "a00e75ec801644bda50a952c8df89ceccd535a25b65190c133648a9f801d8380"
+        },
+        "dist/promise/agent.d.ts": {
+          "bytes": 654,
+          "sha256": "760dabb950254ad83838d4bfac649fa41c28b1085f6bf316bf58300dc381b6a8"
+        },
+        "dist/promise/aisdk.d.ts": {
+          "bytes": 594,
+          "sha256": "76e3f66209ff257d7fbe04e132dae9aa00ffebf4c5ef796419f7b5a9873a83a9"
+        },
+        "dist/promise/artifact.d.ts": {
+          "bytes": 1809,
+          "sha256": "107a070e17861810f26cfd74135b6d2dd8ed8a7d49793d8f8f85f9dfa061b8d0"
+        },
+        "dist/promise/command.d.ts": {
+          "bytes": 878,
+          "sha256": "7011d6c2bf16fde75786130b5e80269c0e27bec8a8c793ab3ef964b16b3a4205"
+        },
+        "dist/promise/event.d.ts": {
+          "bytes": 402,
+          "sha256": "0f8229f59b5e7528ea625af3f277f64869a981808bbfd6bc7589b0aa5144e556"
+        },
+        "dist/promise/index.d.ts": {
+          "bytes": 1078,
+          "sha256": "786a6383b72bbccb17bd55b61c90427a4d9051b418c7818304654c5a024f3252"
+        },
+        "dist/promise/integration.d.ts": {
+          "bytes": 3625,
+          "sha256": "c9759f8c9be6fd8656b1d63f4457b36bd32ac5a1e7436efd96ea23981ad4effa"
+        },
+        "dist/promise/mcp.d.ts": {
+          "bytes": 701,
+          "sha256": "32339ff7dfea736afcdbff14d929997333a87ab953a5d825bba68dc7e0d9c9d3"
+        },
+        "dist/promise/model.d.ts": {
+          "bytes": 1349,
+          "sha256": "1150a8595651fcc33d2eb1070b8de1aaeff368997399c4a3d6ae7adda40094da"
+        },
+        "dist/promise/permission.d.ts": {
+          "bytes": 1345,
+          "sha256": "bc939cc6e47ea0ba50c015c71bf1067556ef9a05580422e20effe0bace5fe190"
+        },
+        "dist/promise/plugin.d.ts": {
+          "bytes": 2908,
+          "sha256": "3066ef33f55fd0fcbb6b845960ddab230d79a51135ef511227b29bd85a699cc4"
+        },
+        "dist/promise/provider.d.ts": {
+          "bytes": 1583,
+          "sha256": "3ea47f34c9acdda10b450fb58b8848001f252b02817d72d7c5d43917d545a2ff"
+        },
+        "dist/promise/reference.d.ts": {
+          "bytes": 666,
+          "sha256": "371e31059a57b1aad8eef5b05029dce114f145ed0d4a40a4b4d06a427863dc24"
+        },
+        "dist/promise/registration.d.ts": {
+          "bytes": 710,
+          "sha256": "16436600a035f85d035e3baebb8412084119f620ee4eafc9feba1c7438f6f5ff"
+        },
+        "dist/promise/rpc.d.ts": {
+          "bytes": 1167,
+          "sha256": "a8286171def24eb35f35ed6d4149a7d4ac4993d7457a97465e2ed0f726e51283"
+        },
+        "dist/promise/session.d.ts": {
+          "bytes": 7597,
+          "sha256": "b33ad2554c28b1b7213a18a0502782467338a096203635e27137310cc6d48048"
+        },
+        "dist/promise/shell.d.ts": {
+          "bytes": 362,
+          "sha256": "38168a362cbc5a714efe7d7df75cd75b7896a8feb261d2b5e869c218f29041a3"
+        },
+        "dist/promise/skill.d.ts": {
+          "bytes": 645,
+          "sha256": "27cc6b0edbb815c9d0f7ea6963a708dff17b3acd1fcefe1c2d1c63af2887538a"
+        },
+        "dist/promise/storage.d.ts": {
+          "bytes": 421,
+          "sha256": "81d4d33862bd2f0f31caf5c3649a21c2fe774bf524bc60362e4ec8af9f7a5cbb"
+        },
+        "dist/promise/tool.d.ts": {
+          "bytes": 2510,
+          "sha256": "14ead93a2c03136af9768f9f02447c5fb357d1bce12a4b38a5e9fe31a0e91eff"
+        },
+        "dist/promise/vcs.d.ts": {
+          "bytes": 1828,
+          "sha256": "a0a550ec82c782fde3079afa3ebf668a8dfa94022ebc5f39b1c38e84001b83f7"
+        },
+        "dist/promise/websearch.d.ts": {
+          "bytes": 781,
+          "sha256": "f053049778daba4f0686a0321586ba5d5168aa2c336c3b207559c218f2f7b514"
+        },
+        "dist/promise/worktree.d.ts": {
+          "bytes": 1024,
+          "sha256": "08b1b9578105e03028577b6b191d2d6abefc220444fbef15e577d1aff2e10bd8"
+        },
+        "dist/rpc.d.ts": {
+          "bytes": 44,
+          "sha256": "e10018c22d0e04a1dd5e807a176b759406d894347edd3f3a733dfcca5fff5e6c"
+        },
+        "dist/runtime-modules.d.ts": {
+          "bytes": 619,
+          "sha256": "49c618851ecc171da20919cd94d2e77aa8f8151d059c6f9870b01a76b5d18a73"
+        },
+        "dist/runtime.d.ts": {
+          "bytes": 312,
+          "sha256": "ffca2ce5e81ee04199877b4a07a1d36f22620a08d2b6e35877a9706520692f98"
+        },
+        "dist/source.bun.d.ts": {
+          "bytes": 180,
+          "sha256": "4cad71c30e5dc0b88e6060d49413c31c4e3cc6ddb141ae028f9fd3eedce4dfca"
+        },
+        "dist/source.d.ts": {
+          "bytes": 304,
+          "sha256": "cd42329030a25f0b32698cb626cc924f753f4e6e9ebc09bad9cea6d09c09da16"
+        },
+        "dist/source.node.d.ts": {
+          "bytes": 205,
+          "sha256": "3b4a330d3a18cd0258bf596b43ed0f74fbae4c24b5322afa4e50b728a281045d"
+        },
+        "dist/source.package.d.ts": {
+          "bytes": 103,
+          "sha256": "ded3f2e665aa6c145cdee5d4706c6668a59a0ec68f183e082883d54135fdd62d"
+        },
+        "dist/storage.d.ts": {
+          "bytes": 372,
+          "sha256": "7fb7afc9ca565aa3e092d8426ab86f735a33751e403c2cbab8e3be842808a83a"
+        },
+        "dist/tui/context.d.ts": {
+          "bytes": 20554,
+          "sha256": "621afdacc9f6d270afe6ba2f4e2fb3a8fa42fbd78309a844b3048f9bb014d9bb"
+        },
+        "dist/tui/index.d.ts": {
+          "bytes": 102,
+          "sha256": "2f5e63e14fdf04df2c86a4eebf69ba00ab50ee16be9d8af72a6d5f2a94ad388b"
+        },
+        "dist/tui/plugin.d.ts": {
+          "bytes": 325,
+          "sha256": "0349ed706c741103b5ba0a3565f17936e5e1fee51b448e183ef19ed06e354297"
+        },
+        "dist/tui/solid.d.ts": {
+          "bytes": 265,
+          "sha256": "09f41c0d615852cf238ff46785f37518ea272e6b7e9b507927cf04b21b51cb89"
+        },
+        "dist/worktree.d.ts": {
+          "bytes": 724,
+          "sha256": "b2be242bdbde517b6af7fe11daa0a23425674ad8ec6dfe78bab6cfead66be4ac"
+        }
+      },
+      "declaredBytes": 371393,
+      "expandedBytes": 491520,
+      "graphClosure": "NOT established",
+      "integrity": "sha512-DHtmC55UM5NbtZwyayLxI/ygTMt3n+6xXYYBkOdNxmZ+rLcIbpjmeJvySqdxFmT3K7Pk/2pHsuocxhquu6sysA==",
+      "metadata": {
+        "bytes": 3367,
+        "sha256": "afbb80312bc93be7e2862377d416e31c77d7c9c06df3e34d01a8b37d85815414"
+      },
+      "name": "@opencode/plugin",
+      "nestedMetadata": {},
+      "noticeEvidence": "sdk-notice-provenance.json: measured gh verification and source notice scope; independent review pending",
+      "noticeMappingApproved": false,
+      "noticeMappingStatus": "EVIDENCE_COMPLETE_REVIEW_PENDING",
+      "notices": {},
+      "packagePath": "node_modules/@opencode/plugin",
+      "repository": {
+        "directory": "packages/plugin",
+        "type": "git",
+        "url": "git+https://github.com/anomalyco/opencode.git"
+      },
+      "resolved": "https://registry.npmjs.org/@opencode/plugin/-/plugin-2.2.5.tgz",
+      "selectionApproved": false,
+      "sourceCommitBinding": "958f965d35ed44d32b018fd55b02a5357a7748fd",
+      "unselectedTypeSources": {},
+      "version": "2.2.5"
+    },
+    {
+      "archiveGitHead": null,
+      "archiveRoot": "package",
+      "archiveSha256": "5143a68a5952a49664c1a62318a8916c61fceb90fec7511d61615bc881be7ed6",
+      "compressedBytes": 32419,
+      "declarations": {
+        "dist/tui/color.d.ts": {
+          "bytes": 232,
+          "sha256": "9e60d5e24645006f58d7d55cb8623aaf8c278824a35d7dda1f3cf19c3746f7b3"
+        },
+        "dist/tui/expand.d.ts": {
+          "bytes": 360,
+          "sha256": "d1bb9fab51ebe648173e15cd6a262e4f5dc9ed4d13329c5894adef4a8433fbf4"
+        },
+        "dist/tui/index.d.ts": {
+          "bytes": 1197,
+          "sha256": "fff004b25ae42d2f811330629e4ce3eb1e09d6115422e6cd853c2fec0200fd40"
+        },
+        "dist/tui/resolve.d.ts": {
+          "bytes": 154503,
+          "sha256": "db09e04f1fd171acc700c4603924c4b11539fec058f6d8cf28ea1f5a1d773e27"
+        },
+        "dist/tui/schema.d.ts": {
+          "bytes": 577795,
+          "sha256": "553ffe704f8be2ebf9e98cc99202faa1fe38b634abb364b0934f193ca0d0725e"
+        },
+        "dist/tui/select.d.ts": {
+          "bytes": 459,
+          "sha256": "6b960944e340654e2f659c937a07756e82fcd46fdaecf5aab6a5fdae05ca1dcf"
+        },
+        "dist/tui/syntax.d.ts": {
+          "bytes": 235,
+          "sha256": "af8f432485fa09189658c9cd7c09645677f411319cfc41f834b6036858084001"
+        },
+        "dist/tui/types.d.ts": {
+          "bytes": 3007,
+          "sha256": "5795e03f499b2a4d8c8533d5f21f7bd867049e4819c0868ec243c56d03765d03"
+        },
+        "dist/tui/v1-migrate-new-designs.d.ts": {
+          "bytes": 173,
+          "sha256": "a8d71c2a1733a5399ed7b1a30656cb6e22dfe7863352249ebfcf9baa139753e4"
+        },
+        "dist/tui/v1-migrate.d.ts": {
+          "bytes": 1522,
+          "sha256": "ec1512b249dc63102d220d48b22b9ef35f794456724ff478ab0e08402455520e"
+        },
+        "dist/tui/v1.d.ts": {
+          "bytes": 2554,
+          "sha256": "3361044ed74b571a7265350b4fbe770eac17c147d37416974f1ebd32e94e441f"
+        }
+      },
+      "declaredBytes": 809039,
+      "expandedBytes": 827904,
+      "graphClosure": "NOT established",
+      "integrity": "sha512-mUW5YKCxJQHnhrCepsyMoEqWZrQFipF5WrRmos9WB/iehZiUL6ix6OXjUmv5W5gctKzgQd8tYVi7x90H5/grHQ==",
+      "metadata": {
+        "bytes": 1069,
+        "sha256": "beb0e496834a16aca1e492483c17fe01331267f53ba699f4adf5b2f8a4763399"
+      },
+      "name": "@opencode/theme",
+      "nestedMetadata": {},
+      "noticeEvidence": "sdk-notice-provenance.json: measured gh verification and source notice scope; independent review pending",
+      "noticeMappingApproved": false,
+      "noticeMappingStatus": "EVIDENCE_COMPLETE_REVIEW_PENDING",
+      "notices": {},
+      "packagePath": "node_modules/@opencode/theme",
+      "repository": {
+        "directory": "packages/theme",
+        "type": "git",
+        "url": "git+https://github.com/anomalyco/opencode.git"
+      },
+      "resolved": "https://registry.npmjs.org/@opencode/theme/-/theme-2.2.5.tgz",
+      "selectionApproved": false,
+      "sourceCommitBinding": "958f965d35ed44d32b018fd55b02a5357a7748fd",
+      "unselectedTypeSources": {},
+      "version": "2.2.5"
+    },
+    {
+      "archiveGitHead": null,
+      "archiveRoot": "package",
+      "archiveSha256": "99d47974f98febaaa6975fad0f44f7ea4a83753ff9f801699a866ccd94eee193",
+      "compressedBytes": 2986055,
+      "declarations": {
+        "NativeScene.d.ts": {
+          "bytes": 11520,
+          "sha256": "9c87622e799e1827d055bd9488136f5f04a5d8ede2f5a8a3e49e0b65c5f49521"
+        },
+        "NativeSession.d.ts": {
+          "bytes": 7048,
+          "sha256": "e41d081c664c88d88353d449d72d979c347db8e4c7b3ab6e7a27f05d72e079e4"
+        },
+        "NativeSpanFeed.d.ts": {
+          "bytes": 1704,
+          "sha256": "530316e0fded727f6b1815c6ae800bdc1aa6125308e065611ea66ac36ee73397"
+        },
+        "Renderable.d.ts": {
+          "bytes": 22759,
+          "sha256": "601957a7d1e11a13f42db77f53cee8ba64d8aa0790c665e61f4a8c15b37176f1"
+        },
+        "animation/Timeline.d.ts": {
+          "bytes": 5288,
+          "sha256": "bf739cda635c3ca6cdae5d2d3f216aad1294b1770f8c1d3cf833e700b37ff8fd"
+        },
+        "ansi.d.ts": {
+          "bytes": 583,
+          "sha256": "f1de7101d6903c6bef53bf30371628ccff315efd12a9f616d799e3ddab331ced"
+        },
+        "audio-stream/demuxer.d.ts": {
+          "bytes": 664,
+          "sha256": "23a5d19f03dfc3a9921299ebcd5d82933d7a1c801fd692de8a57e9d1aae6bd21"
+        },
+        "audio-stream/icy/demuxer.d.ts": {
+          "bytes": 969,
+          "sha256": "a33ff9c0b2aaba2ba7c9a2c0697c9e16982909d55ef88b755759c25675903edf"
+        },
+        "audio-stream/icy/metadata.d.ts": {
+          "bytes": 124,
+          "sha256": "28897c75503f9869decb690b5a32cb63b8dd24b875bd780ba024ca7c6cb7c1b3"
+        },
+        "audio.d.ts": {
+          "bytes": 17573,
+          "sha256": "26d7d93befcfeabe0853ba5f562f51bac3793ef93d1f5785186dec9c599aabd8"
+        },
+        "buffer.d.ts": {
+          "bytes": 8760,
+          "sha256": "30c2276b2b79aaf768c33792c8185c464fa3a99f3e1f4d9df03eab4ae76243d5"
+        },
+        "console.d.ts": {
+          "bytes": 4559,
+          "sha256": "5f16ac30d50f7d010807f290d83024bd417e8002777f15f4d0bab7c6bc78e1c5"
+        },
+        "edit-buffer.d.ts": {
+          "bytes": 4977,
+          "sha256": "27bb7ee3eae213105911fa3e50f6aff650d5ced8ed87226badc5b662fbe72862"
+        },
+        "editor-view.d.ts": {
+          "bytes": 3815,
+          "sha256": "42c007ac5cf1f4b271bcd28a217f88ed445f3aba4d8ca2eefb75d488ce7af3ee"
+        },
+        "image.d.ts": {
+          "bytes": 5180,
+          "sha256": "0e83ca32c294797da8427305e56ce05414f735e46c92598af73097d64b0e55d2"
+        },
+        "index.d.ts": {
+          "bytes": 4220,
+          "sha256": "eda2b5095ba1b9fe91a9f5ef5d18bd2a630add0b2e025a889709b90fd6f047a4"
+        },
+        "lib/KeyHandler.d.ts": {
+          "bytes": 2108,
+          "sha256": "5ed371e292fd25b16e0aa1b3ac6a0a3060e8fecd948e0324b668fa8fb47a84cf"
+        },
+        "lib/RGBA.d.ts": {
+          "bytes": 1798,
+          "sha256": "dfd753fec492593f7d50c35add8f85d1c9da365e9842b5eb846a282b72112475"
+        },
+        "lib/ascii.font.d.ts": {
+          "bytes": 13105,
+          "sha256": "5281bdaa20c009c5ea8bd26e6c2eb23709f1fe4d8326308952f648a70e895d76"
+        },
+        "lib/border.d.ts": {
+          "bytes": 1786,
+          "sha256": "f1358290d5025a08089aa7bb84770d6d1c2a3161332f445622fc439a58699e3d"
+        },
+        "lib/buffer-access.d.ts": {
+          "bytes": 553,
+          "sha256": "e40aa73a8eeea3c2ec27ecf20b3367d1d6e521bd676d36748b60f8decacff49e"
+        },
+        "lib/bunfs.d.ts": {
+          "bytes": 296,
+          "sha256": "af5f8b7e3bed9edd596876aacecb6e52a62f9dff6854f0068b80c05db0e1eb66"
+        },
+        "lib/clipboard.d.ts": {
+          "bytes": 4937,
+          "sha256": "b284364f480947d26ab4b804db8da2cf8e31902a6ae2727e5748bf74dd79486e"
+        },
+        "lib/clock.d.ts": {
+          "bytes": 628,
+          "sha256": "feccc8bf6c3e27da8f67f5d5ad9e514207cb32d8e55c88d034820c6b47135548"
+        },
+        "lib/data-paths.d.ts": {
+          "bytes": 796,
+          "sha256": "ce7e2f27dc7216f0b0a1f94265c86547dae5f827f1c872fd52357fbcc464fe2d"
+        },
+        "lib/debounce.d.ts": {
+          "bytes": 1310,
+          "sha256": "b6329a60a42acd99062c9b5b3cfd722088feb844072f9277ae442ce70dfcdf4b"
+        },
+        "lib/detect-links.d.ts": {
+          "bytes": 503,
+          "sha256": "27d2af142e75752a7b0e92f99519498ed281fbfd712f144c3edbe221a7d0e9f9"
+        },
+        "lib/env.d.ts": {
+          "bytes": 1088,
+          "sha256": "ca578704040899dc9a935c7bda11b7f871c4793967e86f8b87baafd8a8eb26ad"
+        },
+        "lib/extmarks-history.d.ts": {
+          "bytes": 536,
+          "sha256": "8437065d96d60c4ef4f612f1a94e5eb1f03a95973284f4ff308502c04f80d66c"
+        },
+        "lib/extmarks.d.ts": {
+          "bytes": 3144,
+          "sha256": "c7a6ec7ac91489f4469273473ba38db6d6db7aa0a973bb5d121f68829862494f"
+        },
+        "lib/hast-styled-text.d.ts": {
+          "bytes": 521,
+          "sha256": "9c0bba0158f2f88d3cab554a05bffa74ce2ceb9b5337a1221f3244e8f535751f"
+        },
+        "lib/host-clipboard.internal.d.ts": {
+          "bytes": 1281,
+          "sha256": "b4da89e73086fe6175a1e154c386a2245433414b94b0aaca0f420574ab015a49"
+        },
+        "lib/host-clipboard.native.d.ts": {
+          "bytes": 165,
+          "sha256": "a8aaaffb5b87951d02b72618222b934967fe9b333657aa596eb0648f96d15161"
+        },
+        "lib/index.d.ts": {
+          "bytes": 762,
+          "sha256": "963738746e9c60b1cc26f8ee5afdccba665850f337c66db22710a1911d55da9e"
+        },
+        "lib/keybinding.internal.d.ts": {
+          "bytes": 1775,
+          "sha256": "36dd05439e9ba0fad6f5b96acfcb650d8aa225e462c58505a28b0805676ab80d"
+        },
+        "lib/objects-in-viewport.d.ts": {
+          "bytes": 1113,
+          "sha256": "489b85e3dde84547053fc458123cf270521eeda37ff32b116262cc35d85e6ce7"
+        },
+        "lib/output.capture.d.ts": {
+          "bytes": 740,
+          "sha256": "5f9e57b68c2bd69e57a45e1a8139d02fe1c210374ffb4eb3ee910d9704859815"
+        },
+        "lib/parse.keypress-kitty.d.ts": {
+          "bytes": 317,
+          "sha256": "896004190b3262677f1f1c6a42e61e0b4ccd31ed0597eb81c87144058a2a702b"
+        },
+        "lib/parse.keypress.d.ts": {
+          "bytes": 795,
+          "sha256": "6f96a97dc6322acc342783075a946eb7fb1fe7415106a40360240de2a16b69bf"
+        },
+        "lib/parse.mouse.d.ts": {
+          "bytes": 893,
+          "sha256": "ab7c3d12f7585e6c1b7bfb801cc942ba83e477e18005b18e12d91b4fc096f25f"
+        },
+        "lib/paste.d.ts": {
+          "bytes": 270,
+          "sha256": "1d4f556d012ab80ee6c24c52d5556f8f647d560bd214959548b5534c0487a87e"
+        },
+        "lib/queue.d.ts": {
+          "bytes": 417,
+          "sha256": "bc01065585ef6c9c2b72a0fab85f3cf2b474fcc7515928a3711d7504fad56402"
+        },
+        "lib/render-geometry.d.ts": {
+          "bytes": 412,
+          "sha256": "9b6e5ad808b7d6c2bd08e26f74ca8ac1d424af6d64be1bfe8d22fca6426b75cb"
+        },
+        "lib/renderable.validations.d.ts": {
+          "bytes": 1031,
+          "sha256": "8611d0c9987df777323e2ceb6588c5c56887d0bf30e9a5de7502803527e347ee"
+        },
+        "lib/scroll-acceleration.d.ts": {
+          "bytes": 1681,
+          "sha256": "78dbc39aeeedcc971ac45b9ca132883f321bae0fb0e1bb1736cdff838b8a8bc6"
+        },
+        "lib/scroll-chain.d.ts": {
+          "bytes": 760,
+          "sha256": "ac3e6db1b66e9d5ab11d73fe80f96749b0189ac1ad13dff61df297ad753aa740"
+        },
+        "lib/selection.d.ts": {
+          "bytes": 2122,
+          "sha256": "a67b41ad6a56755293e1f16354760156a554a07e0fc6935489a15e0ab6ce6cb0"
+        },
+        "lib/singleton.d.ts": {
+          "bytes": 376,
+          "sha256": "dc47d57f33c1bb29700cbba6a6dc556d41d4ca229bcc7da041638caaa544fc49"
+        },
+        "lib/stdin-parser-native.d.ts": {
+          "bytes": 3604,
+          "sha256": "b4c05097c1504643c6eec47c0852a653ae2d471029f2f9aa6f4a6268f9d1b578"
+        },
+        "lib/stdin-parser.d.ts": {
+          "bytes": 3126,
+          "sha256": "2e3c96d6855cbf6d5abc76ccb35bd176f8b0149f8ae33af2132b8db180b9e27d"
+        },
+        "lib/styled-text.d.ts": {
+          "bytes": 3331,
+          "sha256": "7c186672a3e96f5d71f9ad9bf6a544572780c28b5b4b39e41f07f739919d82a4"
+        },
+        "lib/terminal-capability-detection.d.ts": {
+          "bytes": 1561,
+          "sha256": "f8c49982ee4ed4d541dfab49d8228a6b17584a8ea6de560d200f7e2debe02d4e"
+        },
+        "lib/terminal-palette.d.ts": {
+          "bytes": 2132,
+          "sha256": "9580f859c4df247bd0d56f3e940851dbdc47d79267327670d8f76a58d1cf0a61"
+        },
+        "lib/tree-sitter-styled-text.d.ts": {
+          "bytes": 926,
+          "sha256": "edbf43e4a81af7e909c5101765662d0d85d23666e0caf73ab878358599c198c5"
+        },
+        "lib/tree-sitter/assets/update.d.ts": {
+          "bytes": 465,
+          "sha256": "f49f89310b3643c22647c904de99d199dcff31c263c21084b7f94eca526265fd"
+        },
+        "lib/tree-sitter/client.d.ts": {
+          "bytes": 2575,
+          "sha256": "88ab662275697386249ef2773661ce5e987538eadf06377598674deaeb42d85d"
+        },
+        "lib/tree-sitter/default-parser-assets.bun.d.ts": {
+          "bytes": 116,
+          "sha256": "89a94e2a3d3d697be8827dfd585acca3c52c2787d55d7b33909d3b40f47158cc"
+        },
+        "lib/tree-sitter/default-parsers.d.ts": {
+          "bytes": 194,
+          "sha256": "a3f760a00fee16e8317da1035b3ae50fc5cb7acd4602914f8bf5fc25ce4d27cc"
+        },
+        "lib/tree-sitter/download-utils.d.ts": {
+          "bytes": 823,
+          "sha256": "cc8de0c27f1ef2aff1bdeff1aeb133e1a2f1d67aff26f1f3a46d68c00e9ca2e8"
+        },
+        "lib/tree-sitter/index.d.ts": {
+          "bytes": 316,
+          "sha256": "ac35af2e23473c97d4a4f30d6f4dcb44721e8cf50a545a2b37ad44814164f124"
+        },
+        "lib/tree-sitter/parser.worker.d.ts": {
+          "bytes": 11,
+          "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881"
+        },
+        "lib/tree-sitter/parsers-config.d.ts": {
+          "bytes": 1515,
+          "sha256": "02026bcaa5530f8903c88facd78b2b9ee1b0e2da1de7bf263c4426153ae9db2b"
+        },
+        "lib/tree-sitter/resolve-ft.d.ts": {
+          "bytes": 363,
+          "sha256": "47d1ded3f9e0e9d5db5a2e7482c3a5d10a22766497004881a0eae2be4ce7a39e"
+        },
+        "lib/tree-sitter/types.d.ts": {
+          "bytes": 4377,
+          "sha256": "e0ba55cb04ad368ce96a841bfc6f9237ea7feb1439a741ea0aeb89f9718436ac"
+        },
+        "lib/tree-sitter/update-assets.d.ts": {
+          "bytes": 147,
+          "sha256": "bee35901036def5af2e6781aa30a8e70e81e5c5d363e73ef60a7e26be5638a06"
+        },
+        "lib/validate-dir-name.d.ts": {
+          "bytes": 69,
+          "sha256": "0b54fd3a0da6d46e850061e44941d0edb0b9cad11cb0db0fe2a044693c17a357"
+        },
+        "lib/yoga.options.d.ts": {
+          "bytes": 2491,
+          "sha256": "29882d6ce37b23f05e47e77806b57306fa3c782cc8b5a8a07e36c15a4906d155"
+        },
+        "native-abi.generated.d.ts": {
+          "bytes": 211736,
+          "sha256": "ed9bd522f96353bf4c140f6348816b5d8594c16d6a6aa612fba7e28e17d4e6fc"
+        },
+        "native-event-worker-repro.worker.d.ts": {
+          "bytes": 11,
+          "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881"
+        },
+        "node-asset-target.d.ts": {
+          "bytes": 464,
+          "sha256": "ce614d2ceb145e1bc93e85af5c6124233b3a6cf334fc0806301396df6442c522"
+        },
+        "node-assets.d.ts": {
+          "bytes": 266,
+          "sha256": "9a44a715afbf96efc893823c91bd18c57b98c52cadb3a017f0f00d50137f930b"
+        },
+        "platform/assets.d.ts": {
+          "bytes": 298,
+          "sha256": "73118b120e71546b4be15e76d1d7ea4f196ac8ef46aed6d37808ce653bf6c705"
+        },
+        "platform/ffi.d.ts": {
+          "bytes": 5833,
+          "sha256": "1ec6e4d466e5c94176068263db6d790988d047e9f2faff7ffa14f584c166a5ef"
+        },
+        "platform/runtime-assets.bun.d.ts": {
+          "bytes": 332,
+          "sha256": "307e19a67f876918fb77bc4e21c782a758c4949d9442036d8ab33c83989b5e6c"
+        },
+        "platform/runtime-assets.node.d.ts": {
+          "bytes": 331,
+          "sha256": "efb268baa98acbe151823b62ce496ba43b2de4f9a924d8c60b641660e646384b"
+        },
+        "platform/runtime.d.ts": {
+          "bytes": 815,
+          "sha256": "a73f9f708695327ae064da884752c9a6b1f4fa56624934ab481993af91355e6e"
+        },
+        "platform/test.d.ts": {
+          "bytes": 557,
+          "sha256": "9f0a2ce450a489bdfb11fe6a6683c156efd922e006c6c14b729f15d6cb464f6a"
+        },
+        "platform/worker.d.ts": {
+          "bytes": 1339,
+          "sha256": "e485c90d2da3cafed3a740a6ce693848000b688fb132bec29fc04c1a66d01753"
+        },
+        "platform/worker.node-test.d.ts": {
+          "bytes": 11,
+          "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881"
+        },
+        "plugins/core-slot.d.ts": {
+          "bytes": 4631,
+          "sha256": "4f2a8bf53c2c08062185f344ba7e57d0706c79153c65ed1b54f2dadb8ce39d55"
+        },
+        "plugins/registry.d.ts": {
+          "bytes": 2057,
+          "sha256": "8445ae18e32c9e60b255a9f6eacf79b4ee8c954c5971d64d8887be90b43a8c3a"
+        },
+        "plugins/types.d.ts": {
+          "bytes": 1290,
+          "sha256": "be2bc8b90410d66d31c0a7ac1306b261a89edf3c8a6f71a2429c67782f4a2f6d"
+        },
+        "post/effects.d.ts": {
+          "bytes": 5004,
+          "sha256": "22cb895fc06e10048f8edb181eb93fd72b688357d51f54fe5073a563e1e19784"
+        },
+        "post/filters.d.ts": {
+          "bytes": 2668,
+          "sha256": "bc9a09ff907e7385027b14c06e422421766794254dfb393b4ad088bcbdaa8fe8"
+        },
+        "post/matrices.d.ts": {
+          "bytes": 1105,
+          "sha256": "363c077037d08a423463e82380da0ea2b925d9c580a2ee4f328285010cd8951b"
+        },
+        "renderables/ASCIIFont.d.ts": {
+          "bytes": 2136,
+          "sha256": "07ba215600528dceca4036fc6a7a387e12fb5220760ca2098863ad3b9edc0508"
+        },
+        "renderables/Box.d.ts": {
+          "bytes": 3809,
+          "sha256": "e4bed5b1751bff880aa1ed1bddbc7ecd13d863aa1d400af6ff0a3df63844f8fa"
+        },
+        "renderables/Code.d.ts": {
+          "bytes": 4672,
+          "sha256": "a580570f863b732db4ca0b3ad7e2ee781b90770c4806e49e0e74ad89bb5faa88"
+        },
+        "renderables/Diff.d.ts": {
+          "bytes": 6199,
+          "sha256": "5e046ff2db923d9027d7b3d13551b3400dcf7a07bca227392d18e19e0ef6610c"
+        },
+        "renderables/EditBufferRenderable.d.ts": {
+          "bytes": 9228,
+          "sha256": "f28fbcdd062bafaf64765d0e27332a04e49e4f1e54174f60584f9457b5f0e61b"
+        },
+        "renderables/EmbeddedTerminal.d.ts": {
+          "bytes": 3070,
+          "sha256": "b9a963a408de2c04787aa508990ad1ecfcd248ac5c452abd73a9e85729c49f19"
+        },
+        "renderables/FrameBuffer.d.ts": {
+          "bytes": 1018,
+          "sha256": "68899cff474e2d71b16d5affa39cfbe0ce048406baa73c998e8fae43b9237108"
+        },
+        "renderables/Image.d.ts": {
+          "bytes": 2219,
+          "sha256": "da45684bc15b5ea8ef15630e6a11702c24651a8c3d5d4d61fa67288542494a23"
+        },
+        "renderables/Input.d.ts": {
+          "bytes": 2387,
+          "sha256": "1fc3c1d07287309ef472b9095fd40b8da0f6614620d0867467fa6a050be34ba9"
+        },
+        "renderables/LineNumberRenderable.d.ts": {
+          "bytes": 3415,
+          "sha256": "8eaa8493a4d089d77cce73d5d94518407bc38fc0856bd01a7b0aac582fa558ca"
+        },
+        "renderables/Markdown.d.ts": {
+          "bytes": 9802,
+          "sha256": "51d59678401b80c2b690404183206823c1e5d214e79f4dc9f82dd46d96a4ec44"
+        },
+        "renderables/ScrollBar.d.ts": {
+          "bytes": 3710,
+          "sha256": "b0d8a404b43bacb2d37d7296511c3500b831d44e2b31f5dba2c06a98c8344fb9"
+        },
+        "renderables/ScrollBox.d.ts": {
+          "bytes": 8698,
+          "sha256": "19f701333354fff8153e7698fe634470c5a1f8a282fe0b1125f2afb42436328b"
+        },
+        "renderables/ScrollBoxParts.d.ts": {
+          "bytes": 7529,
+          "sha256": "9668a3048bc809159ef88142636942492666e4840fcce9dcc00b953c28537d5d"
+        },
+        "renderables/Select.d.ts": {
+          "bytes": 4596,
+          "sha256": "f2ab8f8457f441209051959bff7a2bbba7a7dc219c4cafb5c12231123c1325f8"
+        },
+        "renderables/Slider.d.ts": {
+          "bytes": 1777,
+          "sha256": "726de45dfb67cc05be838eed58997002ca9c8ec2eb2c6ad37a6a808d97bf0363"
+        },
+        "renderables/TabSelect.d.ts": {
+          "bytes": 3828,
+          "sha256": "7adda1f5e730eafcb864874cf32c65859da6333189c3be3611cc26a5e604cc5f"
+        },
+        "renderables/Text.d.ts": {
+          "bytes": 1662,
+          "sha256": "c37d4101f2bdb0ced2f3bafdc0ceb56b9aafbcf7fa32c75ca418373c26d06620"
+        },
+        "renderables/TextBufferRenderable.d.ts": {
+          "bytes": 4787,
+          "sha256": "ea04e997b858cdc5318eb47317bdb39f31d94e5eddb0b73440f64e2e086cf00a"
+        },
+        "renderables/TextNode.d.ts": {
+          "bytes": 3472,
+          "sha256": "303932d18ce3dbbc49bd0f34d99e73806ebc317a19cdf25331f28b42f949c42b"
+        },
+        "renderables/TextTable.d.ts": {
+          "bytes": 5395,
+          "sha256": "dacdbb4f529e4527834657d4905180cafdd38857bb4800e2153c90d8a0adde8b"
+        },
+        "renderables/Textarea.d.ts": {
+          "bytes": 3308,
+          "sha256": "0cc1ea5e0109e60aa5eb4288088687336d7f67d94e47b22eb5165eceae0da7bf"
+        },
+        "renderables/TimeToFirstDraw.d.ts": {
+          "bytes": 973,
+          "sha256": "a6723418bf0e6a494b80e900da03f9ecc5037710d042d0e2db88640fb0fbc873"
+        },
+        "renderables/__tests__/renderable-test-utils.d.ts": {
+          "bytes": 862,
+          "sha256": "ce9ab71fe7f6a4c137687a5b9bf91ca694a412de9dc34374c40fc94451530fd4"
+        },
+        "renderables/composition/VRenderable.d.ts": {
+          "bytes": 811,
+          "sha256": "da79366dfd461eb430ba1c2def81913f327d9fe108c06843c6013c30120ec3d1"
+        },
+        "renderables/composition/constructs.d.ts": {
+          "bytes": 3642,
+          "sha256": "374fbd3e0c81fa4ee7b0c90081fcbd15735f3973c2cce23d5db2c044ec4d80f3"
+        },
+        "renderables/composition/vnode.d.ts": {
+          "bytes": 3336,
+          "sha256": "a0cbae07c512435d57be4c01cf8c8b0edf7a779d7c7fe5024f5379fcf0a32e87"
+        },
+        "renderables/index.d.ts": {
+          "bytes": 960,
+          "sha256": "b2dbf5685ca41c478f848ef0a879705d95a19d17b9fc1fb195d94fe17265aa44"
+        },
+        "renderables/markdown-parser.d.ts": {
+          "bytes": 463,
+          "sha256": "3170ca77d2a86f4f2d4dc6ea7a30f6f152aa52622d5f69375f504d20f7084a95"
+        },
+        "renderables/text-table-width.d.ts": {
+          "bytes": 125,
+          "sha256": "4b911f6000896c43fdc49206d55ded23ee0689714f725b53c35a179f65cd3fc2"
+        },
+        "renderer-theme-mode.d.ts": {
+          "bytes": 799,
+          "sha256": "833628ce35907041c79c28287a2f647db3731fcf22c163d69466552cef6f3993"
+        },
+        "renderer.d.ts": {
+          "bytes": 26892,
+          "sha256": "0e0a2abfb92b4e84632848c2d7f25ec6e2e140f562cd2b04a6c779bb781aa5dc"
+        },
+        "runtime-plugin-support-configure.d.ts": {
+          "bytes": 419,
+          "sha256": "08607b7a600fcb484984af4b041cc0cfb55944b27776f27414866212f27dae91"
+        },
+        "runtime-plugin-support.d.ts": {
+          "bytes": 372,
+          "sha256": "6c59201ea85c68a09ae92cddb4b13d4780719b669b7000fe122aa39aa6567e4e"
+        },
+        "runtime-plugin.d.ts": {
+          "bytes": 990,
+          "sha256": "cb89d79380046cf08a939cd7fca9a58fac067ec39d85d35c4bc1ff81ea96803d"
+        },
+        "session-buffer.d.ts": {
+          "bytes": 535,
+          "sha256": "18c8b3000005e8562d9454855a75fb9ccdfa0a2495caac03a5b2962af3ff45f5"
+        },
+        "syntax-style.d.ts": {
+          "bytes": 2185,
+          "sha256": "0d9ecfe86dd24b14aece3e9789ad206c996dbe99498a907640d966ee259e7339"
+        },
+        "testing.d.ts": {
+          "bytes": 401,
+          "sha256": "a656c18e40cdfed1aa657bd546babb0433a187e73a7fbc7f77cbb005feee73ec"
+        },
+        "testing/bun-test-node.d.ts": {
+          "bytes": 3824,
+          "sha256": "9d5c04cc7a4150255d216125eb617c517c5c159ad3c2b164e76279be2ba36857"
+        },
+        "testing/harness.d.ts": {
+          "bytes": 2125,
+          "sha256": "d7cf1f75cf85f38441bddb86af5043263cc9b0ee894b55f076c9d47696958295"
+        },
+        "testing/manual-clock.d.ts": {
+          "bytes": 694,
+          "sha256": "a1f6504d6e96fc844f75a15b01a9694ddf967907e200844dfd39139ff7d6734f"
+        },
+        "testing/mock-keys.d.ts": {
+          "bytes": 2450,
+          "sha256": "723da8296feac3c9003eb98cdb77ab1fddbb8a956b7de17c0e662d86435a707f"
+        },
+        "testing/mock-mouse.d.ts": {
+          "bytes": 1785,
+          "sha256": "0228500a94facc449a40a9ebdd41441769a60ceca55cb146643ca98e40483d8e"
+        },
+        "testing/mock-tree-sitter-client.d.ts": {
+          "bytes": 905,
+          "sha256": "0e5424f21b2f486107e666b91405a2a3c630987465e8f5ef21a6aec28115fcdb"
+        },
+        "testing/spy.d.ts": {
+          "bytes": 181,
+          "sha256": "5ab798bdbacc401a343db78106d3e353e30d04349c31ea5a8699225060b18e03"
+        },
+        "testing/terminal-capabilities.d.ts": {
+          "bytes": 521,
+          "sha256": "e688203f1469e3ecf3b8727552facee4de2883b441bd2b26c1f46d4057274c6b"
+        },
+        "testing/test-recorder.d.ts": {
+          "bytes": 1468,
+          "sha256": "3f8c300f56702ec163639299a8ec88c187c88d20e9a3afccedb664b106da159e"
+        },
+        "testing/test-renderer.d.ts": {
+          "bytes": 2638,
+          "sha256": "2090ec0f5ddb390e0f7a214e49e153e8c232f18087503199bcfc5d23793a1cb1"
+        },
+        "testing/test-streams.d.ts": {
+          "bytes": 1334,
+          "sha256": "b3a6021105d46a93f3e70bb62bb1839c00d7220922b74b66e93705339c16cdbc"
+        },
+        "tests/image-icc-allocation-child.d.ts": {
+          "bytes": 11,
+          "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881"
+        },
+        "tests/native-log-worker-child.d.ts": {
+          "bytes": 11,
+          "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881"
+        },
+        "tests/native-symbol-stubs.d.ts": {
+          "bytes": 359,
+          "sha256": "bda2d3982ff28477f9149d65c9d53477cb3f75204bd6acf2c8a2448aa0c58033"
+        },
+        "tests/yoga-callback-boundary-child.d.ts": {
+          "bytes": 11,
+          "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881"
+        },
+        "tests/yoga-default-config-worker-child.d.ts": {
+          "bytes": 11,
+          "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881"
+        },
+        "tests/yoga-upstream/tools/MeasureCounter.d.ts": {
+          "bytes": 606,
+          "sha256": "8780edd9b7f7598b30c58e0c6585d3742808074e480dd4ac7553fdf0a747b9c3"
+        },
+        "tests/yoga-upstream/tools/utils.d.ts": {
+          "bytes": 428,
+          "sha256": "934e38eb41ac7e39e930b89758a169ff3fe38dba8fa50f07fda2170cc47a9e56"
+        },
+        "text-buffer-view.d.ts": {
+          "bytes": 2606,
+          "sha256": "07ae7af33fe8e81b156b43c6c26bb3e29732ccc2c09c1e2a8b67a65618cfd91e"
+        },
+        "text-buffer.d.ts": {
+          "bytes": 3263,
+          "sha256": "4beca85cc2117887e28f671d9ca2e10ffa1b6d231e71a360616bcb03c4f273f8"
+        },
+        "types.d.ts": {
+          "bytes": 9171,
+          "sha256": "c3aaee45ed21c60f56b2d13e274017e932f496f8e8888f593ede53d68ebc1144"
+        },
+        "utils.d.ts": {
+          "bytes": 646,
+          "sha256": "3e789337bdd50e655d36f9cc614c13f400d7759e6c1859241ae0c9ddbe5db81d"
+        },
+        "yoga.d.ts": {
+          "bytes": 15964,
+          "sha256": "7b63fbd2adb03cf0871e111725a1afe046cbd8f87ca9aa0803348ad6185057be"
+        },
+        "yoga.internal.d.ts": {
+          "bytes": 3450,
+          "sha256": "9cbfb492137bd9ca5cc2e3d93cc5e78663415efb837e6e1f3f4f26183609f8eb"
+        },
+        "zig-structs.d.ts": {
+          "bytes": 10539,
+          "sha256": "64cd3ea06a1beb14a9170cb1386125ba81001f902246eb5359561162b69383c3"
+        },
+        "zig.d.ts": {
+          "bytes": 75962,
+          "sha256": "b4e19555cdf1d12870b7a42bc44b65b6b94cb3d888fdcf12cb34388dd53ab009"
+        }
+      },
+      "declaredBytes": 18054741,
+      "expandedBytes": 18214912,
+      "graphClosure": "NOT established",
+      "integrity": "sha512-LwnIT7k+rGelridv7390enJXZpNuQYKIS3NdttJyoLPjbRFPyHnAKkCHk6X8MRS64vcSjOeVq9sl7XLWII16jQ==",
+      "metadata": {
+        "bytes": 2700,
+        "sha256": "e49a3fd4a8a80cbe08ea2dfcde866730d118be70e8b13c8693c01e5bc6ea7433"
+      },
+      "name": "@opentui/core",
+      "nestedMetadata": {},
+      "noticeEvidence": "archive notice bytes present; independent review pending",
+      "noticeMappingApproved": false,
+      "notices": {
+        "LICENSE": {
+          "bytes": 1063,
+          "sha256": "d9c397a5dc5ac77a2a08fc967ea06a65317a4b5b8de48f6f732ffcb21737e3d2"
+        }
+      },
+      "packagePath": "node_modules/@opentui/core",
+      "repository": {
+        "directory": "packages/core",
+        "type": "git",
+        "url": "https://github.com/anomalyco/opentui"
+      },
+      "resolved": "https://registry.npmjs.org/@opentui/core/-/core-0.8.0.tgz",
+      "selectionApproved": false,
+      "sourceCommitBinding": "NOT established",
+      "unselectedTypeSources": {},
+      "version": "0.8.0"
+    },
+    {
+      "archiveGitHead": null,
+      "archiveRoot": "package",
+      "archiveSha256": "d88141550acfcffe14f1bd5753ba852a3791d84199cd4f9012ee9fe9abc42a8d",
+      "compressedBytes": 79112,
+      "declarations": {
+        "components.d.ts": {
+          "bytes": 194,
+          "sha256": "34cee575531f15e93e7314550bc6375c2ceb6df704f0f70944859c1c9916f05e"
+        },
+        "index.d.ts": {
+          "bytes": 724,
+          "sha256": "9e980eb7a73a072cdf0063245d39283228e95d7d5e83c9c225a7432afc35208e"
+        },
+        "jsx-dev-runtime.d.ts": {
+          "bytes": 62,
+          "sha256": "6d6052f331c6328e85775e12b0d25431ea789a31d6d3d87978a08099c4246293"
+        },
+        "jsx-runtime.d.ts": {
+          "bytes": 1381,
+          "sha256": "e936882a80f02b46c70d996e462631c051752b0f868c8c31631ab02c9b95950e"
+        },
+        "scripts/runtime-plugin-support-configure.d.ts": {
+          "bytes": 464,
+          "sha256": "6bd6bdf2a8adcfbcfed7bf570d27f21c4806966f0553c3f91db26f39a64f0fc1"
+        },
+        "scripts/runtime-plugin-support.d.ts": {
+          "bytes": 218,
+          "sha256": "98c7541501a070357f43378459b46ed99930792419607b0ed7f7e580f05eb67e"
+        },
+        "scripts/solid-plugin.d.ts": {
+          "bytes": 576,
+          "sha256": "6a69fc0c24491075e6f951b4a15149b68729ac090c60ed52977d7061408a47bf"
+        },
+        "scripts/solid-transform.d.ts": {
+          "bytes": 538,
+          "sha256": "00d4d562c9652d26495f81d389ab88c3e31ca1cada01581f5655c45be9ced663"
+        },
+        "src/elements/catalogue.d.ts": {
+          "bytes": 2967,
+          "sha256": "e0cfeebc9337a1da4468625388f954dbc6e9bc1b0142fa4b7448355e6a43d7ad"
+        },
+        "src/elements/extras.d.ts": {
+          "bytes": 1879,
+          "sha256": "1dcd2ca493cf59381255d1333d88b5b34c805102148b21d7c6800a525def3702"
+        },
+        "src/elements/hooks.d.ts": {
+          "bytes": 2091,
+          "sha256": "d117e9e10649ae75b6dee144b1ecc265178e4f10578a66e6c77f6ce138f1ed61"
+        },
+        "src/elements/index.d.ts": {
+          "bytes": 116,
+          "sha256": "ee0e7755a5652d6b968ad5603bbc26d45f1226a496b34270c6cad7327aa62c70"
+        },
+        "src/elements/slot.d.ts": {
+          "bytes": 2283,
+          "sha256": "ff289e644347d607c793c4441b2cca6a09c78a67435a51a6368a4b6641c93c6e"
+        },
+        "src/plugins/slot.d.ts": {
+          "bytes": 2003,
+          "sha256": "49c402516ae33908c038a6ead4c1f779669e98b108ea98ff814d884c95a9c2ac"
+        },
+        "src/reconciler.d.ts": {
+          "bytes": 1642,
+          "sha256": "0c6d3d375e504f3a0a4e640fba3e0b1bf447e64095583f30e88040eb8f406ef3"
+        },
+        "src/renderer/index.d.ts": {
+          "bytes": 236,
+          "sha256": "7a1b83f2fbab5ef21abe6a1ebf942f789aeaaaac226d748b8b2859cbc2a2bbd4"
+        },
+        "src/renderer/universal.d.ts": {
+          "bytes": 1184,
+          "sha256": "2b3f26d7ada94c023c9295feb64a3a73c356dc9c63432559538a6d13705cd618"
+        },
+        "src/scrollback.d.ts": {
+          "bytes": 675,
+          "sha256": "04ae009d6ee904feef21dbc76ef10cb430d8f6f6a98058d66ebfb63e69b5ef5a"
+        },
+        "src/testing/bun-test-node.d.ts": {
+          "bytes": 623,
+          "sha256": "66058b88a6f9863b15c9efd7d7488231b24cbdfb873dfa3d8cb07013882e8af3"
+        },
+        "src/time-to-first-draw.d.ts": {
+          "bytes": 433,
+          "sha256": "c90af21a4a92b162e33043d1cafba53a8625f384cdd18afda458b661d798f639"
+        },
+        "src/types/elements.d.ts": {
+          "bytes": 6220,
+          "sha256": "a0f8b22b1b1b888e75c5b852b413f0e5882aaef07b35d093201cc8a1fa7bfee2"
+        },
+        "src/utils/id-counter.d.ts": {
+          "bytes": 64,
+          "sha256": "d5f521e86cabea9f98ea8c170028e81d5e6f5773d55bf89d0699952f12bbbf72"
+        },
+        "src/utils/log.d.ts": {
+          "bytes": 52,
+          "sha256": "11e1f50f03e9a49368f71b301aee12d38afc2ea9ff44ecbdedf223f11cbd18c9"
+        }
+      },
+      "declaredBytes": 339839,
+      "expandedBytes": 380416,
+      "graphClosure": "NOT established",
+      "integrity": "sha512-fk035Q9iGXFgpkXSbpdyWYnT1jFuY0gOhzxaqBXDVtuWrQPB5MRxUxXHgESIMXJPsMTROIjOcKuW+PPhsakpnw==",
+      "metadata": {
+        "bytes": 2421,
+        "sha256": "e4d22241026bddfa12c47296e33eb8b5c8f855ba700e565dcc18ee087158e72f"
+      },
+      "name": "@opentui/solid",
+      "nestedMetadata": {},
+      "noticeEvidence": "archive notice bytes present; independent review pending",
+      "noticeMappingApproved": false,
+      "notices": {
+        "LICENSE": {
+          "bytes": 1063,
+          "sha256": "d9c397a5dc5ac77a2a08fc967ea06a65317a4b5b8de48f6f732ffcb21737e3d2"
+        }
+      },
+      "packagePath": "node_modules/@opentui/solid",
+      "repository": {
+        "directory": "packages/solid",
+        "type": "git",
+        "url": "https://github.com/anomalyco/opentui"
+      },
+      "resolved": "https://registry.npmjs.org/@opentui/solid/-/solid-0.8.0.tgz",
+      "selectionApproved": false,
+      "sourceCommitBinding": "NOT established",
+      "unselectedTypeSources": {},
+      "version": "0.8.0"
+    },
+    {
+      "archiveGitHead": null,
+      "archiveRoot": "package",
+      "archiveSha256": "b8abf30109615f2e39c442ecfabd7c419076c0861dd4095756d34d39ccf1ff51",
+      "compressedBytes": 214652,
+      "declarations": {
+        "h/jsx-runtime/types/index.d.ts": {
+          "bytes": 341,
+          "sha256": "dfd7de37e363d18ea0225bb7ecf3aaff39fc250c2642f0058689e899e61038c0"
+        },
+        "h/jsx-runtime/types/jsx.d.ts": {
+          "bytes": 179493,
+          "sha256": "12398fb0138493843cdf480311482cfbd4acbfd123cf7ca683c8b1a4c9c4a298"
+        },
+        "h/types/hyperscript.d.ts": {
+          "bytes": 870,
+          "sha256": "1057288b8b720b5dd638abd5c64d1bbf5866c70956cd7d05a6031e4855c56c54"
+        },
+        "h/types/index.d.ts": {
+          "bytes": 101,
+          "sha256": "5171f0eed7d7345fd4c648fcc5841fc2173e493e5b8a1ddcc6ca55e826693abb"
+        },
+        "html/types/index.d.ts": {
+          "bytes": 91,
+          "sha256": "5d62ec92735472ed2820e9eb041009aef2567614dcc3402d994f1b0e7476410f"
+        },
+        "html/types/lit.d.ts": {
+          "bytes": 1753,
+          "sha256": "76a56fd308e3ac0fd6103633185938d7af0fcdeb863f1ebb715a401bad2b266b"
+        },
+        "jsx-runtime.d.ts": {
+          "bytes": 29,
+          "sha256": "e4aca01f5b0e8ae4fb805129247822a667fdcdba8384ea340f006deb25de49b4"
+        },
+        "store/types/index.d.ts": {
+          "bytes": 579,
+          "sha256": "92d5c79914ecc6f98e3c56bf55cadf3b03df0179b0c7462c4551fc600c815328"
+        },
+        "store/types/modifiers.d.ts": {
+          "bytes": 265,
+          "sha256": "abeccb62a5e11beb75bde3b531d60e12e8744b41576a658991a7644ab9c41dfb"
+        },
+        "store/types/mutable.d.ts": {
+          "bytes": 232,
+          "sha256": "4c639f865c0c7ec1a391b853428b321378ef2aa337358e33ba178735d6669955"
+        },
+        "store/types/server.d.ts": {
+          "bytes": 1126,
+          "sha256": "a02f90bdad2e2ba6f82fe4a49b4a481d683e26b3457e55eb39e029ecbe995bff"
+        },
+        "store/types/store.d.ts": {
+          "bytes": 7897,
+          "sha256": "e9c823237da6df4b95ce52a0e8f968ea59dc965d589846879aef3b08d315e1e4"
+        },
+        "types/index.d.ts": {
+          "bytes": 1807,
+          "sha256": "6e70da1429948b2ca8201ccc248bd2cb77cd6bbc4cf33f639c4b0f8f6a35cbd1"
+        },
+        "types/jsx.d.ts": {
+          "bytes": 166227,
+          "sha256": "d35504a35868edaa3f43c244b397177f7ce6a6ab872347b7271473299c2e5d27"
+        },
+        "types/reactive/array.d.ts": {
+          "bytes": 2242,
+          "sha256": "38f11ad59dfc38750b789f9f250742d0ce0da44e28f790a032cd15665b70f239"
+        },
+        "types/reactive/observable.d.ts": {
+          "bytes": 1268,
+          "sha256": "c2e65a549ac9d227a9002d077af67bb1c77557a72bf39a85c4354831879078ed"
+        },
+        "types/reactive/scheduler.d.ts": {
+          "bytes": 298,
+          "sha256": "a6d2eb77f390448a229ca63b4adadbcc549d203b8c038f1f7627a118f732969d"
+        },
+        "types/reactive/signal.d.ts": {
+          "bytes": 25453,
+          "sha256": "b46dcc2ec41ae4a5627b6c82b964715e69398b0de8978fd08093e470b68ea235"
+        },
+        "types/render/Suspense.d.ts": {
+          "bytes": 846,
+          "sha256": "8ab288ca80e5f2a9dab19955fcd9e81a244432cd7d256fdb5ea198ed5a44f0a4"
+        },
+        "types/render/component.d.ts": {
+          "bytes": 5049,
+          "sha256": "b886cc0d907b31ae7484a85da375bc8ac42f9986ec1e49c9c7c854956b0a928b"
+        },
+        "types/render/flow.d.ts": {
+          "bytes": 4473,
+          "sha256": "46b432f55912daaf98d11b81c5d06f8b78231c9ef101306ca5b3ef2cc7b6e9f0"
+        },
+        "types/render/hydration.d.ts": {
+          "bytes": 741,
+          "sha256": "0caadd121b8965f24d5c647a2ed01f5fc352772e4cea4bbca2ab78adedfdd921"
+        },
+        "types/render/index.d.ts": {
+          "bytes": 137,
+          "sha256": "b642b6a4b9b670338bc50281a6dd192fb7cc0b2f9d63d38c250bb1f02e828bbc"
+        },
+        "types/server/index.d.ts": {
+          "bytes": 768,
+          "sha256": "e3ac8ee953456fe1ad1d210c975042c3c50b636bdaae468647d36dd718a0bc9b"
+        },
+        "types/server/reactive.d.ts": {
+          "bytes": 4473,
+          "sha256": "7af803d3c9744442905673cf6345b1c9e4723ea82877f2db9342963d99f5318d"
+        },
+        "types/server/rendering.d.ts": {
+          "bytes": 7233,
+          "sha256": "4a65a22756e71443287db45326f9ea1ec0a2b85a0403be2714ad2276306cbaeb"
+        },
+        "universal/types/index.d.ts": {
+          "bytes": 236,
+          "sha256": "7a1b83f2fbab5ef21abe6a1ebf942f789aeaaaac226d748b8b2859cbc2a2bbd4"
+        },
+        "universal/types/universal.d.ts": {
+          "bytes": 1490,
+          "sha256": "92e642d782104415011994d1a3df5b09520899694600e4eeff629fd074becf57"
+        },
+        "web/storage/types/index.d.ts": {
+          "bytes": 147,
+          "sha256": "95872a9c842c9fecb3b2e5d0cf5ee9fcae974b6318799b65304cde335f684de4"
+        },
+        "web/types/client.d.ts": {
+          "bytes": 3717,
+          "sha256": "550611289b820b1bba0e7c8b63c6d688143cd80cf555e0bf6fbd1764381c3327"
+        },
+        "web/types/core.d.ts": {
+          "bytes": 213,
+          "sha256": "60b28bc641c4b78d70f6b21cc3a15df5d11283122693916dfcfb0175bfff8740"
+        },
+        "web/types/index.d.ts": {
+          "bytes": 2324,
+          "sha256": "f8db03cdd070621b978744c04d42fc50232317bdfb114c2d1815bd5c8aef7386"
+        },
+        "web/types/jsx.d.ts": {
+          "bytes": 47,
+          "sha256": "601520abcca03c5fa2dc578075b1c0b560d6de0859832aabb7a567118034969d"
+        },
+        "web/types/server-mock.d.ts": {
+          "bytes": 2024,
+          "sha256": "1da0ad9df4532256d79263966e73b04981e8563533142afbd214647a7bc14ec4"
+        },
+        "web/types/server.d.ts": {
+          "bytes": 6769,
+          "sha256": "b5abfa1c52aec2a2cc607122accce0ce7f00c377277bf3c2354a923c4112da13"
+        }
+      },
+      "declaredBytes": 1076199,
+      "expandedBytes": 1135616,
+      "graphClosure": "NOT established",
+      "integrity": "sha512-4GAmLOWPfNV8H9Jfn2LSFTpNEG6jiOKPiwd5lnLGQtehHaX6l3TOLzJqQ7mqwB/3k1Yy3zyumFVopmc/tm34ow==",
+      "metadata": {
+        "bytes": 8329,
+        "sha256": "d9479f428e3db34f0f0696c1b66ddff1f15eadfc6a204e872fe3ee81ac00f72b"
+      },
+      "name": "solid-js",
+      "nestedMetadata": {
+        "h/jsx-dev-runtime/package.json": {
+          "bytes": 216,
+          "sha256": "1963e4bc744911236d46dfd72d38e065e471828423f6d1eb22efab6b5e5c45c4"
+        },
+        "h/jsx-runtime/package.json": {
+          "bytes": 173,
+          "sha256": "11cdc18365f22d878d571953d5c11c8809c71438a4fb6c431487663dfd9a9b5d"
+        },
+        "h/package.json": {
+          "bytes": 157,
+          "sha256": "24182c5d675279d70869d853fc082fc2f3852b814edd8bf065fe44213960a6bd"
+        },
+        "html/package.json": {
+          "bytes": 166,
+          "sha256": "71210e51b3d6e9033a76847756f717cfe01eb4070fd4115fdf7462dd987f54c1"
+        },
+        "store/package.json": {
+          "bytes": 1208,
+          "sha256": "3457001f7fc9042dee88de1bda43ab27b9463a61fa45f0eae5a1c0607fddc057"
+        },
+        "universal/package.json": {
+          "bytes": 476,
+          "sha256": "743d0d7a5f81a1e594bb24e19f882a24d7ecec2d4ea9d1710b5793e55b477297"
+        },
+        "web/package.json": {
+          "bytes": 1196,
+          "sha256": "2ba5fb658174b108b2311cb095acc01e279df0312bcf04e223f8e5e31790f13b"
+        },
+        "web/storage/package.json": {
+          "bytes": 328,
+          "sha256": "b645e32d8ef30be56114a36d5dff02e04daef6f0a79b76dccfd916832a8a03a4"
+        }
+      },
+      "noticeEvidence": "archive notice bytes present; independent review pending",
+      "noticeMappingApproved": false,
+      "notices": {
+        "LICENSE": {
+          "bytes": 1075,
+          "sha256": "59a76ed2f4a3ebe8d20a58869ef9c09420f796aa179420c8fb916f5557defc9b"
+        }
+      },
+      "packagePath": "node_modules/solid-js",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/solidjs/solid"
+      },
+      "resolved": "https://registry.npmjs.org/solid-js/-/solid-js-1.9.17.tgz",
+      "selectionApproved": false,
+      "sourceCommitBinding": "NOT established",
+      "unselectedTypeSources": {},
+      "version": "1.9.17"
+    },
+    {
+      "archiveGitHead": null,
+      "archiveRoot": "package",
+      "archiveSha256": "6636457aca5e6945fb73671362ae19c9c4e513bb516a53d58c4a2b4d12533e0f",
+      "compressedBytes": 1702266,
+      "declarations": {
+        "web-tree-sitter.d.ts": {
+          "bytes": 37856,
+          "sha256": "6b399f896607ce2567b6fb2fe5e0b9fb703b900add968c818c4018caa338af16"
+        }
+      },
+      "declaredBytes": 5772850,
+      "expandedBytes": 5825024,
+      "graphClosure": "NOT established",
+      "integrity": "sha512-Y09sF44/13XvgVKgO2cNDw5rGk6s26MgoZPXLESvMXeefBf7i6/73eFurre0IsTW6E14Y0ArIzhUMmjoc7xyzA==",
+      "metadata": {
+        "bytes": 2629,
+        "sha256": "6636903505f3a3739fa8f11d6de7264cf3cc0ae6e0c2e2aec0f079656899cc06"
+      },
+      "name": "web-tree-sitter",
+      "nestedMetadata": {},
+      "noticeEvidence": "archive notice bytes present; independent review pending",
+      "noticeMappingApproved": false,
+      "notices": {
+        "LICENSE": {
+          "bytes": 1085,
+          "sha256": "5f9cf9fb6acb1972b35ae29119ce563bb60ec097656bc4b69b9bac2d04c7a147"
+        }
+      },
+      "packagePath": "node_modules/web-tree-sitter",
+      "repository": {
+        "directory": "lib/binding_web",
+        "type": "git",
+        "url": "git+https://github.com/tree-sitter/tree-sitter.git"
+      },
+      "resolved": "https://registry.npmjs.org/web-tree-sitter/-/web-tree-sitter-0.25.10.tgz",
+      "selectionApproved": false,
+      "sourceCommitBinding": "NOT established",
+      "unselectedTypeSources": {
+        "src/bindings.ts": {
+          "bytes": 699,
+          "sha256": "1ac05b3ea7fe9d590f3bcbcb8c7f49e894aec5af45b60358c4058a5937d060c5"
+        },
+        "src/constants.ts": {
+          "bytes": 3224,
+          "sha256": "19791164c5bbf71b3c7182057f6237c2dc3103fdc0d0c0b71acdad72bfeabe66"
+        },
+        "src/index.ts": {
+          "bytes": 647,
+          "sha256": "5144f530ad7cd49426d7460831c7e38034025774b1be13024cda44ae04fcd67c"
+        },
+        "src/language.ts": {
+          "bytes": 9304,
+          "sha256": "69a50ac316618129b11f425d82903eceaa4e610907f5d5b4ab634e379dc2b4a7"
+        },
+        "src/lookahead_iterator.ts": {
+          "bytes": 2085,
+          "sha256": "5afc0d9fcc6cafa133917dc40c99d667d5ae77e18c80bb4498a686474bb468eb"
+        },
+        "src/marshal.ts": {
+          "bytes": 5402,
+          "sha256": "9a91e6a421a67d62271fd9a3ac2c08e855b2e565c8829378684ed818b4b5e1d4"
+        },
+        "src/node.ts": {
+          "bytes": 19765,
+          "sha256": "55a7c656fead85247efe761c90e2c6bf1f3bc2d0a9849389436ca4722d4efd9e"
+        },
+        "src/parser.ts": {
+          "bytes": 10660,
+          "sha256": "7621f8d5bbc08211cb4d55186d0a31cf1da1e64885ba36a7c091b2a05440d035"
+        },
+        "src/query.ts": {
+          "bytes": 31945,
+          "sha256": "01c19fad8a335030f2a1219dc2682cf250000a26ef3d7071adc9d31cc88fdd0b"
+        },
+        "src/tree.ts": {
+          "bytes": 4619,
+          "sha256": "2a976b409c04a0806d25eb833cdab7736a707b5ab88f7d7b998d40cd08a6fa95"
+        },
+        "src/tree_cursor.ts": {
+          "bytes": 10522,
+          "sha256": "ea03204b177807d6d997a5d6a0170e417aa800abe77cc5dd5dfb9164fe2bd36b"
+        }
+      },
+      "version": "0.25.10"
+    },
+    {
+      "archiveGitHead": null,
+      "archiveRoot": "emscripten",
+      "archiveSha256": "dd0dceaf2578bbaa1563db0632657806b18e48c0ff1cbff9f54171708e8d7fb1",
+      "compressedBytes": 5728,
+      "declarations": {
+        "index.d.ts": {
+          "bytes": 16007,
+          "sha256": "2a6896ee1eb573182585d65e48e3ba6896e3f27c7496dcbb6e80963b0feb04ce"
+        }
+      },
+      "declaredBytes": 19023,
+      "expandedBytes": 24064,
+      "graphClosure": "NOT established",
+      "integrity": "sha512-MD2JJ25S4tnjnhjWyalMS6K6p0h+zQV6+Ylm+aGbiS8tSn/aHLSGNzBgduj6FB4zH0ax2GRMGYi/8G1uOxhXWA==",
+      "metadata": {
+        "bytes": 1269,
+        "sha256": "9f453be6e4c9023ba56f45470f6a4d5e1b773fa3b3200fdb29f42d618aff64b9"
+      },
+      "name": "@types/emscripten",
+      "nestedMetadata": {},
+      "noticeEvidence": "archive notice bytes present; independent review pending",
+      "noticeMappingApproved": false,
+      "notices": {
+        "LICENSE": {
+          "bytes": 1141,
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+        }
+      },
+      "packagePath": "node_modules/@types/emscripten",
+      "repository": {
+        "directory": "types/emscripten",
+        "type": "git",
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git"
+      },
+      "resolved": "https://registry.npmjs.org/@types/emscripten/-/emscripten-1.40.0.tgz",
+      "selectionApproved": false,
+      "sourceCommitBinding": "NOT established",
+      "unselectedTypeSources": {},
+      "version": "1.40.0"
+    },
+    {
+      "archiveGitHead": null,
+      "archiveRoot": "json-schema",
+      "archiveSha256": "12dcb1dcff7099bff0663fc220551ba53fcf23c136a22375e323bb6626d95724",
+      "compressedBytes": 6145,
+      "declarations": {
+        "index.d.ts": {
+          "bytes": 28732,
+          "sha256": "f3d8c757e148ad968f0d98697987db363070abada5f503da3c06aefd9d4248c1"
+        }
+      },
+      "declaredBytes": 31748,
+      "expandedBytes": 36864,
+      "graphClosure": "NOT established",
+      "integrity": "sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==",
+      "metadata": {
+        "bytes": 1253,
+        "sha256": "6bf0cb0808cafc14023ae10d55d6a88228397dc54c16106d121f42ac88d64fc8"
+      },
+      "name": "@types/json-schema",
+      "nestedMetadata": {},
+      "noticeEvidence": "archive notice bytes present; independent review pending",
+      "noticeMappingApproved": false,
+      "notices": {
+        "LICENSE": {
+          "bytes": 1141,
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+        }
+      },
+      "packagePath": "node_modules/@types/json-schema",
+      "repository": {
+        "directory": "types/json-schema",
+        "type": "git",
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git"
+      },
+      "resolved": "https://registry.npmjs.org/@types/json-schema/-/json-schema-7.0.15.tgz",
+      "selectionApproved": false,
+      "sourceCommitBinding": "NOT established",
+      "unselectedTypeSources": {},
+      "version": "7.0.15"
+    }
+  ],
+  "previousBlockedDiscoverySha256": "360cf3d25405032f7ca69896857957a78c35157e648c9a1967982619985b2be6",
+  "privateCandidateSha256": "81378958e9ea8590c3300adf497561a982c3a823dee4f706c14f3911bcdba74d",
+  "rootNotice": {
+    "exactBytesPresentInNoticeBundle": true,
+    "retainedIn": "sdk-notice-provenance.json + THIRD-PARTY-NOTICES.txt",
+    "sha256": "625f0f619133f89bbbb2abe37369613dfa1885eba1e50d02170deb62bb42cb6b",
+    "url": "https://raw.githubusercontent.com/anomalyco/opencode/958f965d35ed44d32b018fd55b02a5357a7748fd/LICENSE"
+  },
+  "runtimeDependencyClosure": "NOT established",
+  "schema": 1,
+  "scope": [
+    "@opencode/client",
+    "@opencode/plugin",
+    "@opencode/plugin/tui",
+    "@opencode/theme/tui",
+    "@opentui/core",
+    "@opentui/solid",
+    "@opentui/solid/jsx-runtime",
+    "solid-js",
+    "web-tree-sitter"
+  ],
+  "selectionApproved": false,
+  "sourceEvidenceSha256": "ea42b0da5cec34226407a72343d552920bdb869c19a821be91691f5f8c739cd0",
+  "typeGraphClosure": "NOT established"
+}

@@ -9,7 +9,7 @@ Threadmark is a planned local-first background companion that turns rough develo
 
 > Explain less. Carry context forward. Give every agent a better starting point.
 
-**Status: early foundation development.** The Rust workspace provides offline version/status diagnostics and synthetic scope/worker contract checks. There is no installable companion, persistent index, background service, inference provider or released integration yet. All product workflows below remain planned and require runtime validation.
+**Status: bounded Rust lexical core and source-built native macOS shell.** The CLI registers explicitly approved source files, persists lexical source evidence and human context in private SQLite, and returns bounded source-checked queries across restarts. The [native shell](apps/companion/README.md) offers optional session-only, exact-scope timed lexical refresh (off by default), not a watcher or incremental symbol index. There is no distributed/signed companion, listener, inference provider or certified coding-host integration yet. Later workflows remain planned; [core evidence and limitations](docs/progress/phase-2-core.md) distinguish these slices from full phase acceptance.
 
 ## Try the foundation from source
 
@@ -30,6 +30,106 @@ Rustup uses the pinned toolchain automatically. `status` reports
 reading a project, contacting a provider, or sending a task. These are developer
 diagnostics, not a working product demo. See [development](docs/development.md)
 for security checks, fixtures and platform limits.
+
+## Use the manual knowledge core
+
+After building, select a new private store directory and an existing approved
+source root. Only the listed relative files are readable; there is no implicit
+repository scan. This example assumes a synthetic `main.rs` already exists:
+
+```sh
+target/debug/threadmark --data-dir "$FIXTURE/new-private-store" project add demo "$FIXTURE/source" main.rs
+target/debug/threadmark --data-dir "$FIXTURE/new-private-store" index demo
+target/debug/threadmark --data-dir "$FIXTURE/new-private-store" query demo resolve
+printf '%s\n' 'Synthetic decision: preserve the public API.' | target/debug/threadmark --data-dir "$FIXTURE/new-private-store" context add demo api decision
+target/debug/threadmark --data-dir "$FIXTURE/new-private-store" context show demo api
+printf '%s\n' 'Locate resolve. Do not deploy or change permissions.' | target/debug/threadmark --data-dir "$FIXTURE/new-private-store" context prepare demo resolve
+```
+
+Use absolute canonical paths. Source policy changes invalidate indexed evidence;
+changed or unreadable files are not returned as current until explicitly reindexed.
+User context has separate provenance/history and survives reindexing. Indexing is
+never a way to clear human history. `context forget PROJECT ID
+--confirm-forget-local-history` removes all revisions and suppresses same-ID
+recreation; `context forgotten PROJECT` lists non-content markers. This is not
+forensic erasure: SQLite free pages, journals, backups, earlier exports and displayed
+copies may retain bytes; source files are untouched. New stores use schema v4.
+Existing v1 stores stay v1 until explicit `store upgrade
+--confirm-local-schema-upgrade` (existing store only); older binaries cannot open
+v2 and there is no automatic downgrade. See the [reviewed contract](docs/contracts/context-forget-v1.md).
+Existing v1/v2 stores never implicitly upgrade. Registration-incarnation safety
+for native human Forget, cached removal and timed refresh requires explicit `store upgrade
+--to-version 3 --confirm-local-schema-upgrade --confirm-legacy-workers-stopped`.
+Stop older companions/workers and let pending operations finish first: that flag
+is operator attestation, not a machine-verifiable stop or a fence for old workers.
+V3 insert/delete triggers maintain fresh tokens even for legacy registration
+writers; only incarnation-aware operations reject stale captured work. Older
+binaries cannot open v3; no automatic downgrade. The default upgrade command
+keeps v1→v2 behavior and reports v3/v4 unchanged. Export v1 is unchanged and carries
+no incarnation/restore authority. See the [registration contract](docs/contracts/registration-incarnation-v1.md).
+
+`source forget PROJECT PATH --confirm-forget-source` revokes one approved relative
+file, installs a same-project suppression marker and invalidates the entire coherent
+source snapshot. Remaining approved files require a rebuild. It never opens or alters
+source files (including missing/unreadable files), and preserves all human history,
+including declarations mentioning that file. `source forgotten PROJECT` lists the
+bounded, path-ordered markers. There is no unforget; ordinary policy updates and
+rebuilds cannot reapprove marked paths. Explicit whole-project removal clears markers;
+re-registration is new authorization, not restoration of stored content.
+
+Source Forget requires existing private v4 storage. V1/v2/v3 stores never upgrade
+implicitly, including on export/index. To migrate, stop legacy companions and finish
+all pending workers, then explicitly run `store upgrade --to-version 4
+--confirm-local-schema-upgrade --confirm-legacy-workers-stopped`. Both flags are
+required; the latter is operator attestation, not universal old-worker fencing.
+V4 retains registration incarnations and human Forget guards, with additional policy,
+evidence-insert and project-removal SQL guards. Older binaries cannot open schema v4;
+no automatic downgrade. Native-safe callers must bind all of `--expected-root ROOT
+--expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-sources FILE ...`
+to the exact displayed policy. Unbound CLI repetition is idempotent; stale bound
+approval is rejected. The source-built native shell offers **Forget source…** in
+Projects only after explicit v4 suppression-marker inspection, with a Cancel-default
+exact-policy confirmation. It preserves human history, unsaved notes and original
+request drafts; uncertain outcomes require Refresh. GUI/accessibility acceptance
+remains open; see the [native shell boundary](apps/companion/README.md).
+
+Active source-derivative removal and same-scope suppression are not forensic erasure.
+SQLite free pages, journals, backups, earlier exports and displayed copies may retain
+bytes; no VACUUM or recall is attempted. Export v1 remains unchanged and does not
+preserve suppression markers or provide a restore capability. See the
+[source Forget contract](docs/contracts/source-forget-v1.md) (partial P2-A1/A3/A5/P3-A4;
+no phase closure or atomic external-metadata revocation lease is claimed).
+Indexing is manual lexical capture, not AST/semantic understanding or permission to execute.
+No model, network endpoint or host credentials are used.
+`context prepare` produces an in-memory original-versus-context preview through
+the provider-neutral preparation engine. Stale/missing evidence is needs-input;
+approval and delivery are not attempted. It is Context mode, not AI refinement.
+
+The [native macOS management shell](apps/companion/README.md) builds from source
+and adapts the same core CLI; its tests exercise an actual private synthetic store.
+It has projects/context/status management and a quiet menu-bar surface, not a
+chat or agent launcher. GUI launch, accessibility and native-runtime acceptance
+remain unverified. The [provider-neutral engine](docs/progress/phase-4-refinement.md)
+supports preparation/review contracts without a live provider or host delivery.
+
+Explicit local project removal is available as `project remove PROJECT
+--confirm-remove-local-data`. It removes that project's registration, evidence and
+all human-note revisions atomically, never repository files. Missing confirmation
+does not open/create a store. This is not Forget/suppression or forensic erasure:
+SQLite free pages, sidecars, backups and exports may retain historical bytes.
+Re-registering and explicitly indexing can import approved sources again, but
+does not restore the deleted human-note history.
+
+Explicit sensitive local-content inspection is available as
+`--data-dir EXISTING_STORE project export PROJECT --confirm-export-local-content`.
+It writes one [versioned JSON archive](docs/contracts/project-export-v1.md) to
+stdout only after complete success (at most 1 MiB including the newline), never
+creates a store, indexes, chooses a file, or sends content. It includes all
+eligible current lexical anchors and all human revisions, including retired
+ones, with separate provenance. Stale/unindexed evidence is omitted explicitly;
+authorization failures or overflow fail the whole export without stdout. Source
+excerpts and notes are sensitive: subsequent redirection/sharing is the caller's
+responsibility. This is not backup/restore or an import capability.
 
 ## The problem
 
@@ -66,10 +166,10 @@ flowchart TB
   Host["Existing coding hosts — own chat, permissions and execution"]
   Adapter["Planned: certified host adapters"]
   Daemon["Implemented: finite offline daemon checks\nPlanned: authorized local service and bounded jobs"]
-  Core["Implemented: Rust scope / worker contracts\nPlanned: mem-z SQLite evidence and retrieval"]
+   Core["Implemented: scoped SQLite lexical evidence / user context\nPlanned: graph, incremental structural maintenance and full lifecycle"]
   Worker["Planned: replaceable Graphify extraction"]
   Inference["Planned, optional: explicitly authorized inference"]
-  Shell["Planned: occasional tray / management / review shell\nNot chat, editor, dashboard or agent launcher"]
+  Shell["Source-built macOS tray / management shell\nOpt-in timed lexical refresh; no chat or agent launcher"]
   CLI["Implemented: CLI version / status / synthetic smoke"]
   Host -.-> Adapter
   Adapter -.-> Daemon
@@ -98,9 +198,10 @@ The scope is divided into [Phases 0–9](docs/roadmap.md):
 8. Hardening and public beta
 9. Stable release and sustainable operation
 
-Phases are acceptance gates, not release dates. Foundation engineering evidence
-has passed review for the recorded revision; merge/publication and Phases 1–9 remain open. See the
-[progress record](docs/progress/phase-0.md).
+Phases are acceptance gates, not release dates. The offline foundation is merged;
+Phase 1 remains open and no later phase is closed. See the
+[current feasibility evidence and blockers](docs/progress/phase-1-feasibility-ledger.md)
+and [foundation record](docs/progress/phase-0.md).
 
 ## Documentation
 

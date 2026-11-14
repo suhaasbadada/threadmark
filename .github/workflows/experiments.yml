@@ -35,6 +35,7 @@ jobs:
       - name: Python offline contracts and fixture preparation
         run: |
           "$THREADMARK_PYTHON" -B experiments/extraction/test_harness.py
+          "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/extraction -p test_normalized.py -v
           "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/opencode/native -p 'test_*.py' -v
           "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/host-isolation -p 'test_*.py' -v
           "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/evaluation-corpus -v
@@ -45,8 +46,13 @@ jobs:
           "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/evaluation-symbol -v
           "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/evaluation-directcall -v
           "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/evaluation-runner -v
+          "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/evaluation-pilot -v
+          "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/evidence-selection -v
+          "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/evidence-review -v
+          "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/decision-brief -v
+          "$THREADMARK_PYTHON" -B -m unittest discover -s experiments/graphify-comparison -v
       - name: Node offline host and UX contracts
-        run: node --test experiments/opencode/contract.test.mjs experiments/t3-handoff/prepare.test.mjs experiments/ux-walkthrough/model.test.mjs
+        run: node --test experiments/opencode/contract.test.mjs experiments/opencode/native-journey/kernel.test.mjs experiments/t3-handoff/prepare.test.mjs experiments/ux-walkthrough/model.test.mjs
       - name: Actual synthetic macOS guards (never installed hosts)
         if: runner.os == 'macOS'
         run: |

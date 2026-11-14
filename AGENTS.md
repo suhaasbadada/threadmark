@@ -2,8 +2,9 @@
 
 - Read the relevant `docs/spec/phase-*.md` before editing. Tie each task/PR to TM
   requirements and stable acceptance IDs; record exclusions and evidence.
-- Current implementation is Phase 0 offline foundation, not a working companion.
-  Do not advertise a daemon listener, storage, inference or certified host support.
+- Current runtime includes finite diagnostics and a manual scoped SQLite lexical
+  core/CLI; it is not yet a working background companion. Advertise only verified
+  capabilities, never a daemon listener, inference or certified host support.
 - Core owns knowledge semantics; daemon owns bounded orchestration; adapters own
   capture/handoff; existing hosts own chat, permissions and execution. No HandsFree.
 - Safe Rust only; workspace lints forbid unsafe. Keep third-party dependencies

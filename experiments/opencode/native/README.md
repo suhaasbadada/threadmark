@@ -1,12 +1,29 @@
 # OpenCode 2.2.5 native bridge — notice/provenance gate BLOCKED
 
-**Audit candidate only. No bridge implementation, install, typecheck, TUI runtime
+The [SDK selection planning](SDK-SELECTION.md) records inert inspection of nine
+owned archives (338 declarations). Parent-measured cryptographic verification now
+binds the three notice-less OpenCode archives to build commit
+`958f965d35ed44d32b018fd55b02a5357a7748fd`; package-specific source notice evidence
+and verbatim MIT bytes are retained. Independent review, transitive declaration
+closure and exact SDK design remain open: no projection or executable descriptor.
+No measured guard source or successful standalone candidate changed.
+
+The separate [fixed compiler-only candidate](COMPILER-CONTAINMENT.md) has now
+materialized authentic TypeScript 6.0.3 as inert private data with complete
+metadata/notices and default libraries. After independent exact-candidate review
+and explicit primary authorization, its corrected standalone guard passed version,
+positive semantic and controlled TS2322 negative checks, with 93 authentic default
+libraries and verified cleanup. Earlier failures remain in the progress record.
+No SDK graph is selected or typechecked; native notice/type/product gates remain open.
+
+**Audit candidate only. No bridge implementation, install, SDK typecheck, TUI runtime
 test or installed-host certification. Do not install or load this directory.**
 It is deliberately outside all auto-loaded plugin directories.
 
 The parent requested a real server-command/RPC/TUI review bridge against public
 release v2.2.5 (source commit
-`9bbb8ce18c80f099e0e448775f59d965ead40a21`). The implementation must not begin by
+`9bbb8ce18c80f099e0e448775f59d965ead40a21`; historical requested source, not the
+subsequently authenticated npm build commit above). The implementation must not begin by
 installing an unreviewed dependency closure. The first gate failed; no ambient SDK
 stubs or mock called native were substituted.
 
@@ -53,15 +70,43 @@ reviewed authentic declaration-only mechanism, or seek upstream packaging fixes.
 No blanket license allowance, invented attribution or dependency removal applied.
 
 This lock is still **not proven type-closure-complete**: web-tree-sitter declares
-the **optional** peer `@types/emscripten ^1.40.0`, currently absent. Its actual
+the **optional** peer `@types/emscripten ^1.40.0`. Its actual
 `web-tree-sitter.d.ts:136` references global `EmscriptenModule` (not a direct module
 import), so consuming that declaration still needs an authentic definition;
 optional peer metadata is not proof of a complete strict type graph. Further authentic declaration needs
-have not been compiler-tested. No further acquisition/install was attempted after
-the notice/provenance stop. Legacy-peer resolution is not closure proof.
+have not been compiler-tested. The two-archive prerequisite below is the only new
+acquisition; no install was attempted. Legacy-peer resolution is not closure proof.
 Node 24.10.0 / OpenTUI's Node >=26.4.0 mismatch remains a runtime blocker.
 Compiler 6.0.3's independently acquired archive matches the exact parent SHA-512
-and declares Node >=14.17, but **no compiler ran** while the closure gate is open.
+and declares Node >=14.17. The standalone compiler pass above does not close the
+SDK closure gate.
+
+## Two authentic declaration prerequisites — inert bytes, not closure proof
+
+`@types/json-schema@7.0.15` and `@types/emscripten@1.40.0` are now exact development
+pins. npm 11.6.0 regenerated the lock with only these two entries and root pins
+added; all prior entries remain unchanged. No node_modules or package scripts ran.
+`declaration-prerequisites.json` is a narrow supplemental receipt, not a regenerated
+full dependency audit. The historical blocked audit and its unresolved notices
+remain unchanged. `declaration_receipt.py` checks exact manifest/lock identity and
+strict inert archive inventory; it has no acquisition CLI and is not a resolver.
+
+Exactly two bounded, redirect-denied public registry downloads were integrity
+checked before inspection. Actual archives have **four regular files each**, not
+the five advertised by registry fileCount metadata: complete package.json,
+index.d.ts, README.md and LICENSE. Full immutable bytes remain privately owned;
+only hashes/metadata and the unchanged actual MIT notices are in the repository.
+Both licenses say Copyright (c) Microsoft Corporation. Both actual manifests have
+empty dependencies/scripts; the declaration texts have no import/reference lines.
+JSONSchema7/JSONSchema7Definition and global EmscriptenModule definitions were
+inspected as data, not compiled or substituted with local stubs.
+
+The JSON Schema pin follows provider 3.0.8's authentic development pin. Emscripten
+is needed when explicitly consuming web-tree-sitter's declaration; ordinary
+plugin/TUI reachability of that surface is not established. No Bun types were
+added. No SDK projection/selection, strict semantic/consumed-file closure or
+runtime provenance approval follows from these receipts. A separately reviewed
+SDK fixed guard remains future work; no new execution was authorized.
 
 Offline archive regression tests (stdlib only, no package imports/network):
 
@@ -72,7 +117,7 @@ python3 -B -m unittest discover -s experiments/opencode/native -p 'test_*.py' -v
 ## Declaration preparation implementation (synthetic tests only)
 
 `project_types.py` implements the parent's separate design-only gate. **No actual
-SDK projection has been prepared or compiler run.** The archive inspector above
+SDK projection has been prepared or SDK compiler run.** The archive inspector above
 is not a safe extractor; projection performs its own stricter full-archive and
 selected-output preflight and never uses tar extraction APIs.
 
@@ -108,7 +153,8 @@ Successful ledger state is only `prepared_not_compiled`; type and runtime closur
 remain `NOT established`. No CLI, compiler launcher, install/download step or
 real-SDK selection is provided. The existing workflow's native `test_*.py`
 discovery includes all synthetic projection tests without another workflow step.
-Compiler execution still needs the separate containment-plan review in progress.
+Standalone compiler execution passed its separate reviewed containment gate;
+SDK compiler execution still needs its own exact plan/review/authorization.
 
 `compiler_plan.py` now validates an externally reviewed compiler-only inventory
 and produces an **inert candidate descriptor**, not a launcher or execution
@@ -117,8 +163,9 @@ projection bytes against owned archives, exact ledger, compiler/Node/source
 inventories, fixed strict config and clean environment. Compiler archive provenance
 and Node version identity require external reviewed inventory authority, not a
 self-approved copied ledger. All actual runtime/system policy and negative controls
-remain pending; containment/type closure are explicitly unestablished. Only pure
-synthetic tests ran. No real SDK selection, compiler projection or execution.
+remain pending for an SDK guard; SDK containment/type closure are explicitly
+unestablished. This plan utility has only pure synthetic tests. No real SDK
+selection, projection or execution occurred.
 
 Acquisition redirects now reject in `HTTPRedirectHandler.redirect_request`
 **before** following, while retaining the final-response URL check. Pure tests

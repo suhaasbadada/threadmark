@@ -48,3 +48,28 @@ The maintainer owns remaining feasibility decisions: authenticated IPC, worker
 timeouts/cancellation, SQLite migration/recovery, path identities, Graphify
 release/NOTICE and shell accessibility. Phase 1 must resolve these with evidence
 before the core grows into Phase 2. See the [risk register](../risks.md).
+
+## Authorized sequencing exception — provider-independent product implementation
+
+The owner explicitly superseded the project-wide checkpoint and directed actual
+Rust product implementation and parallel shell/refinement lanes. Phase 1 native
+host, T3 handoff, inference and evaluation acceptance remain OPEN. Their specific
+authority boundaries still apply; they no longer block independently testable
+Phase 2 storage/retrieval or provider-neutral Phase 3/4 contracts. This changes
+implementation order, not the architecture, final acceptance or full product scope.
+
+The first integrated core slice registers explicit roots and exact file consent,
+persists source-line evidence and human context in private SQLite, and provides
+manual bounded index/query/inspection through core → daemon → CLI. Its default
+replaceable extractor captures lexical source lines, not a custom semantic parser
+or adopted Graphify worker. Rollback-journal transactions protect this finite
+slice; WAL/FTS/background maintenance remain subsequent implementation work.
+Schema, cancellation/freshness bounds and dependency/license decisions are
+recorded in [Phase 2 core evidence](../progress/phase-2-core.md).
+
+Parallel clients use the small [local adapter seam](../contracts/client-v1.md).
+Core remains the authorization/storage owner; clients do not create a second
+database or infer authority from IDs. No listener, live provider/credential reuse,
+native coding-host launch, global configuration, deployment or phase closure is
+authorized by this exception. The original foundation decisions above remain
+historical context where they describe deferred/not-yet-existing functionality.

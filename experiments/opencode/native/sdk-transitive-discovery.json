@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "kind": "inert-sdk-transitive-selection-summary",
+  "executionApproved": false,
+  "selectionApproved": false,
+  "materialized": false,
+  "compilerDescriptor": null,
+  "typeGraphClosure": "NOT established",
+  "runtimeDependencyClosure": "NOT established",
+  "privateCandidateSha256": "a5b57c65fad62a83e0e2a52d446ffc6eb68f630740aec030bbc53977467d4846",
+  "inputPlanSha256": "1dc707d3d6fcac4949914698c5649a19cf48760409cb14fd1cb5d374fe4aa198",
+  "compilerBindingSha256": "506e39ab4ed28a6c5415c6e99a55759a730d77e4d5b398924ae41ecc8364db79",
+  "compilerInventory": {"files": 112, "defaultLibraries": 107, "archiveSha256": "33cd0ee1beaa8c9e9d15a9da836c62ddea4c34a42d7c2d349dbc80d94165d22a", "sdkProjectionContainsCompilerJS": false, "standaloneExecutionAuthorizationReused": false},
+  "sourceBindings": {
+    "sdk_compiler_candidate.py": "7ccb8d840e023ab43b375eab5edcce0ea579788abdbb5441ece9e6a2112ff1c7",
+    "sdk_transitive_notice.py": "364096452c8bc4bf8335ecee688b86583ea4553b2e0a2660422efb7cbe472866",
+    "sdk_positive.tsx": "a7a7ebe87414879ff9d22a85b96c9da94d38a6353de1352db4138188ae36c234",
+    "sdk_negative.ts": "447b106743122a7f75d7c98587bf40fe6d089f818b458f259a1f124909fb060a"
+  },
+  "evidenceBindings": {
+    "sdk-selection-discovery.json": "21e331e3dd936c690538d05262c74ad7f1bc5017e4bb1491e40446fbec98beac",
+    "sdk-notice-provenance.json": "8045ca38b56644bed92347390e4a6d70a49ee989a2bc91d650744f000398377e",
+    "sdk-transitive-notice-provenance.json": "0b4ccb6fe35a623a5337f6c86429f4aca9e64cf6d9510f9c9bc910931b18795e",
+    "declaration-prerequisites.json": "720498b4d792a25965a7361a41b6fd690ea4221b9a09d90c685dd9215aa17d5a",
+    "THIRD-PARTY-NOTICES.txt": "6ae4b256bd3a2c1590af2fb447d9b59b1d6d387741405f22cbf1d72caf274db9"
+  },
+  "upstreamLexicalReview": {"referenceDirectives": 265, "suppressionMentionsInEffectComments": 6, "unknownImportOperandsInRecognizedSyntax": 0, "semanticClosure": "NOT established; unsupported syntax is not ruled out by this lexical inventory"},
+  "configIntent": {
+    "strict": true, "noEmit": true, "skipLibCheck": false, "skipDefaultLibCheck": false,
+    "types": [], "typeRoots": ["__state/typeRoots"], "module": "ESNext", "moduleResolution": "Bundler", "target": "ESNext",
+    "jsx": "react-jsx", "jsxImportSource": "@opentui/solid",
+    "explicitAmbientFiles": ["node_modules/@types/emscripten/index.d.ts", "node_modules/@types/node/index.d.ts"],
+    "fixtureModes": ["sdk_positive.tsx", "sdk_negative.ts"],
+    "negativeExpectation": {"api": "rgbToOklch numeric first argument", "diagnostic": "TS2345", "status": "UNOBSERVED"}
+  },
+  "knownMissing": ["Independent actual-byte selection, source/archive notice, upstream directive and fixture/config review", "Potential optional references bun, electron, vite, google-auth-library and package imports condition #runtime-import require review; no static resolution/consumption claim", "@standard-schema/spec custom source export target ./src/index.ts is not present in the owned archive or selected; review conditional relevance, do not stub or claim it resolved", "Exact SDK/Node/compiler/system/owner per-file policy and private evidence design", "Separate primary execution authorization and measured SDK containment controls", "Official compiler positive/negative diagnostics and consumed-file closure are UNOBSERVED"],
+  "counts": {"packages": 22, "declarations": 1464, "potentialReadFilesIncludingFixtures": 1512, "typingSources": 0, "excludedImplementationTypeSources": 737, "nestedMetadata": 9, "archiveNotices": 15, "sourceNoticeMappingsPendingReview": 7},
+  "selectionRule": "Explicit package identities; every .d.ts/.d.mts/.d.cts, whole package.json including nested metadata, and actual notice basenames. Individual potential reads are not necessarily consumed. No JS, aliases, stubs or library skips. TS/TSX implementation sources excluded unless actual exports/types require them; none required in this selection.",
+  "priorNinePackages": "sdk-selection-discovery.json retains exact identities, all declarations, metadata and notice hashes for the original nine packages. It remains unchanged, historical and inert.",
+  "additionalPackages": [
+    {"path":"node_modules/@opencode/protocol","version":"2.2.5","archiveSha256":"f40c82c5ceeec25ef4b5e96e69b192bdb8afa6ce60ef21b4485c08223a80335a","metadataSha256":"625b7c771d178eaf9bac9fb397a5057e94aed4750e4f8bbd1835d3bdee046669","selectionInventorySha256":"b473be07f8deda7d9cec76056f8aa5c454bbd8b72543afb9664c5bfc9eed9dc7","declarations":42,"selectedFiles":43,"excludedTypeSources":0,"notices":{}},
+    {"path":"node_modules/@opencode/schema","version":"2.2.5","archiveSha256":"68b395496c3407ab4b478f6efe89f2bec631aba6b463398984fde82272a99758","metadataSha256":"9435ae9be1c0ea5b9517993800393618a7759b8045ccd32a44cde91ef807125a","selectionInventorySha256":"d15b9cd459916847bf759580ebec92b822f85deb8642f45e43bf7379dc0fc7fc","declarations":105,"selectedFiles":106,"excludedTypeSources":0,"notices":{}},
+    {"path":"node_modules/@opencode/ai","version":"2.2.5","archiveSha256":"f4ff298e13f115951032e9614faa15c805d6a3955b4c4c6fc0f48aeb29b300b8","metadataSha256":"61f4ac629d0a2c7f93422143a9aa2441d2ef8e986e69ad05cca2410668db1320","selectionInventorySha256":"c2886b6af35359762fbeab32b54821de175dc1a5865d084b9bbc6cf23c204e37","declarations":249,"selectedFiles":250,"excludedTypeSources":0,"notices":{}},
+    {"path":"node_modules/@opencode/util","version":"2.2.5","archiveSha256":"9f4a63d79b000e575b908ab67f733deececed12656d0a1f7ca8001ddd52f38fd","metadataSha256":"9d104aad54a8e78395399bee4098c5f64a16a4525819dde461592c2821b715da","selectionInventorySha256":"20393e9b0b1beedb9ca25372a99c4ba3e79d2c2a51aa9fd63bb2e0529b286375","declarations":45,"selectedFiles":46,"excludedTypeSources":0,"notices":{}},
+    {"path":"node_modules/effect","version":"4.0.6","archiveSha256":"a36d2862f3658f1999c72103ae46827c28427a52f704cacd6ea10ea7407eb75d","metadataSha256":"2a3f954fe2937a1ece18510d103bf5448726555076bcbb75f5603dfc60aba5f7","selectionInventorySha256":"b8f89b71aeec0a1c8893c1a40e7e14f2847ad8be96fe0739f3d3afbac97ee488","declarations":538,"selectedFiles":541,"excludedTypeSources":593,"notices":{"LICENSE":"774c3bc5924ad8ae6c5a75f1c53db13feb238ade15989625c513d07b60dedf30"}},
+    {"path":"node_modules/bun-ffi-structs","version":"0.3.1","archiveSha256":"bfe8c37f6d3ed44e930bc3ee7f4e784324583dd9f753d7dafdd0e493a37c8350","metadataSha256":"a49bdab75473c9c4d96faedb0f6433c10e7f6ecf4864aec095d6e6fb8ecd2dbd","selectionInventorySha256":"f2659939fd113ba7fd64e46f6b3bbe196f1a5a1f93b5d00dea933a5047942aae","declarations":5,"selectedFiles":7,"excludedTypeSources":0,"notices":{"LICENSE":"f2046b2f212d286d06a53214867136c8152a481737e62fcda49c1412488c3a74"}},
+    {"path":"node_modules/@types/node","version":"26.6.6","archiveSha256":"7ef006842f7a647868e9d53588148cb058008b107aea6a728143730bee020456","metadataSha256":"2520fc33dc754e75d61e6e49c174b439244537c3f2cff1897432806156a054fd","selectionInventorySha256":"549a1feba49919b3fa02cb4de3613c7ca08df5bcc1c1df39eec5f6104e0b7404","declarations":89,"selectedFiles":91,"excludedTypeSources":0,"notices":{"LICENSE":"c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"}},
+    {"path":"node_modules/@types/ws","version":"8.18.2","archiveSha256":"9d774304de5397f58da47b31f68b69cf0ff84ef7b1087cf4fea27729f8db83fe","metadataSha256":"f5b7223923b24d17ae264da95d3e35f72c57bc951c63a31c7c5fbd1490fbf94a","selectionInventorySha256":"5db792434e102704a5793fe2b4062bab79eec15d8eb34b7f5d33d7f356e33fa6","declarations":2,"selectedFiles":4,"excludedTypeSources":0,"notices":{"LICENSE":"c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"}},
+    {"path":"node_modules/@ai-sdk/provider","version":"3.0.8","archiveSha256":"7a057aecd868cb9612e74c6f3728aebacce2293652f43322358bcd07e56970e7","metadataSha256":"dbb3c1855b5dd36804d968b962521bd424511b070ce72233dc83f46ffa30750d","selectionInventorySha256":"ddd1055bd841bbfb91757b73a434c748b0b7e1e2cfedabdf057a6618d1cda7f3","declarations":2,"selectedFiles":4,"excludedTypeSources":133,"notices":{"LICENSE":"b4f9adb7c568904834d0dd6cc98d16c390d21ca32fc17ae7a267715269bd5529"}},
+    {"path":"node_modules/csstype","version":"3.2.3","archiveSha256":"f3501f8ee1c73f7568fecb22c11231162c0467e59262461da5579519307427a3","metadataSha256":"c818b74a9bc1556488b7ec2a65399224738f6619228f9a6491c5c02ca91f849e","selectionInventorySha256":"b7c6709cc3dd5b604abae5fbdb1eaa428f190b04562a105cd3460125704fb668","declarations":1,"selectedFiles":3,"excludedTypeSources":0,"notices":{"LICENSE":"11d55bd4541c75ee7879547ac49089c489163dae49551389713c3d026cab383e"}},
+    {"path":"node_modules/marked","version":"17.0.1","archiveSha256":"d09bc4067748b71af131a261550193cfefba014f67971f3890f2269293f5a60b","metadataSha256":"be185aa58050a43e845ad87b4b0f8cbdf9f6d30720a6c97a9b1302ae1582309d","selectionInventorySha256":"c08e64907a571202f5f62faab25200c27c598c17da7cfa3ba98bcff5d871bff1","declarations":1,"selectedFiles":3,"excludedTypeSources":0,"notices":{"LICENSE.md":"8e3a3f82f59a60958f56ca08f445647c32a4733dc7ca6c2c46f6eb898471ab9c"}},
+    {"path":"node_modules/@standard-schema/spec","version":"1.1.0","archiveSha256":"a7cb7268be280ab518d450f8c3b07c86f23417225c0ab53691ed59b3067cceaf","metadataSha256":"58e5bd75ddd0684c88b07cd799585cc72a37fd6efb8ab0c936d49e230d5164fb","selectionInventorySha256":"28bd79f81aad33adc58dad1fead6a6daa4a069c004cef9b423f14081b19f544a","declarations":2,"selectedFiles":4,"excludedTypeSources":0,"notices":{"LICENSE":"653b779005a3a4d64a7288c940f7b9a0e8f0b1e0375f6aa6af9473caf131e564"}},
+    {"path":"node_modules/undici-types","version":"8.9.0","archiveSha256":"3a587851ccbf1021b20eac8a38eb819d7e2a1ab77aa477cb24cae5473a3e78c6","metadataSha256":"7f3c1a0498b1b7f74402f76d2958bf5a35fc89403036188dc5f8ede1b4e0638b","selectionInventorySha256":"7e66f4ce41482a6e6e14489999633938663b574a232c276aaba789ab14ee5a96","declarations":45,"selectedFiles":47,"excludedTypeSources":0,"notices":{"LICENSE":"a6db8096b2707bc0102d256917d4d33f298ba36d8c3f25de067a2b5bb379db27"}}
+  ]
+}
