@@ -1,5 +1,21 @@
 # Unit AF — native explicit coverage/freshness inspection
 
+## Publication outcome
+
+PR #81 passed all five checks at full head
+`070654ab226f3487b60212d1318d53c18eb011ba` (CI `43590580220`, integrated
+`43590580246`). Fresh exact-head/main/check/review/approval/discussion/rules
+verification found no blocker; authorized merge completed as
+**`430294c001f8d40c7372299cd7839fe4a60204f6`**. Watch removed; separate exact
+post-merge CI remains unverified. No GUI/AX/runtime-host certification inferred.
+PR #80 exact post-merge `43590490587` and `43590490702`, both targeting
+`6e4223cb7cd279086e2672ec5a16c07f89e4da42`, completed **PASS**.
+
+Incremental backend PR #82 will be retargeted from this branch to main, updated
+normally and freshly gated at its new head. AH native incremental controls and
+AI atomic note batches remain in their existing isolated lanes; no duplicate
+workers/reminders. Nine inherited progress edits and all worktrees preserved.
+
 ## Primary integration and independent review
 
 Primary committed only thirteen owned files as `6a89285` and applied as
