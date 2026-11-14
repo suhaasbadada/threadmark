@@ -76,6 +76,7 @@ public struct ProcessService: CoreService {
               limits.inputBytes > 0, limits.inputBytes <= 4096 else { throw ServiceError.invalid }
         let cancellation = Cancellation()
         var operationLimits = limits
+        if case .indexIncrementalBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 65536) }
         if case .coverageBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 65536) }
         if case .inspectSourceAnchorBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .compareHumanContextBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 65536) }
@@ -121,6 +122,8 @@ public struct ProcessService: CoreService {
             default: responseOperation = operation
             }
             switch responseOperation {
+            case .indexIncrementalBound(let request):
+                return .incrementalBuild(try IncrementalBuildReport.decode(data, request: request))
             case .searchHumanContextKindsBound(let request):
                 return .filteredHumanSearch(try FilteredHumanSearch.decode(data, request: request))
             case .coverageBound(let request):
@@ -258,6 +261,13 @@ public struct ProcessService: CoreService {
         var args: [String]
         var input = Data()
         switch operation {
+        case .indexIncrementalBound(let request):
+            try request.validate()
+            let p = request.project
+            guard case .string(let identity) = p.root_identity, let token = p.incarnation else { throw ServiceError.invalid }
+            args = ["index-incremental", p.id, "--expected-root", p.root,
+                    "--expected-root-identity", identity, "--expected-incarnation", token,
+                    "--expected-snapshot", try ProjectExportDocument.snapshotArgument(p), "--expected-sources"] + p.sources
         case .searchHumanContextKindsBound(let request):
             try request.validate()
             let b = request.binding
