@@ -65,6 +65,9 @@ fn usage() -> std::process::ExitCode {
         "opt-in human revision guard v1: context update PROJECT ID KIND (bounded stdin) or context retire PROJECT ID, followed by --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-revision N (all four, exact order, N=1..32). Existing store required; stale revision appends nothing. CAS only, not semantic conflict resolution; trusted forms unchanged."
     );
     eprintln!(
+        "opt-in human reads v1: context list PROJECT, context show PROJECT ID, context search PROJECT QUERY accept --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN (all three, exact order, once; existing store only). Checked before human SQL in a coherent snapshot and rechecked before return; not an atomic external revocation lease or source-currentness check. Trusted unbound forms unchanged; metadata is not credentials."
+    );
+    eprintln!(
         "explicit compatibility change: store upgrade --confirm-local-schema-upgrade (existing store only; older binaries cannot open schema v2; no automatic downgrade)"
     );
     eprintln!(
@@ -346,8 +349,24 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
                 Command::PrepareContextBound(expected, (*query).into(), original)
             }
         }
-        ["context", "search", project, query] => {
-            Command::SearchContext((*project).into(), (*query).into())
+        ["context", "search", project, query, flags @ ..] => {
+            if flags.is_empty() {
+                Command::SearchContext((*project).into(), (*query).into())
+            } else {
+                let Some(bound) = human_read_binding(project, flags) else {
+                    return usage();
+                };
+                if threadmark_core::knowledge::validate_human_search(project, query).is_err() {
+                    return usage();
+                }
+                Command::SearchContextBound(
+                    (*project).into(),
+                    (*query).into(),
+                    bound.root.into(),
+                    bound.root_identity.into(),
+                    bound.incarnation.into(),
+                )
+            }
         }
         ["query-terms", id, text] => Command::QueryTerms((*id).into(), (*text).into()),
         ["context", "prepare", project, query, flags @ ..] => {
@@ -498,8 +517,40 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
         ["context", "retire", project, id] => {
             Command::RetireContext((*project).into(), (*id).into())
         }
-        ["context", "list", project] => Command::Contexts((*project).into()),
-        ["context", "show", project, id] => Command::Context((*project).into(), (*id).into()),
+        ["context", "list", project, flags @ ..] => {
+            if flags.is_empty() {
+                Command::Contexts((*project).into())
+            } else {
+                let Some(bound) = human_read_binding(project, flags) else {
+                    return usage();
+                };
+                Command::ContextsBound(
+                    (*project).into(),
+                    bound.root.into(),
+                    bound.root_identity.into(),
+                    bound.incarnation.into(),
+                )
+            }
+        }
+        ["context", "show", project, id, flags @ ..] => {
+            if flags.is_empty() {
+                Command::Context((*project).into(), (*id).into())
+            } else {
+                let Some(bound) = human_read_binding(project, flags) else {
+                    return usage();
+                };
+                if threadmark_core::knowledge::validate_export_project(id).is_err() {
+                    return usage();
+                }
+                Command::ContextBound(
+                    (*project).into(),
+                    (*id).into(),
+                    bound.root.into(),
+                    bound.root_identity.into(),
+                    bound.incarnation.into(),
+                )
+            }
+        }
         _ => return usage(),
     };
     match run(
@@ -521,6 +572,31 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
 fn failure() -> std::process::ExitCode {
     eprintln!("local knowledge operation failed; no content published");
     std::process::ExitCode::FAILURE
+}
+
+// Closed three-flag grammar: no partial, repeated, legacy or source-scope flags.
+fn human_read_binding<'a>(
+    project: &str,
+    words: &[&'a str],
+) -> Option<threadmark_core::knowledge::ContextReadBinding<'a>> {
+    let [
+        "--expected-root",
+        root,
+        "--expected-root-identity",
+        identity,
+        "--expected-incarnation",
+        token,
+    ] = words
+    else {
+        return None;
+    };
+    let binding = threadmark_core::knowledge::ContextReadBinding {
+        root,
+        root_identity: identity,
+        incarnation: token,
+    };
+    binding.validate(project).ok()?;
+    Some(binding)
 }
 
 // Closed, ordered grammar rejects partial, repeated and unknown flags before stdin.
