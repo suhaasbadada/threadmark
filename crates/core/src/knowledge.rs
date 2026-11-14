@@ -20,6 +20,7 @@ const FLAGS: OFlags = OFlags::RDONLY
     .union(OFlags::NOFOLLOW)
     .union(OFlags::CLOEXEC);
 
+mod context_comparison;
 mod context_revision;
 mod export;
 mod forget;
@@ -29,6 +30,7 @@ mod ranked_query;
 mod schema;
 mod source_forget;
 mod source_inspection;
+pub use context_comparison::validate_context_comparison;
 pub use context_revision::{ContextRevisionBinding, validate_context_kind, validate_context_text};
 pub use forget::{ForgetBinding, ForgetStage};
 pub use human_read::ContextReadBinding;
@@ -1477,7 +1479,7 @@ impl Store {
                     r.get::<_, i64>(0)?,
                     r.get::<_, String>(1)?,
                     r.get::<_, String>(2)?,
-                    r.get::<_, bool>(3)?,
+                    r.get::<_, i64>(3)?,
                 ))
             })
             .map_err(unavailable)?;
@@ -1489,11 +1491,13 @@ impl Store {
                 || text.is_empty()
                 || text.len() > 4096
                 || text.contains('\0')
+                || !matches!(retired, 0 | 1)
                 || records.len() >= 32
             {
                 return Err(invalid());
             }
-            records.push(json!({"revision":revision,"kind":kind,"text":text,"retired":retired}));
+            records
+                .push(json!({"revision":revision,"kind":kind,"text":text,"retired":retired != 0}));
         }
         if records.is_empty() {
             return Err(invalid());

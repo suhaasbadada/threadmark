@@ -79,6 +79,8 @@ pub enum Command {
     ContextsBound(String, String, String, String),
     /// Opt-in history read scoped to a captured registration.
     ContextBound(String, String, String, String, String),
+    /// Explicit bounded textual review: project, note, from/to, root, identity, nonce.
+    CompareContextBound(String, String, u32, u32, String, String, String),
     /// Explicit compatibility-changing schema upgrade of existing storage only.
     UpgradeStore,
     /// Operator attests that all legacy workers have stopped before this migration.
@@ -116,6 +118,19 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         threadmark_core::knowledge::validate_export_binding(expected)?;
     }
     match &command {
+        Command::CompareContextBound(project, id, from, to, root, identity, token) => {
+            threadmark_core::knowledge::validate_context_comparison(
+                project,
+                id,
+                *from,
+                *to,
+                &threadmark_core::knowledge::ContextReadBinding {
+                    root,
+                    root_identity: identity,
+                    incarnation: token,
+                },
+            )?;
+        }
         Command::ContextsBound(project, root, identity, token)
         | Command::ForgottenContextsBound(project, root, identity, token)
         | Command::ForgottenSourcesBound(project, root, identity, token)
@@ -254,6 +269,7 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
             | Command::ForgottenContextsBound(..)
             | Command::ForgottenSourcesBound(..)
             | Command::ContextBound(..)
+            | Command::CompareContextBound(..)
             | Command::SearchContextBound(..)
             | Command::UpdateContextRevisionBound(..)
             | Command::RetireContextRevisionBound(..)
@@ -286,6 +302,19 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         Store::open(data_dir)?
     };
     let result = match command {
+        Command::CompareContextBound(project, id, from, to, root, identity, token) => store
+            .context_comparison_bound(
+                &project,
+                &id,
+                from,
+                to,
+                &threadmark_core::knowledge::ContextReadBinding {
+                    root: &root,
+                    root_identity: &identity,
+                    incarnation: &token,
+                },
+                cancel,
+            )?,
         Command::ForgottenContextsBound(project, root, identity, token) => store
             .forgotten_contexts_bound(
                 &project,
