@@ -5,6 +5,10 @@ import Combine
 public final class CompanionModel: ObservableObject {
     @Published public private(set) var projects: [Project] = []
     @Published public private(set) var pendingRemoval: RemovalConfirmation?
+    @Published public private(set) var pendingForget: ForgetConfirmation?
+    @Published public private(set) var forgottenMarkers: ForgottenContexts?
+    @Published public private(set) var contextEditorRevision: UInt64 = 0
+    @Published public private(set) var forgetRequiresRefresh = false
     @Published public private(set) var selectedID: String?
     @Published public private(set) var project: Project?
     @Published public private(set) var contexts: [ContextEntry] = []
@@ -71,9 +75,91 @@ public final class CompanionModel: ObservableObject {
     public func requestRemoval() {
         guard canRemoveProject, let project else { return }
         if automaticTicket != nil { cancel() }
+        pendingForget = nil
         pendingRemoval = RemovalConfirmation(id: UUID(), project: project, generation: generation, scopeRevision: scopeRevision)
     }
     public func cancelRemoval() { pendingRemoval = nil }
+    public var canForgetContext: Bool {
+        guard canRemoveProject, !policyDirty, !forgetRequiresRefresh, let history,
+              history.project == selectedID, InputPolicy.identifier(history.id),
+              history.producer == "human-authored", !history.history.isEmpty,
+              history.history.count <= 32 else { return false }
+        return history.history.map(\.revision).sorted() == Array(1...history.history.count)
+    }
+    public func requestForget() {
+        guard canForgetContext, let project, let history else { return }
+        disableAutomaticRefresh()
+        self.history = history
+        pendingRemoval = nil
+        pendingForget = ForgetConfirmation(id: UUID(), project: project, contextID: history.id,
+            revision: history.history.count, generation: generation, scopeRevision: scopeRevision)
+    }
+    public func cancelForget() { pendingForget = nil }
+    /// View-local unsaved edits invalidate approval, without saving or changing source authority.
+    public func contextEditorChanged() { pendingForget = nil }
+    nonisolated private static func sameForgetScope(_ current: Project, _ captured: Project) -> Bool {
+        current.id == captured.id && current.root == captured.root &&
+        current.root_identity == captured.root_identity && current.incarnation == captured.incarnation &&
+        current.sources == captured.sources && current.incarnation.map(InputPolicy.incarnation) == true
+    }
+    public func confirmForget(_ confirmation: ForgetConfirmation) {
+        guard pendingForget == confirmation, confirmation.generation == generation,
+              confirmation.scopeRevision == scopeRevision, canForgetContext,
+              project == confirmation.project, history?.id == confirmation.contextID,
+              history?.history.count == confirmation.revision,
+              case .string(let identity) = confirmation.project.root_identity,
+              let token = confirmation.project.incarnation, InputPolicy.incarnation(token) else {
+            pendingForget = nil; return
+        }
+        let target = confirmation.project, id = confirmation.contextID, revision = confirmation.revision
+        disableAutomaticRefresh()
+        pendingForget = nil; clearResults(); contexts = []; forgottenMarkers = nil
+        contextEditorRevision &+= 1 // Only dispatch clears unsaved human text; original request stays intact.
+        forgetRequiresRefresh = true
+        start(status: "Forgetting all local human history — cancellation requires Refresh") { service in
+            do {
+                let reply = try await service.perform(.forgetContext(target.id, id, target.root, identity, token, revision))
+                guard case .forgotten(let receipt) = reply else { throw ServiceError.invalid }
+                try receipt.validate(project: target.id, id: id, revision: revision)
+                try Task.checkCancellation()
+                let before = try await service.perform(.project(target.id))
+                guard case .project(let project) = before, Self.sameForgetScope(project, target) else { throw ServiceError.scopeMismatch }
+                let contexts = try await service.perform(.contexts(target.id))
+                let markers = try await service.perform(.forgottenContexts(target.id))
+                let after = try await service.perform(.project(target.id))
+                guard case .project(let project) = after, Self.sameForgetScope(project, target) else { throw ServiceError.scopeMismatch }
+                return [reply, contexts, markers]
+            } catch { throw ServiceError.forgetUncertain }
+        } apply: { replies in
+            guard case .forgotten(let receipt) = replies[0], case .contexts(let contexts) = replies[1],
+                  contexts.project == target.id, !contexts.contexts.contains(where: { $0.id == id }),
+                  case .forgottenContexts(let markers) = replies[2] else { throw ServiceError.forgetUncertain }
+            do {
+                try receipt.validate(project: target.id, id: id, revision: revision)
+                try markers.validate(project: target.id)
+                guard markers.forgotten.contains(where: { $0.id == id }) else { throw ServiceError.invalid }
+            } catch { throw ServiceError.forgetUncertain }
+            self.contexts = contexts.contexts; self.forgottenMarkers = markers; self.forgetRequiresRefresh = false
+            self.status = "All target human history forgotten — same-scope suppression confirmed; sources untouched. Not forensic erasure."
+        }
+    }
+    public func inspectForgottenContexts() {
+        guard let target = project, target.id == selectedID, manualActionsAvailable else { return }
+        forgottenMarkers = nil
+        start { service in
+            let before = try await service.perform(.project(target.id))
+            guard case .project(let project) = before, Self.sameForgetScope(project, target) else { throw ServiceError.scopeMismatch }
+            let markers = try await service.perform(.forgottenContexts(target.id))
+            let after = try await service.perform(.project(target.id))
+            guard case .project(let project) = after, Self.sameForgetScope(project, target) else { throw ServiceError.scopeMismatch }
+            return [markers]
+        } apply: { replies in
+            guard case .forgottenContexts(let markers) = replies[0] else { throw ServiceError.invalid }
+            try markers.validate(project: target.id)
+            self.forgottenMarkers = markers
+            self.status = "Non-content suppression markers inspected — not an archive or restore capability"
+        }
+    }
     public func confirmRemoval(_ confirmation: RemovalConfirmation) {
         guard pendingRemoval == confirmation, confirmation.generation == generation,
               confirmation.scopeRevision == scopeRevision, canRemoveProject,
@@ -115,10 +201,11 @@ public final class CompanionModel: ObservableObject {
                   case .contexts(let contexts) = replies[1], contexts.project == id else { throw ServiceError.scopeMismatch }
             self.project = project; self.sourceDraft = project.sources; self.policyDirty = false
             self.contexts = contexts.contexts
+            self.forgetRequiresRefresh = false
             self.status = project.snapshot == nil || project.snapshot == .null
                 ? "Not built — explicit Build required" : "Snapshot recorded — currentness not checked"
             if project.incarnation == nil {
-                self.status = "Schema v3 required for cached removal/automatic refresh. Stop older workers, then explicitly run store upgrade --to-version 3 --confirm-local-schema-upgrade --confirm-legacy-workers-stopped. Manual operations remain available."
+                self.status = "Schema v3 required for native Forget/cached removal/automatic refresh. Stop older workers, then explicitly run store upgrade --to-version 3 --confirm-local-schema-upgrade --confirm-legacy-workers-stopped. Manual operations remain available."
             }
         }
     }
@@ -276,7 +363,7 @@ public final class CompanionModel: ObservableObject {
     private func automaticRefreshTick() {
         guard !paused, !quitting, let consent = automaticRefreshConsent else { return }
         guard consent == automaticRefreshProposal else { disableAutomaticRefresh(); return }
-        guard !busy, ownedOperations.isEmpty, pendingRemoval == nil else { return }
+        guard !busy, ownedOperations.isEmpty, pendingRemoval == nil, pendingForget == nil, !forgetRequiresRefresh else { return }
         evidence = nil; indexReport = nil
         start(status: "Updating — timed bounded full lexical reconciliation", automatic: true) { service in
             [try await service.perform(.indexBound(consent.projectID, consent.root, consent.rootIdentity, consent.sources, consent.incarnation))]
@@ -287,6 +374,7 @@ public final class CompanionModel: ObservableObject {
         }
     }
     public func togglePause() {
+        pendingForget = nil
         paused.toggle()
         if paused, automaticTicket != nil { cancel() }
         updateRefreshDriver()
@@ -316,12 +404,16 @@ public final class CompanionModel: ObservableObject {
     public func cancel() {
         automaticTicket = nil
         pendingRemoval = nil
+        pendingForget = nil
         preview = nil
         generation &+= 1; job?.cancel(); job = nil
         if busy { status = "Canceled — refresh persisted state before continuing"; clearResults() }
+        if forgetRequiresRefresh {
+            contexts = []; forgottenMarkers = nil; status = ServiceError.forgetUncertain.localizedDescription
+        }
         busy = false
     }
-    private func clearResults() { evidence = nil; history = nil; indexReport = nil; preview = nil }
+    private func clearResults() { evidence = nil; history = nil; indexReport = nil; preview = nil; forgottenMarkers = nil }
     private func clearProject() {
         disableAutomaticRefresh()
         scopeRevision &+= 1

@@ -256,6 +256,7 @@ struct ContextView: View {
                             }
                         }
                         Button("Retire (retain history)") { model.retireContext(history.id); editing = false }.disabled(!model.manualActionsAvailable)
+                        Button("Forget entry…", role: .destructive, action: model.requestForget).disabled(!model.canForgetContext)
                     }
                 }
                 Divider()
@@ -272,9 +273,36 @@ struct ContextView: View {
                     }.disabled(model.project == nil || !model.manualActionsAvailable || !InputPolicy.identifier(id) || text.isEmpty || text.utf8.count > 4096)
                     Button("New entry") { id = ""; text = ""; kind = "note"; editing = false }
                 }
-                Text("Forget is unavailable in client-v1. Retire does not delete retained history. No removal or persistence claim is made beyond the core response.").font(.caption)
+                Button("Inspect non-content suppression markers", action: model.inspectForgottenContexts)
+                    .disabled(model.project?.incarnation == nil || !model.manualActionsAvailable)
+                if let markers = model.forgottenMarkers {
+                    Text("Forgotten IDs (not retained history): \(markers.forgotten.map(\.id).joined(separator: ", "))").textSelection(.enabled)
+                }
+                Text("Retire retains history. Native Forget requires schema v3 and explicit confirmation. Source Forget, restore and unforget are unavailable.").font(.caption)
             }.padding()
         }.onChange(of: model.scopeRevision) { _ in id = ""; text = ""; editing = false }
+        .onChange(of: model.contextEditorRevision) { _ in id = ""; text = ""; editing = false; kind = "note" }
+        .onChange(of: id) { _ in model.contextEditorChanged() }
+        .onChange(of: kind) { _ in model.contextEditorChanged() }
+        .onChange(of: text) { _ in model.contextEditorChanged() }
+        .onChange(of: editing) { _ in model.contextEditorChanged() }
+        .sheet(item: Binding(get: { model.pendingForget }, set: { if $0 == nil { model.cancelForget() } })) { confirmation in
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Forget ALL local history for this entry?").font(.headline)
+                Text("Project: \(confirmation.project.id) · Context: \(confirmation.contextID)")
+                Text("Latest revision: \(confirmation.revision) · Revisions to remove: \(confirmation.revision)")
+                Text("Root: \(confirmation.project.root)").textSelection(.enabled)
+                Text("Root identity: \(confirmation.project.root_identity?.description ?? "unavailable")").textSelection(.enabled)
+                Text("Registration incarnation: \(confirmation.project.incarnation ?? "unavailable")").textSelection(.enabled)
+                Text("Permanently removes ALL local revisions for this human entry and suppresses same-ID recreation in this registration. Unsaved human editor text will be cleared on confirmation; the unrelated original request draft is preserved. Retire instead if you need retained history.")
+                Text(ForgottenContext.retentionLimits)
+                Text("Already displayed copies cannot be recalled. No restore or unforget is provided.")
+                HStack {
+                    Button("Cancel", action: model.cancelForget).keyboardShortcut(.defaultAction)
+                    Button("Forget all local entry history", role: .destructive) { model.confirmForget(confirmation) }
+                }
+            }.padding().frame(width: 580)
+        }
     }
 }
 

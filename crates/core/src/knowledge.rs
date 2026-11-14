@@ -23,7 +23,7 @@ const FLAGS: OFlags = OFlags::RDONLY
 mod export;
 mod forget;
 mod schema;
-pub use forget::ForgetStage;
+pub use forget::{ForgetBinding, ForgetStage};
 pub use schema::UpgradeStage;
 #[cfg(test)]
 mod tests;

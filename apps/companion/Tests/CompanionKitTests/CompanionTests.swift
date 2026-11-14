@@ -83,6 +83,7 @@ private actor ExplicitFakeCoreService: CoreService {
         calls += 1
         if let error = nextFailure { nextFailure = nil; throw error }
         switch operation {
+        case .forgetContext, .forgottenContexts: throw ServiceError.unavailable
         case .removeProject(let id, let root, let identity, let token):
             removalCalls += 1
             guard projects.contains(where: { $0.id == id && $0.root == root && $0.root_identity == .string(identity) && $0.incarnation == token }) else { throw ServiceError.scopeMismatch }
@@ -654,6 +655,45 @@ struct AdapterTests {
         try await withAdapter("removal-valid") { adapter in
             guard case .removed(let receipt) = try await adapter.perform(.removeProject("alpha", "/synthetic/alpha", "r1", "0123456789abcdef0123456789abcdef")) else { throw ServiceError.invalid }
             try receipt.validate(project: "alpha")
+        }
+    }
+    @Test func boundForgetExactArgumentsEmptyStdinAndTypedReceipt() async throws {
+        try await withAdapter("forget-valid") { adapter in
+            guard case .forgotten(let receipt) = try await adapter.perform(.forgetContext("alpha", "memo", "/synthetic/alpha", "r1", "0123456789abcdef0123456789abcdef", 2)) else { throw ServiceError.invalid }
+            try receipt.validate(project: "alpha", id: "memo", revision: 2)
+        }
+        try await withAdapter("markers-valid") { adapter in
+            guard case .forgottenContexts(let markers) = try await adapter.perform(.forgottenContexts("alpha")) else { throw ServiceError.invalid }
+            #expect(markers.forgotten.map(\.id) == ["a", "memo"])
+        }
+    }
+    @Test(arguments: ["ack", "project", "id", "false", "limits", "large", "content", "zero", "count", "over", "fraction", "bool-count"])
+    func forgetRejectsInvalidReceipts(mode: String) async throws {
+        try await withAdapter("forget-" + mode) { adapter in
+            let expected: ServiceError = ["project", "id"].contains(mode) ? .scopeMismatch : (mode == "large" ? .outputLimit : .invalid)
+            await #expect(throws: expected) { try await adapter.perform(.forgetContext("alpha", "memo", "/synthetic/alpha", "r1", "0123456789abcdef0123456789abcdef", 2)) }
+        }
+    }
+    @Test(arguments: ["project", "bad", "duplicate", "order", "content", "extra", "over", "large"])
+    func markersRejectMismatchedMalformedOrUnboundedOutput(mode: String) async throws {
+        try await withAdapter("markers-" + mode) { adapter in
+            let expected: ServiceError = mode == "project" ? .scopeMismatch : (mode == "large" ? .outputLimit : .invalid)
+            await #expect(throws: expected) { try await adapter.perform(.forgottenContexts("alpha")) }
+        }
+    }
+    @Test func forgetRejectsInvalidBindingsBeforeSpawn() async throws {
+        // The fixture's successful path requires exact bound argv; no invalid
+        // binding may reach it and produce a misleading acknowledgment.
+        try await withAdapter("forget-valid") { adapter in
+            for revision in [-1, 0, 33, Int.max] {
+                await #expect(throws: ServiceError.invalid) { try await adapter.perform(.forgetContext("alpha", "memo", "/synthetic/alpha", "r1", "0123456789abcdef0123456789abcdef", revision)) }
+            }
+            for token in ["", "bad", "0123456789ABCDEF0123456789abcdef"] {
+                await #expect(throws: ServiceError.invalid) { try await adapter.perform(.forgetContext("alpha", "memo", "/synthetic/alpha", "r1", token, 2)) }
+            }
+            for (root, identity) in [("relative", "r1"), ("/synthetic", ""), ("/synthetic\0", "r1")] {
+                await #expect(throws: ServiceError.invalid) { try await adapter.perform(.forgetContext("alpha", "memo", root, identity, "0123456789abcdef0123456789abcdef", 2)) }
+            }
         }
     }
     @Test(arguments: ["ack", "wrong", "false", "limits", "large", "content"])

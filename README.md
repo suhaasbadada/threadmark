@@ -49,7 +49,7 @@ printf '%s\n' 'Locate resolve. Do not deploy or change permissions.' | target/de
 Use absolute canonical paths. Source policy changes invalidate indexed evidence;
 changed or unreadable files are not returned as current until explicitly reindexed.
 User context has separate provenance/history and survives reindexing. Indexing is
-never a way to clear human history. CLI-only `context forget PROJECT ID
+never a way to clear human history. `context forget PROJECT ID
 --confirm-forget-local-history` removes all revisions and suppresses same-ID
 recreation; `context forgotten PROJECT` lists non-content markers. This is not
 forensic erasure: SQLite free pages, journals, backups, earlier exports and displayed
@@ -58,7 +58,7 @@ Existing v1 stores stay v1 until explicit `store upgrade
 --confirm-local-schema-upgrade` (existing store only); older binaries cannot open
 v2 and there is no automatic downgrade. See the [reviewed contract](docs/contracts/context-forget-v1.md).
 Existing v1/v2 stores never implicitly upgrade. Registration-incarnation safety
-for native cached removal and timed refresh requires explicit `store upgrade
+for native human Forget, cached removal and timed refresh requires explicit `store upgrade
 --to-version 3 --confirm-local-schema-upgrade --confirm-legacy-workers-stopped`.
 Stop older companions/workers and let pending operations finish first: that flag
 is operator attestation, not a machine-verifiable stop or a fence for old workers.

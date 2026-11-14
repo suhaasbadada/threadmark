@@ -4,6 +4,39 @@ import Darwin
 
 let args = Array(CommandLine.arguments.dropFirst())
 let mode = args.count > 1 ? URL(fileURLWithPath: args[1]).lastPathComponent : "invalid"
+if mode.hasPrefix("forget-") {
+    guard Array(args.dropFirst(2)) == ["context", "forget", "alpha", "memo", "--confirm-forget-local-history", "--expected-root", "/synthetic/alpha", "--expected-root-identity", "r1", "--expected-incarnation", "0123456789abcdef0123456789abcdef", "--expected-revision", "2"],
+          FileHandle.standardInput.readDataToEndOfFile().isEmpty else { exit(1) }
+    if mode == "forget-ack" { print("{}"); exit(0) }
+    if mode == "forget-large" { print(String(repeating: "x", count: 1025)); exit(0) }
+    var response: [String: Any] = ["project": "alpha", "id": "memo", "forgotten": true, "removed_revisions": 2,
+        "retention_limits": "Active human-history removal and same-scope suppression only; not forensic erasure. SQLite free pages, journals, backups, earlier exports and displayed copies may retain bytes. Source files are untouched."]
+    if mode == "forget-project" { response["project"] = "beta" }
+    if mode == "forget-id" { response["id"] = "other" }
+    if mode == "forget-false" { response["forgotten"] = false }
+    if mode == "forget-limits" { response["retention_limits"] = "erased forever" }
+    if mode == "forget-content" { response["text"] = "synthetic unexpected content" }
+    if mode == "forget-zero" { response["removed_revisions"] = 0 }
+    if mode == "forget-count" { response["removed_revisions"] = 1 }
+    if mode == "forget-over" { response["removed_revisions"] = 33 }
+    if mode == "forget-fraction" { response["removed_revisions"] = 2.5 }
+    if mode == "forget-bool-count" { response["removed_revisions"] = true }
+    FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject: response)); exit(0)
+}
+if mode.hasPrefix("markers-") {
+    guard Array(args.dropFirst(2)) == ["context", "forgotten", "alpha"],
+          FileHandle.standardInput.readDataToEndOfFile().isEmpty else { exit(1) }
+    if mode == "markers-large" { print(String(repeating: "x", count: 1_048_577)); exit(0) }
+    var response: [String: Any] = ["project": "alpha", "forgotten": [["id": "a"], ["id": "memo"]]]
+    if mode == "markers-project" { response["project"] = "beta" }
+    if mode == "markers-bad" { response["forgotten"] = [["id": "../bad"]] }
+    if mode == "markers-duplicate" { response["forgotten"] = [["id": "memo"], ["id": "memo"]] }
+    if mode == "markers-order" { response["forgotten"] = [["id": "z"], ["id": "a"]] }
+    if mode == "markers-content" { response["forgotten"] = [["id": "memo", "text": "unexpected synthetic"]] }
+    if mode == "markers-extra" { response["text"] = "unexpected synthetic" }
+    if mode == "markers-over" { response["forgotten"] = (0...4096).map { ["id": String(format: "id%04d", $0)] } }
+    FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject: response)); exit(0)
+}
 if mode.hasPrefix("index-bound-") {
     guard Array(args.dropFirst(2)) == ["index", "alpha", "--expected-root", "/synthetic/alpha", "--expected-root-identity", "r1", "--expected-incarnation", "0123456789abcdef0123456789abcdef", "--expected-sources", "a.rs"],
           FileHandle.standardInput.readDataToEndOfFile().isEmpty else { exit(1) }

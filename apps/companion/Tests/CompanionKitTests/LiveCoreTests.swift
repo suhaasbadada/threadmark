@@ -5,6 +5,78 @@ import Testing
 @Suite("Explicit opt-in live Rust core adapter integration")
 struct LiveCoreTests {
     @Test(.enabled(if: ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"] != nil,
+                  "Set THREADMARK_CORE_TEST_BINARY to the explicitly rebuilt core; synthetic data only"))
+    @MainActor func nativeBoundHumanForgetAndStaleApprovalsAgainstActualSQLite() async throws {
+        let path = try #require(ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"])
+        guard path.hasPrefix("/"), FileManager.default.isExecutableFile(atPath: path) else { throw ServiceError.unavailable }
+        let fm = FileManager.default
+        let base = try StoreSelection.existingDirectory(fm.temporaryDirectory).appendingPathComponent("opencode/threadmark-forget-" + UUID().uuidString)
+        try fm.createDirectory(at: base, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        defer { try? fm.removeItem(at: base) }
+        let alpha = base.appendingPathComponent("alpha"), beta = base.appendingPathComponent("beta")
+        for root in [alpha, beta] { try fm.createDirectory(at: root, withIntermediateDirectories: false) }
+        let source = alpha.appendingPathComponent("a.rs"), otherSource = beta.appendingPathComponent("b.rs")
+        let sourceBytes = Data("fn synthetic_alpha() {}\n".utf8), otherBytes = Data("fn synthetic_beta() {}\n".utf8)
+        try sourceBytes.write(to: source); try otherBytes.write(to: otherSource)
+        let store = try StoreSelection.newDirectory(parent: base, name: "store")
+        let adapter = ProcessService(executable: URL(fileURLWithPath: path), dataDirectory: store)
+        _ = try await adapter.perform(.addProject("alpha", alpha.path, ["a.rs"]))
+        _ = try await adapter.perform(.addProject("beta", beta.path, ["b.rs"]))
+        _ = try await adapter.perform(.index("alpha")); _ = try await adapter.perform(.index("beta"))
+        _ = try await adapter.perform(.writeContext("alpha", "memo", "note", "Synthetic first", update: false))
+        _ = try await adapter.perform(.writeContext("alpha", "memo", "decision", "Synthetic second", update: true))
+        _ = try await adapter.perform(.writeContext("alpha", "other", "note", "Synthetic other note", update: false))
+        _ = try await adapter.perform(.writeContext("beta", "memo", "note", "Synthetic unrelated project", update: false))
+        let model = CompanionModel(service: adapter, configured: true, refreshDriver: ManualRefreshDriver())
+        model.select("alpha"); await model.waitForOperation()
+        model.editPreparation(query: "synthetic", original: "Unrelated original — never rewrite")
+        model.openContext("memo"); await model.waitForOperation()
+        model.requestForget(); let editedPrompt = try #require(model.pendingForget)
+        _ = try await adapter.perform(.writeContext("alpha", "memo", "note", "Synthetic intervening edit", update: true))
+        model.confirmForget(editedPrompt); await model.waitForOperation()
+        #expect(model.lastError == .forgetUncertain && model.forgetRequiresRefresh)
+        guard case .context(let edited) = try await adapter.perform(.context("alpha", "memo")) else { throw ServiceError.invalid }
+        #expect(edited.history.count == 3 && edited.history.last?.text == "Synthetic intervening edit")
+        model.refreshSelected(); await model.waitForOperation()
+        model.editPreparation(query: "synthetic", original: "Unrelated original — never rewrite")
+        model.openContext("memo"); await model.waitForOperation()
+        model.requestForget(); let approved = try #require(model.pendingForget)
+        model.confirmForget(approved); model.confirmForget(approved); await model.waitForOperation()
+        #expect(model.lastError == nil && !model.forgetRequiresRefresh && model.contextEditorRevision == 2)
+        #expect(model.history == nil && model.forgottenMarkers?.forgotten.map(\.id) == ["memo"])
+        #expect(model.contexts.map(\.id) == ["other"] && model.originalDraft == "Unrelated original — never rewrite")
+        _ = try await adapter.perform(.index("alpha"))
+        let reopened = ProcessService(executable: URL(fileURLWithPath: path), dataDirectory: store)
+        guard case .forgottenContexts(let markers) = try await reopened.perform(.forgottenContexts("alpha")),
+              case .context(let unrelated) = try await reopened.perform(.context("beta", "memo")),
+              case .query(let evidence) = try await reopened.perform(.query("alpha", "synthetic_alpha")) else { throw ServiceError.invalid }
+        #expect(markers.forgotten.map(\.id) == ["memo"] && unrelated.history[0].text == "Synthetic unrelated project")
+        #expect(evidence.currentness == "current-at-read" && evidence.results.map(\.path) == ["a.rs"])
+        await #expect(throws: ServiceError.failed) { try await reopened.perform(.writeContext("alpha", "memo", "note", "No resurrection", update: false)) }
+        // Re-register twice at identical roots and identical revision one. The
+        // old native approval must not delete replacement human history.
+        func reregister() async throws {
+            guard case .project(let p) = try await adapter.perform(.project("alpha")),
+                  case .string(let identity) = p.root_identity, let token = p.incarnation else { throw ServiceError.invalid }
+            _ = try await adapter.perform(.removeProject("alpha", p.root, identity, token))
+            _ = try await adapter.perform(.addProject("alpha", alpha.path, ["a.rs"]))
+            _ = try await adapter.perform(.writeContext("alpha", "memo", "note", "Synthetic replacement revision one", update: false))
+        }
+        try await reregister()
+        model.select("alpha"); await model.waitForOperation(); model.openContext("memo"); await model.waitForOperation()
+        model.requestForget(); let oldRegistration = try #require(model.pendingForget)
+        try await reregister()
+        model.confirmForget(oldRegistration); await model.waitForOperation()
+        #expect(model.lastError == .forgetUncertain && model.contexts.isEmpty && model.forgottenMarkers == nil)
+        guard case .context(let replacement) = try await adapter.perform(.context("alpha", "memo")),
+              case .forgottenContexts(let replacementMarkers) = try await adapter.perform(.forgottenContexts("alpha")) else { throw ServiceError.invalid }
+        #expect(replacement.history.count == 1 && replacement.history[0].text == "Synthetic replacement revision one")
+        #expect(replacementMarkers.forgotten.isEmpty)
+        #expect(try Data(contentsOf: source) == sourceBytes)
+        #expect(try Data(contentsOf: otherSource) == otherBytes)
+        await model.shutdown()
+    }
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"] != nil,
                   "Set THREADMARK_CORE_TEST_BINARY explicitly to test timed real SQLite reconciliation"))
     @MainActor func consentDrivenTimedRealCoreReconciliation() async throws {
         let path = try #require(ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"])
