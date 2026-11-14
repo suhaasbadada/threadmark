@@ -46,6 +46,24 @@ Every feature must cover success, cancellation, invalid scope, unavailable depen
 
 ## Evaluation and unresolved decisions
 
+The bounded [SMALL retrieval pilot](../progress/phase-1-retrieval-pilot.md) now
+records actual lexical/symbol/candidate evidence on both frozen synthetic roots.
+It establishes neither representative product quality nor caller-retrieval benefit
+for the candidate under its fixed eight-anchor envelope; P1-A1/P1-A5 remain partial.
+
+A separate [bounded evidence selector](../progress/phase-1-evidence-selection.md)
+now prototypes interleaved declaration/caller drafts. It preserves that pilot,
+does not adopt a default retriever, and is not new comparative-quality evidence.
+
+The [scoped extraction experiment](../progress/phase-1-scoped-extraction.md)
+demonstrates namespaced Graphify identities, malformed-source rejection and fresh
+recovery on the original tiny fixtures. Graphify adoption/packaging and broader
+evaluation remain open; this is not a Phase 2 importer or native-host proof.
+
+The [recorded-evidence review walkthrough](../progress/phase-1-evidence-review.md)
+joins those fixed source-backed observations to local review/cancel and context
+invalidation. It does not copy/send, refresh extraction, or establish host consent.
+
 Phase 1 establishes representative repository/task fixtures and provisional latency/resource budgets before implementation optimizes against them. Phase 4 sets task-quality evaluation thresholds before held-out runs. Phase 8 freezes release budgets and evaluates whether the benefit outweighs latency, cost, and review effort. There are no measured performance claims yet.
 
 The project license is [MIT](../../LICENSE). Decisions still open include desktop shell confirmation, extraction-worker packaging, supported inference profiles, exact host versions, shortcut assignments, retention durations, resource budgets, and public-release support commitments. Each is owned and resolved in its relevant phase rather than treated as an implicit promise.

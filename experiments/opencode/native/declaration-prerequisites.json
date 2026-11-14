@@ -1,0 +1,154 @@
+{
+  "status": "Two inert declaration archives verified; NOT type-closure/install/runtime approval",
+  "execution": "NONE; no package or compiler execution",
+  "packageLockSha256": "20571ff490c60ed12a0e6b7eefb54138f9292778d2f4be1a2b874f5db1ed6651",
+  "packageManifestSha256": "f1bea8babcc92323e67a6c35efc1fccd4527e79502bee660c086955fe4b8a628",
+  "records": [
+    {
+      "name": "@types/emscripten",
+      "version": "1.40.0",
+      "resolved": "https://registry.npmjs.org/@types/emscripten/-/emscripten-1.40.0.tgz",
+      "integrity": "sha512-MD2JJ25S4tnjnhjWyalMS6K6p0h+zQV6+Ylm+aGbiS8tSn/aHLSGNzBgduj6FB4zH0ax2GRMGYi/8G1uOxhXWA==",
+      "archiveSha256": "dd0dceaf2578bbaa1563db0632657806b18e48c0ff1cbff9f54171708e8d7fb1",
+      "compressedBytes": 5728,
+      "expandedBytes": 24064,
+      "declaredExtractedBytes": 19023,
+      "manifest": {
+        "name": "@types/emscripten",
+        "version": "1.40.0",
+        "description": "TypeScript definitions for emscripten",
+        "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/emscripten",
+        "license": "MIT",
+        "contributors": [
+          {
+            "name": "Kensuke Matsuzaki",
+            "githubUsername": "zakki",
+            "url": "https://github.com/zakki"
+          },
+          {
+            "name": "Periklis Tsirakidis",
+            "githubUsername": "periklis",
+            "url": "https://github.com/periklis"
+          },
+          {
+            "name": "Bumsik Kim",
+            "githubUsername": "kbumsik",
+            "url": "https://github.com/kbumsik"
+          },
+          {
+            "name": "Louis DeScioli",
+            "githubUsername": "lourd",
+            "url": "https://github.com/lourd"
+          }
+        ],
+        "main": "",
+        "types": "index.d.ts",
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+          "directory": "types/emscripten"
+        },
+        "scripts": {},
+        "dependencies": {},
+        "peerDependencies": {},
+        "typesPublisherContentHash": "559921c396adbee299b283860e66f9c1d6fe14e7908e50e10a82dc51af01e47d",
+        "typeScriptVersion": "5.0"
+      },
+      "files": {
+        "emscripten/LICENSE": {
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "bytes": 1141
+        },
+        "emscripten/README.md": {
+          "sha256": "0abb0ccc58842265f622383d203f542226d7c55d1dc5271dd838519dad296b6c",
+          "bytes": 606
+        },
+        "emscripten/index.d.ts": {
+          "sha256": "2a6896ee1eb573182585d65e48e3ba6896e3f27c7496dcbb6e80963b0feb04ce",
+          "bytes": 16007
+        },
+        "emscripten/package.json": {
+          "sha256": "9f453be6e4c9023ba56f45470f6a4d5e1b773fa3b3200fdb29f42d618aff64b9",
+          "bytes": 1269
+        }
+      },
+      "noticePath": "emscripten/LICENSE",
+      "typesPath": "emscripten/index.d.ts",
+      "externalImportOrReferenceLines": []
+    },
+    {
+      "name": "@types/json-schema",
+      "version": "7.0.15",
+      "resolved": "https://registry.npmjs.org/@types/json-schema/-/json-schema-7.0.15.tgz",
+      "integrity": "sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==",
+      "archiveSha256": "12dcb1dcff7099bff0663fc220551ba53fcf23c136a22375e323bb6626d95724",
+      "compressedBytes": 6145,
+      "expandedBytes": 36864,
+      "declaredExtractedBytes": 31748,
+      "manifest": {
+        "name": "@types/json-schema",
+        "version": "7.0.15",
+        "description": "TypeScript definitions for json-schema",
+        "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/json-schema",
+        "license": "MIT",
+        "contributors": [
+          {
+            "name": "Boris Cherny",
+            "githubUsername": "bcherny",
+            "url": "https://github.com/bcherny"
+          },
+          {
+            "name": "Lucian Buzzo",
+            "githubUsername": "lucianbuzzo",
+            "url": "https://github.com/lucianbuzzo"
+          },
+          {
+            "name": "Roland Groza",
+            "githubUsername": "rolandjitsu",
+            "url": "https://github.com/rolandjitsu"
+          },
+          {
+            "name": "Jason Kwok",
+            "githubUsername": "JasonHK",
+            "url": "https://github.com/JasonHK"
+          }
+        ],
+        "main": "",
+        "types": "index.d.ts",
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+          "directory": "types/json-schema"
+        },
+        "scripts": {},
+        "dependencies": {},
+        "typesPublisherContentHash": "79984fd70cd25c3f7d72b84368778c763c89728ea0073832d745d4691b705257",
+        "typeScriptVersion": "4.5"
+      },
+      "files": {
+        "json-schema/LICENSE": {
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "bytes": 1141
+        },
+        "json-schema/README.md": {
+          "sha256": "1356012b45f761d2e1d72f704edde2f74f437995d7dd064071b93fae703aac59",
+          "bytes": 622
+        },
+        "json-schema/index.d.ts": {
+          "sha256": "f3d8c757e148ad968f0d98697987db363070abada5f503da3c06aefd9d4248c1",
+          "bytes": 28732
+        },
+        "json-schema/package.json": {
+          "sha256": "6bf0cb0808cafc14023ae10d55d6a88228397dc54c16106d121f42ac88d64fc8",
+          "bytes": 1253
+        }
+      },
+      "noticePath": "json-schema/LICENSE",
+      "typesPath": "json-schema/index.d.ts",
+      "externalImportOrReferenceLines": []
+    }
+  ],
+  "compressedBytes": 11873,
+  "expandedBytes": 60928,
+  "declaredExtractedBytes": 50771
+}

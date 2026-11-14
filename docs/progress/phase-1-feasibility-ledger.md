@@ -1,5 +1,116 @@
 # Phase 1 — Feasibility evidence and open gates
 
+## Current decision snapshot — 2026-11-13
+
+**Phase 1 remains OPEN. No Phase 2 transition or scope reduction is approved by
+this report.** TM-02, TM-04–TM-08, TM-10; P1-A1–P1-A5 are partial or blocked.
+This section supersedes the current-status implications of the historical
+2026-11-12 snapshot below, without changing its evidence or failed experiments.
+Continued implementation and qualified merges are authorized; new product
+inference, trust boundaries, native-host launches and deployment are not implied.
+
+### What a developer can actually run
+
+The Rust workspace still provides finite offline diagnostics and synthetic
+contracts, not an installed companion, listener, storage or persistent index.
+Two additional explicit synthetic inspection paths are runnable from source:
+
+```sh
+python3 -B experiments/evidence-review/cli.py --synthetic orbit
+python3 -B experiments/decision-brief/cli.py --synthetic harbor
+```
+
+The first quotes retained, source-checked structural evidence; the second quotes
+exact current-rule markers from generated public source bytes. Both preserve the
+original request, label inspection as non-authorizing and end original-only on
+cancel/EOF. They are not AI refinement, real project indexing, host consent or
+draft delivery. Earlier stdout previews are not erased by cancellation.
+
+### Updated acceptance ledger
+
+| Gate | Established evidence | Still required; not substituted by green CI |
+| --- | --- | --- |
+| P1-A1 extraction | [Scoped normalization](phase-1-scoped-extraction.md) separates colliding producer IDs across two roots, checks exact anchors, preserves provenance/confidence and rejects malformed Python before Graphify import. Historical rename/deletion and failure observations remain recorded. [Retrieval comparison](phase-1-graphify-comparison.md) completed twelve bounded conditions. | Graphify default adoption is not justified. The callable-marker adapter excluded Rust evidence; equal eight-slot-ceiling scores do not establish backend equivalence or adequate Rust comparison. Full language/resource/packaging validation remains open. No persistence or incremental importer is proven. |
+| P1-A2 OpenCode | Authentic SDK compiler discovery and source bridge exist; [native journey record](phase-1-native-journey.md) separates source, mock and installed-host observations. The bridge passes documentation-backed `resume: false`. | Installed 2.2.5/Bun 1.4.4 crashed before readiness. No native review, approval-one/cancel-zero inbox behavior or installed-server admission-only semantics were observed. All native-host launches remain paused. |
+| P1-A3 T3 | [Pinned-source copy preparation](phase-1-t3.md) validates exact text/destination and rejects changed/oversized prompt-link content; copy-only output is effect-free. | No actual clipboard/composer placement, occupied-draft preservation or destination acknowledgment. Available thread-send tools submit messages, not draft-prefill proof. Do not substitute them, prompt-bearing URLs, UI scraping or database writes. |
+| P1-A4 UX | [Recorded-evidence review](phase-1-evidence-review.md) and [current-decision brief](phase-1-decision-brief.md) each have six scripted mechanical journeys covering project changes, cancellation and simulated failure/recovery; ambiguity and source-injection conformance are explicit. | No declared human usability/review-effort study or normal-host comparison. Terminal verbosity, manual scope choice, retained prior previews and inability to resolve permission remain friction/counterexamples. Simulated outages are not actual daemon recovery. |
+| P1-A5 capability/evaluation | Frozen [corpus](phase-1-evaluation-corpus.md), [scoring](phase-1-evaluation-scoring.md), reviewed [runner](phase-1-evaluation-runner.md), prospective budgets and recorded small trials exist. | Synthetic scale is not representative-repository validation. Memory enforcement/RSS, larger-tier runs, authorized inference, refinement/task-success comparisons, host acceptance and full redistribution provenance remain open. Conditions 4–5 in ADR 0006 have not run. |
+
+### Evidence that must remain distinguishable
+
+- The original eighteen-case pilot and twelve-case Graphify comparison are
+  separate frozen studies, not interchangeable baselines. Neither was retuned.
+  In the latter, both backends scored TP=8/FP=0/FN=8, precision=1 and recall=.5,
+  but authored selected mixed Rust/Python and the Graphify adapter Python only.
+  Pinned producer source and historical raw graphs support an adapter-contract
+  gap, not a claim that Graphify cannot extract Rust. Current full raw graphs
+  were not retained. See [ADR 0010](../decisions/0010-graphify-retrieval-comparison.md).
+- The initial native Segmenter failure, subsequent standalone-not-ready failure
+  and fixed-loopback Bun SIGTRAP are retained failed attempts. The crash cause
+  remains unknown. Passing compiler discovery under a separately declared 2 GiB
+  bound does not erase the earlier 1 GiB OOM or certify host readiness.
+- Runtime provenance/notice gaps for `@npmcli/agent@4.0.2`,
+  `eastasianwidth@0.2.0` and three AWS packages are not waived by Rust cargo-deny
+  or SDK declaration review. Installed-version observation is not redistribution
+  approval. See [native dependency/compiler evidence](phase-1-opencode-native.md).
+- Local tests, exact-head PR CI, qualified merge and post-merge main CI are
+  separate gates. None proves a daemon deployment, useful refinement or certified
+  host. No production/binary deployment has been performed by these units.
+
+### Decisions needed for the remaining live paths
+
+1. **Product inference:** explicit provider/profile/model, permitted data scope,
+   endpoint/locality and a bounded cost/egress/retention/cancellation plan. Current
+   inference/network/spend budget remains zero under
+   [ADR 0006](../decisions/0006-phase-1-evaluation-protocol.md). Coding-agent login
+   tokens and a statement that inference capacity exists do not supply this API
+   authorization. Request any necessary secret only through the secure harness.
+2. **Native-host continuation:** retain the launch pause. A supported diagnosis
+   or an explicitly approved isolated environment and exact bounded test plan
+   must precede another launch. No VM/account/runtime installation or broader
+   filesystem/network/Seatbelt allowance is implied; do not retry the crash.
+3. **T3 draft path:** an exposed draft-placement capability and an authorized
+   disposable destination with existing-draft preservation, cancellation and
+   observable acknowledgment. Copy preparation is a useful fallback experiment,
+   not a silent substitute for the agreed draft handoff acceptance.
+
+These are genuine capability/authority gates, not requests to relax safety or
+reduce the product scope. Independent engineering remains possible: focused
+packaging/provenance investigation, a separately reviewed cross-language
+extraction contract, and prospective resource validation. None can stand in for
+the live MVP paths above. Do not generate more demo wrappers solely to keep work
+moving, alter a frozen study to manufacture success, or start Phase 2 on unproven
+host/inference assumptions. A scoped next unit must identify which open gate it
+actually advances.
+
+### Latest integrated revision and verification boundary
+
+[PR #37](https://github.com/suhaasbadada/threadmark/pull/37) merged as
+`eeb55b4598ce754ff5cc623a1e02f3cce5f92aba` after independent review and five
+successful checks on source head `6f65d2b0a746a82f283c382b87ecca838aefbe37`.
+Post-merge [CI 43429901955](https://github.com/suhaasbadada/threadmark/actions/runs/43429901955)
+and [integrated 43429901952](https://github.com/suhaasbadada/threadmark/actions/runs/43429901952)
+both passed on that exact merge. Its reviewed tree passed 743 Python/100 Node
+offline tests plus foundation/dependency/security checks; those results do not
+constitute checks for this subsequent documentation update.
+
+This refresh changes only evidence navigation/status, not runtime, experiments,
+budgets, source/query/oracle bytes, site, permissions or acceptance criteria.
+Its own review, tested SHA and exact-head CI are recorded separately before
+handoff. The seven inherited unstaged progress appends remain untouched.
+
+Local checks for this three-file refresh passed: full `python3 scripts/check.py`
+(foundation format/build/Clippy/tests/docs/finite smoke and deliberate failure
+probe), `cargo deny --locked check`, staged `python3 scripts/secrets.py`, and
+staged whitespace. No extraction, inference, native-host or repeated full offline
+experiment suite was needed or run for these document-only changes.
+Joffrey independently reviewed the consolidation with no substantive findings;
+he verified the original ledger body byte-for-byte, bounded claims against local
+specifications/evidence, three-file scope, links and whitespace. Remote outcomes
+were primary-verified, not independently fetched by that reviewer.
+
+## Historical snapshot — 2026-11-12
+
 2026-11-12 UTC. **Phase 1 OPEN; Phase 2 not authorized by this report.**
 TM-02, TM-04–TM-08, TM-10; P1-A1–P1-A5 remain partial/unverified as detailed
 below. Phase 0 is the offline foundation, not a functioning companion. Foundation

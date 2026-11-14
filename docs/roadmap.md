@@ -2,7 +2,7 @@
 
 [Documentation home](../README.md) · [Product requirements](product.md) · [Detailed phase-wise specification](spec/README.md)
 
-**Current status: Phase 0 engineering evidence accepted for the [recorded tested revision](progress/phase-0.md); merge and publication unapproved. Phases 1–9 remain open.** These are gated scopes, not calendar estimates. Security, tests, and failure handling begin with each feature; Phase 8 does not postpone them.
+**Current status: Phase 0 offline foundation is merged; Phase 1 feasibility remains open.** See the [current evidence and blocker ledger](progress/phase-1-feasibility-ledger.md) and [foundation record](progress/phase-0.md). No functioning companion or Phase 2 transition is claimed; Phases 2–9 remain open. These are gated scopes, not calendar estimates. Security, tests, and failure handling begin with each feature; Phase 8 does not postpone them.
 
 This is the concise roadmap. The linked specifications expand each phase into user outcomes, behavior, work packages, exclusions, and testable acceptance IDs. Threadmark is a background companion; no phase introduces a replacement chat, editor, task dashboard, or agent launcher.
 

@@ -1,6 +1,6 @@
 [package]
 name = "threadmark-cli"
-description = "Offline Threadmark foundation diagnostics"
+description = "Manual Threadmark local knowledge CLI and offline diagnostics"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -13,6 +13,7 @@ name = "threadmark"
 path = "src/main.rs"
 
 [dependencies]
+serde_json = "=1.0.154"
 threadmark-core = { path = "../core", version = "0.1.0" }
 threadmark-daemon = { path = "../daemon", version = "0.1.0" }
 

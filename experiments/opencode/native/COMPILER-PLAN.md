@@ -1,5 +1,9 @@
 # Compiler-only candidate plan — inert, execution CLOSED
 
+The separate [fixed compiler-only candidate](COMPILER-CONTAINMENT.md) now
+implements inert authentic compiler preparation and a future fixed launcher.
+It does not make this descriptor executable or approve SDK projection/execution.
+
 TM-04/TM-05/TM-08/TM-10; supporting P1-A2/P1-A5 prerequisite only. Neither
 acceptance ID nor Phase 1 is completed. This is a macOS-first **plan candidate**,
 not a sandbox, launcher, certified compiler check or native OpenCode bridge.

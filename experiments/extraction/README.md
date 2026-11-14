@@ -25,3 +25,21 @@ obtain passing results.
 
 See [predeclared protocol](../../docs/decisions/0002-extraction-feasibility.md) and
 [results, counterexamples and acceptance limits](../../docs/progress/phase-1-extraction.md).
+
+## Prospective scoped normalization (separate contract)
+
+`normalized.py` and `scoped_run.py` implement experimental
+`threadmark.scoped-static.v1`, not a changed interpretation of the historical
+schema or evidence. Offline tests require no Graphify or native parsers:
+
+```sh
+python3 -B -W error::ResourceWarning experiments/extraction/test_normalized.py
+python3 -B experiments/extraction/scoped_run.py --help
+```
+
+The actual six-case gate is **closed pending primary review and existing bounded
+lifecycle tests**. See [ADR 0009](../../docs/decisions/0009-scoped-static-extraction.md)
+for the predeclared schema, unchanged budgets, syntax limitations and protocol;
+[prospective progress](../../docs/progress/phase-1-scoped-extraction.md) contains
+the exact command and remaining gates. Default/help imports no Graphify/native
+parsers and starts no worker. Not a product importer, engine repair or adoption.
