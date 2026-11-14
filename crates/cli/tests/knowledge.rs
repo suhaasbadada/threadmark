@@ -18,6 +18,48 @@ const FORGET: [&str; 5] = [
 const UPGRADE: [&str; 3] = ["store", "upgrade", "--confirm-local-schema-upgrade"];
 
 #[test]
+fn cached_mutation_bindings_are_complete_and_valid_before_store_creation() {
+    let f = Fixture::new();
+    let binding = [
+        "--expected-root",
+        "/synthetic/root",
+        "--expected-root-identity",
+        "r1",
+        "--expected-incarnation",
+        "0123456789abcdef0123456789abcdef",
+    ];
+    for prefix in [
+        vec!["project", "sources", "a"],
+        vec!["context", "add", "a", "memo", "note"],
+        vec!["context", "update", "a", "memo", "note"],
+        vec!["context", "retire", "a", "memo"],
+    ] {
+        for count in 1..binding.len() {
+            let mut args = prefix.clone();
+            args.extend_from_slice(&binding[..count]);
+            let out = f.run(&args, Some(b"Synthetic private note"));
+            assert!(!out.status.success() && out.stdout.is_empty());
+            assert!(!f.0.join("store").exists());
+        }
+    }
+    for suffix in [
+        vec![],
+        vec!["--expected-sources"],
+        vec!["--expected-sources", "--new-sources", "--new-sources"],
+        vec!["--expected-sources", "../bad.rs", "--new-sources"],
+        vec!["--expected-sources", "--bad.rs", "--new-sources"],
+        vec!["--expected-sources", "--new-sources", "../bad.rs"],
+    ] {
+        let mut args = vec!["project", "sources", "a"];
+        args.extend(binding);
+        args.extend(suffix);
+        let out = f.run(&args, None);
+        assert!(!out.status.success() && out.stdout.is_empty());
+        assert!(!f.0.join("store").exists());
+    }
+}
+
+#[test]
 fn source_forget_confirmation_and_complete_bindings_precede_any_store_creation() {
     let f = Fixture::new();
     let prefix = [
@@ -1044,7 +1086,7 @@ impl Fixture {
         Self(path)
     }
     fn run(&self, args: &[&str], input: Option<&[u8]>) -> Output {
-        let mut process = Command::new(env!("CARGO_BIN_EXE_threadmark"))
+        let process = Command::new(env!("CARGO_BIN_EXE_threadmark"))
             .arg("--data-dir")
             .arg(self.0.join("store"))
             .args(args)
@@ -1053,12 +1095,24 @@ impl Fixture {
             .stderr(Stdio::piped())
             .spawn()
             .unwrap();
-        if let Some(bytes) = input {
-            process.stdin.take().unwrap().write_all(bytes).unwrap();
+        Self::finish(process, input)
+    }
+    fn finish(mut process: std::process::Child, input: Option<&[u8]>) -> Output {
+        let input_closed_early = if let Some(bytes) = input {
+            match process.stdin.take().unwrap().write_all(bytes) {
+                Ok(()) => false,
+                Err(error) if error.kind() == std::io::ErrorKind::BrokenPipe => true,
+                Err(error) => panic!("stdin write failed: {:?}", error.kind()),
+            }
         } else {
             drop(process.stdin.take());
-        }
-        process.wait_with_output().unwrap()
+            false
+        };
+        let output = process.wait_with_output().unwrap();
+        // Early argument rejection intentionally need not consume stdin. Never
+        // hide a successful child that failed to receive the supplied input.
+        assert!(!input_closed_early || !output.status.success());
+        output
     }
     fn ok(&self, args: &[&str], input: Option<&[u8]>) -> Value {
         let out = self.run(args, input);
@@ -1071,6 +1125,38 @@ impl Drop for Fixture {
     fn drop(&mut self) {
         std::fs::remove_dir_all(&self.0).unwrap();
     }
+}
+
+#[test]
+fn rejected_child_may_close_stdin_before_the_fixture_writes() {
+    let f = Fixture::new();
+    let mut child = Command::new(env!("CARGO_BIN_EXE_threadmark"))
+        .arg("--data-dir")
+        .arg(f.0.join("store"))
+        .arg("--invalid-command")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    // Retain our pipe while waiting for known finite argument rejection. This
+    // forces the early-close ordering without timing or platform assumptions.
+    let input = child.stdin.take();
+    assert!(!child.wait().unwrap().success());
+    child.stdin = input;
+    assert_eq!(
+        child
+            .stdin
+            .as_mut()
+            .unwrap()
+            .write_all(b"synthetic")
+            .unwrap_err()
+            .kind(),
+        std::io::ErrorKind::BrokenPipe
+    );
+    let result = Fixture::finish(child, Some(b"synthetic"));
+    assert!(!result.status.success() && result.stdout.is_empty());
+    assert!(!f.0.join("store").exists());
 }
 
 #[test]

@@ -77,6 +77,24 @@ pub fn validate_removal_binding(id: &str, root: &str, root_identity: &str) -> Re
 fn identity(id: &str) -> Result<()> {
     Scope::new(id, "local", "snapshot").map(|_| ())
 }
+/// Validate a complete source replacement (empty policies explicitly revoke access).
+pub fn validate_sources_binding(
+    id: &str,
+    root: &str,
+    identity: &str,
+    token: &str,
+    old: &[String],
+    new: &[String],
+) -> Result<()> {
+    validate_removal_binding(id, root, identity)?;
+    validate_incarnation(token)?;
+    validate_paths(old)?;
+    validate_paths(new)?;
+    if old.iter().chain(new).any(|p| p.starts_with("--")) {
+        return Err(invalid());
+    }
+    Ok(())
+}
 /// Validate automatic index scope before opening storage. This is stale-approval
 /// protection, not authentication or a grant of additional source access.
 pub fn validate_index_binding(
@@ -712,6 +730,48 @@ impl Store {
         self.set_sources_for_policy(&project, paths)
     }
 
+    /// Replace only the exact displayed registration and source policy.
+    pub fn set_sources_bound(
+        &mut self,
+        id: &str,
+        binding: &SourceForgetBinding<'_>,
+        paths: Vec<String>,
+    ) -> Result<()> {
+        validate_sources_binding(
+            id,
+            binding.root,
+            binding.root_identity,
+            binding.incarnation,
+            binding.sources,
+            &paths,
+        )?;
+        let project =
+            self.bound_project(id, binding.root, binding.root_identity, binding.incarnation)?;
+        if project.sources != binding.sources {
+            return Err(Error::ScopeMismatch);
+        }
+        self.set_sources_for_policy(&project, paths)
+    }
+
+    fn bound_project(
+        &self,
+        id: &str,
+        root: &str,
+        root_identity: &str,
+        incarnation: &str,
+    ) -> Result<Project> {
+        validate_removal_binding(id, root, root_identity)?;
+        validate_incarnation(incarnation)?;
+        let project = self.project(id)?;
+        if project.root != root
+            || project.root_identity != root_identity
+            || project.incarnation.as_deref() != Some(incarnation)
+        {
+            return Err(Error::ScopeMismatch);
+        }
+        Ok(project)
+    }
+
     // A local ID can be explicitly reused after removal. Pending operations must
     // never mutate a replacement root that happened to receive the same ID.
     fn require_project_root(tx: &rusqlite::Transaction<'_>, project: &Project) -> Result<()> {
@@ -737,6 +797,15 @@ impl Store {
         let tx = self.db.transaction().map_err(unavailable)?;
         Self::require_project_root(&tx, project)?;
         source_forget::require_allowed(&tx, id, &paths)?;
+        let current: String = tx
+            .query_row("SELECT sources FROM projects WHERE id=?1", [id], |r| {
+                r.get(0)
+            })
+            .map_err(unavailable)?;
+        let current: Vec<String> = serde_json::from_str(&current).map_err(unavailable)?;
+        if current != project.sources {
+            return Err(Error::ScopeMismatch);
+        }
         tx.execute("DELETE FROM evidence WHERE project=?1", [id])
             .map_err(unavailable)?;
         tx.execute(
@@ -1161,6 +1230,31 @@ impl Store {
         )
         .map_err(unavailable)?;
         tx.commit().map_err(unavailable)
+    }
+
+    /// Native cached edits must name the exact registration, not only its reusable ID.
+    pub fn write_context_bound(
+        &mut self,
+        project: &str,
+        binding: (&str, &str, &str),
+        id: &str,
+        kind: &str,
+        text: &str,
+        update: bool,
+    ) -> Result<()> {
+        let project = self.bound_project(project, binding.0, binding.1, binding.2)?;
+        self.write_context_for_policy(&project, id, kind, text, update)
+    }
+
+    /// Retirement is also a persistent human-history mutation.
+    pub fn retire_context_bound(
+        &mut self,
+        project: &str,
+        binding: (&str, &str, &str),
+        id: &str,
+    ) -> Result<()> {
+        let project = self.bound_project(project, binding.0, binding.1, binding.2)?;
+        self.retire_context_for_policy(&project, id)
     }
 
     /// Retire a human note by appending a revision, never deleting source files.

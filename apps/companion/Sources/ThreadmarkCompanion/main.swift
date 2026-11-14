@@ -128,6 +128,20 @@ struct ProjectsView: View {
                 if let project = model.project {
                     Text("Registered root: \(project.root)").textSelection(.enabled)
                     Text("Root identity: \(project.root_identity?.description ?? "not supplied")").textSelection(.enabled)
+                    Button("Inspect source suppression markers", action: model.inspectForgottenSources)
+                        .disabled(!model.canRemoveProject || model.policyDirty)
+                    if let markers = model.sourceMarkers {
+                        Text("Suppressed relative files (non-content): \(markers.forgotten.map(\.path).joined(separator: ", "))").textSelection(.enabled)
+                    }
+                    Text("Source Forget requires a successful schema-v4 marker inspection in this scope. It is separate from plain allowlist editing.").font(.caption)
+                    ForEach(project.sources, id: \.self) { path in
+                        HStack {
+                            Text(path).textSelection(.enabled)
+                            Button("Forget source…", role: .destructive) { model.requestSourceForget(path) }
+                                .disabled(!model.canForgetSource(path))
+                                .accessibilityLabel("Forget source \(path)")
+                        }
+                    }
                     Button("Remove local project…", role: .destructive, action: model.requestRemoval)
                         .disabled(!model.canRemoveProject)
                     Text("Last project inspection snapshot: \(project.snapshot?.description ?? "not built")").textSelection(.enabled)
@@ -135,7 +149,7 @@ struct ProjectsView: View {
                     TextEditor(text: Binding(get: { model.sourceDraft.joined(separator: "\n") }, set: { model.stageSources(lines($0)) }))
                         .frame(minHeight: 85).accessibilityLabel("Approved relative file paths, one per line")
                     HStack {
-                        Button("Apply source policy", action: model.applySources).disabled(!model.policyDirty || model.busy)
+                        Button("Apply source policy", action: model.applySources).disabled(!model.policyDirty || model.busy || model.sourceRequiresRefresh)
                         Button("Build project understanding", action: model.build).disabled(!model.canBuild).keyboardShortcut("b", modifiers: [.command, .shift])
                     }
                     Text("Manual Build: bounded local lexical lines (30 seconds). No inference. Unsupported/unreadable files are decided by core; inspect coverage.").font(.caption)
@@ -157,7 +171,7 @@ struct ProjectsView: View {
                     Divider()
                     HStack {
                         TextField("Search authorized source evidence", text: $query)
-                        Button("Search") { model.query(query) }.disabled(query.isEmpty || query.utf8.count > 256 || !model.manualActionsAvailable || model.policyDirty)
+                        Button("Search") { model.query(query) }.disabled(query.isEmpty || query.utf8.count > 256 || !model.manualActionsAvailable || model.policyDirty || model.sourceRequiresRefresh)
                     }
                     Text("Search input is limited to 256 UTF-8 bytes; input is never truncated.").font(.caption)
                     if let result = model.evidence {
@@ -195,6 +209,23 @@ struct ProjectsView: View {
                     Button("Remove all local project data", role: .destructive) { model.confirmRemoval(confirmation) }
                 }
             }.padding().frame(width: 560)
+        }
+        .sheet(item: Binding(get: { model.pendingSourceForget }, set: { if $0 == nil { model.cancelSourceForget() } })) { confirmation in
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Forget source derivatives and revoke this file?").font(.headline)
+                Text("Project: \(confirmation.project.id) · File: \(confirmation.path)").textSelection(.enabled)
+                Text("Root: \(confirmation.project.root)").textSelection(.enabled)
+                Text("Root identity: \(confirmation.project.root_identity?.description ?? "unavailable")").textSelection(.enabled)
+                Text("Registration incarnation: \(confirmation.project.incarnation ?? "unavailable")").textSelection(.enabled)
+                Text("Exact captured approved policy: \(confirmation.project.sources.joined(separator: ", "))").textSelection(.enabled)
+                Text("Removes active SOURCE facts and invalidates the entire project's coherent source snapshot. Revokes this file's read/reimport approval and retains a non-content suppression marker. No unforget is available. Remaining approved files need rebuilding as needed.")
+                Text("The SOURCE FILE, saved HUMAN history, unsaved human editor and original request draft are untouched. Prior displayed copies, exports and backups cannot be recalled.")
+                Text(ForgottenSource.retentionLimits)
+                HStack {
+                    Button("Cancel", action: model.cancelSourceForget).keyboardShortcut(.defaultAction)
+                    Button("Forget source and revoke approval", role: .destructive) { model.confirmSourceForget(confirmation) }
+                }
+            }.padding().frame(width: 580)
         }
     }
     private func lines(_ text: String) -> [String] {
@@ -255,7 +286,7 @@ struct ContextView: View {
                                 id = history.id; kind = latest.kind; text = latest.text; editing = true
                             }
                         }
-                        Button("Retire (retain history)") { model.retireContext(history.id); editing = false }.disabled(!model.manualActionsAvailable)
+                        Button("Retire (retain history)") { model.retireContext(history.id); editing = false }.disabled(!model.manualActionsAvailable || model.project?.incarnation == nil || model.sourceRequiresRefresh)
                         Button("Forget entry…", role: .destructive, action: model.requestForget).disabled(!model.canForgetContext)
                     }
                 }
@@ -270,7 +301,7 @@ struct ContextView: View {
                 HStack {
                     Button(editing ? "Save new revision" : "Add context") {
                         model.writeContext(id: id, kind: kind, text: text, update: editing)
-                    }.disabled(model.project == nil || !model.manualActionsAvailable || !InputPolicy.identifier(id) || text.isEmpty || text.utf8.count > 4096)
+                    }.disabled(model.project?.incarnation == nil || model.sourceRequiresRefresh || !model.manualActionsAvailable || !InputPolicy.identifier(id) || text.isEmpty || text.utf8.count > 4096)
                     Button("New entry") { id = ""; text = ""; kind = "note"; editing = false }
                 }
                 Button("Inspect non-content suppression markers", action: model.inspectForgottenContexts)
@@ -278,10 +309,9 @@ struct ContextView: View {
                 if let markers = model.forgottenMarkers {
                     Text("Forgotten IDs (not retained history): \(markers.forgotten.map(\.id).joined(separator: ", "))").textSelection(.enabled)
                 }
-                Text("Retire retains history. Native Forget requires schema v3 and explicit confirmation. Source Forget, restore and unforget are unavailable.").font(.caption)
+                Text("Retire retains history. Human Forget requires schema v3 or later and explicit confirmation. Source Forget is separate in Projects after v4 marker inspection. Restore and unforget are unavailable.").font(.caption)
             }.padding()
-        }.onChange(of: model.scopeRevision) { _ in id = ""; text = ""; editing = false }
-        .onChange(of: model.contextEditorRevision) { _ in id = ""; text = ""; editing = false; kind = "note" }
+        }.onChange(of: model.contextEditorRevision) { _ in id = ""; text = ""; editing = false; kind = "note" }
         .onChange(of: id) { _ in model.contextEditorChanged() }
         .onChange(of: kind) { _ in model.contextEditorChanged() }
         .onChange(of: text) { _ in model.contextEditorChanged() }

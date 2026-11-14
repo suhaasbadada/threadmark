@@ -52,3 +52,17 @@ or native UI changed. Native source Forget, native upgrade UI, GUI/accessibility
 and additional platform fixtures, live providers/hosts and full phase closure
 remain open. No private user Forget or source scan ran; inherited appends, user
 work, worktrees and orchestration reminders remain preserved.
+
+## Publication outcome
+
+PR [#50](https://github.com/suhaasbadada/threadmark/pull/50) passed all five
+checks on `5382f92cedd26707c450fa2d4b88f11ba0c4b28d`: CI
+[43542905082](https://github.com/suhaasbadada/threadmark/actions/runs/43542905082)
+and integrated [43542905045](https://github.com/suhaasbadada/threadmark/actions/runs/43542905045).
+Fresh exact-head/main/discussion/rules checks found no blocker; independent review
+and suppression/migration acceptance above applied. It merged at
+`2026-11-14T01:55:11Z` as `86dba4cd1e442c5e704e55f38fef4e7c69b5683e`;
+the PR watch was removed. Post-merge CI
+[43543381061](https://github.com/suhaasbadada/threadmark/actions/runs/43543381061)
+and integrated [43543380907](https://github.com/suhaasbadada/threadmark/actions/runs/43543380907)
+both passed on that exact merge. No private source was forgotten during testing.

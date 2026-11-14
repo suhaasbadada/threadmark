@@ -24,6 +24,8 @@ pub enum Command {
     ExportProject(String),
     /// Revoke/replace source policy and invalidate active evidence immediately.
     Sources(String, Vec<String>),
+    /// Exact captured registration and old policy, checked before mutation.
+    SourcesBound(String, String, String, String, Vec<String>, Vec<String>),
     /// Explicit bounded index job.
     Index(String),
     /// Timed reconciliation bound to exact previously approved scope.
@@ -38,6 +40,10 @@ pub enum Command {
     WriteContext(String, String, String, String, bool),
     /// Append a retirement revision.
     RetireContext(String, String),
+    /// Cached human edit bound to a registration.
+    WriteContextBound(String, String, String, String, bool, String, String, String),
+    /// Cached retirement bound to a registration.
+    RetireContextBound(String, String, String, String, String),
     /// List latest human records.
     Contexts(String),
     /// Inspect bounded edit history.
@@ -70,6 +76,19 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
     }
     if let Command::RemoveProjectBound(id, root, identity) = &command {
         threadmark_core::knowledge::validate_removal_binding(id, root, identity)?;
+    }
+    match &command {
+        Command::SourcesBound(id, root, identity, token, old, new) => {
+            threadmark_core::knowledge::validate_sources_binding(
+                id, root, identity, token, old, new,
+            )?;
+        }
+        Command::WriteContextBound(id, _, _, _, _, root, identity, token)
+        | Command::RetireContextBound(id, _, root, identity, token) => {
+            threadmark_core::knowledge::validate_removal_binding(id, root, identity)?;
+            threadmark_core::knowledge::validate_incarnation(token)?;
+        }
+        _ => {}
     }
     if let Command::IndexBound(id, root, identity, sources) = &command {
         threadmark_core::knowledge::validate_index_binding(id, root, identity, sources)?;
@@ -114,6 +133,9 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
     } else if matches!(
         &command,
         Command::IndexBound(..)
+            | Command::SourcesBound(..)
+            | Command::WriteContextBound(..)
+            | Command::RetireContextBound(..)
             | Command::IndexIncarnationBound(..)
             | Command::RemoveProjectIncarnationBound(..)
             | Command::UpgradeStore
@@ -194,6 +216,19 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
             store.set_sources(&id, paths)?;
             json!({"project":id,"source_evidence_invalidated":true})
         }
+        Command::SourcesBound(id, root, identity, token, old, paths) => {
+            store.set_sources_bound(
+                &id,
+                &threadmark_core::knowledge::SourceForgetBinding {
+                    root: &root,
+                    root_identity: &identity,
+                    incarnation: &token,
+                    sources: &old,
+                },
+                paths,
+            )?;
+            json!({"project":id,"source_evidence_invalidated":true})
+        }
         Command::Index(id) => store.index(&id, &mut LexicalLines, cancel)?,
         Command::IndexIncarnationBound(id, root, identity, sources, token) => {
             store.index_incarnation_bound(&id, &root, &identity, &sources, &token, cancel)?
@@ -211,6 +246,21 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         }
         Command::RetireContext(project, id) => {
             store.retire_context(&project, &id)?;
+            json!({"project":project,"id":id,"retired":true})
+        }
+        Command::WriteContextBound(project, id, kind, text, update, root, identity, token) => {
+            store.write_context_bound(
+                &project,
+                (&root, &identity, &token),
+                &id,
+                &kind,
+                &text,
+                update,
+            )?;
+            json!({"project":project,"id":id,"saved":true,"producer":"human-authored"})
+        }
+        Command::RetireContextBound(project, id, root, identity, token) => {
+            store.retire_context_bound(&project, (&root, &identity, &token), &id)?;
             json!({"project":project,"id":id,"retired":true})
         }
         Command::Contexts(project) => store.contexts(&project)?,

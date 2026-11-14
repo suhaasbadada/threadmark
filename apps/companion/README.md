@@ -15,6 +15,8 @@ sh apps/companion/scripts/swift.sh build --product ThreadmarkCompanion
 sh apps/companion/scripts/swift.sh test --disable-xctest --enable-swift-testing -Xswiftc -warnings-as-errors
 sh apps/companion/scripts/bundle.sh
 plutil -lint apps/companion/dist/Threadmark.app/Contents/Info.plist
+# After explicitly rebuilding core (synthetic data only):
+python3 apps/companion/scripts/source-forget-core.py --binary "$PWD/target/debug/threadmark"
 ```
 
 The bundle script only builds and copies to ignored `dist/Threadmark.app`; it
@@ -78,6 +80,13 @@ the real adapter, and removes its data. It does not launch an app GUI or host.
   indexing is lexical source-line evidence, not AST/semantic understanding.
 - Human context add/edit/retire routes to core, with content only on stdin and
   inspectable revision history. The shell never implements a second database.
+  Native Apply and human add/edit/retire bind the captured root, root identity and
+  registration incarnation; Apply additionally compares the exact old source
+  list inside the write transaction. There is no legacy/unbound native fallback.
+  Schema v1/v2 requires an explicit CLI v3/v4 upgrade after stopping legacy workers.
+  A replaced registration clears the human editor, original draft and context
+  display without adopting the replacement; uncertain failures require Refresh.
+  Source-only changes in the same registration retain unsaved human drafts.
 - **Forget entry…** requires loaded human history and a valid schema-v3
   incarnation. Its cancel-default immutable prompt displays project/context,
   root/identity/incarnation, latest revision and total revisions to remove.
@@ -93,9 +102,40 @@ the real adapter, and removes its data. It does not launch an app GUI or host.
   a claim of rollback. An explicit action inspects only bounded non-content
   suppression IDs, never an archive. Active removal/same-scope suppression is not
   forensic erasure or recall of backups, earlier exports or displayed copies.
-  Source Forget, restore and unforget remain unavailable. Synthetic model,
+  Source Forget is separate in Projects as described below; restore and unforget remain unavailable. Synthetic model,
   subprocess and opt-in live SQLite tests cover partial P2-A3/P2-A5/P3-A4;
   native walkthrough/accessibility acceptance and full Phase 2/3 remain open.
+- **Inspect source suppression markers** explicitly verifies schema-v4 metadata,
+  bracketed by exact project/root/root-identity/incarnation/source-policy checks.
+  An incarnation alone is only a v3 capability, not evidence of v4. Only a
+  successful inspection in the current selected scope enables **Forget source…**
+  for each currently registered approved file; plain allowlist editing is separate.
+  Its immutable Cancel-default prompt captures the entire ordered source policy
+  and warns that all project source snapshots are invalidated, remaining files
+  need rebuilding as needed, and this path's read/reimport authority is revoked
+  with a non-content suppression marker and no unforget. Source files, human
+  revision history, unsaved human editor and original request draft are untouched.
+  The native call always includes `--confirm-forget-source --expected-root ROOT
+  --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-sources FILE ...`;
+  no root-only fallback or unbound idempotent repeat is used.
+  Confirmation immediately invalidates source evidence/index reports/previews and
+  blocks Build/query/Prepare/policy Apply while outcome is uncertain. Success
+  requires a strict content-free receipt (1 KiB, exact fields, initial snapshot
+  invalidated), remaining policy equal to the captured policy minus that file,
+  and marker presence bracketed by fresh matching project metadata. Replacement
+  registrations/policies never become authority for an old prompt. Failure/cancel
+  requires Refresh; no rollback or automatic retry is claimed. Automatic timer,
+  watches and owned async metadata preflight stop and are joined before deletion.
+  The marker list is at most 1 MiB/64 sorted unique validated paths (240 bytes
+  each), not an archive/export/restore capability. Earlier displayed copies,
+  exports, journals and backups are not erased or recalled.
+  Failed inspection offers generic permissions/Refresh and explicit v4 guidance:
+  `store upgrade --to-version 4 --confirm-local-schema-upgrade --confirm-legacy-workers-stopped`.
+  Stop old workers first; the confirmation is operator attestation, not machine
+  proof. No implicit upgrade or native upgrade panel is provided. Human-editor
+  reset is namespace/human-Forget-specific, not triggered by source-only policy
+  revisions. Synthetic model/subprocess and opt-in rebuilt-core tests cover
+  bounded P2-A1/P2-A3/P2-A5/P3-A3/P3-A4/P3-A5; GUI/accessibility remains OPEN.
 - Source evidence is scoped to the selected registered project and its approved
   file list. Project/source-policy changes and cancel reject late UI results.
   A host-project mismatch stops rather than selecting another project's context.
@@ -236,7 +276,7 @@ After separate authorization and core CLI integration:
    Check light/dark, reduced motion, focus order, text labels and screen reader.
 
 Phase 1 live host/inference gates stay OPEN. Full P3-A1–P3-A6 acceptance remains
-open pending these observed journeys. Forget, conflict resolution, export,
+open pending these observed journeys. Conflict resolution, export,
 login startup, incremental structural indexing, host certification and inference are visibly
 unavailable or outside client-v1, not simulated by the shell.
 

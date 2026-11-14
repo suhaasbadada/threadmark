@@ -67,6 +67,41 @@ public struct ForgetConfirmation: Identifiable, Equatable, Sendable {
     let generation: UInt64
     let scopeRevision: UInt64
 }
+public struct SourceForgetConfirmation: Identifiable, Equatable, Sendable {
+    public let id: UUID
+    public let project: Project
+    public let path: String
+    let generation: UInt64
+    let scopeRevision: UInt64
+}
+public struct ForgottenSource: Codable, Sendable {
+    public let project: String
+    public let path: String
+    public let forgotten: Bool
+    public let source_authorization: String
+    public let snapshot: String
+    public let human_context: String
+    public let retention_limits: String
+    public static let retentionLimits = "Active source-derivative removal and same-scope suppression only; not forensic erasure. Source files and human context are untouched. SQLite free pages, journals, backups, earlier exports and displayed copies may retain bytes."
+    public func validate(project target: String, path file: String) throws {
+        guard project == target, path == file else { throw ServiceError.scopeMismatch }
+        // Native calls are always bound initial revocations, never unbound repeats.
+        guard forgotten, source_authorization == "revoked", snapshot == "invalidated",
+              human_context == "unchanged", retention_limits == Self.retentionLimits,
+              InputPolicy.sourceMarker(path) else { throw ServiceError.invalid }
+    }
+}
+public struct ForgottenSources: Codable, Sendable {
+    public struct Marker: Codable, Sendable { public let path: String }
+    public let project: String
+    public let forgotten: [Marker]
+    public func validate(project target: String) throws {
+        guard project == target else { throw ServiceError.scopeMismatch }
+        let paths = forgotten.map(\.path)
+        guard paths.count <= 64, paths.allSatisfy(InputPolicy.sourceMarker),
+              Set(paths).count == paths.count, paths == paths.sorted() else { throw ServiceError.invalid }
+    }
+}
 public struct ForgottenContext: Codable, Sendable {
     public let project: String
     public let id: String
@@ -175,10 +210,12 @@ public struct ContextPreview: Codable, Equatable, Sendable {
 }
 
 public enum ServiceError: String, Error, Sendable, LocalizedError {
-    case invalid, unavailable, canceled, scopeMismatch, stale, timedOut, outputLimit, failed, removalUncertain, forgetUncertain
+    case invalid, unavailable, canceled, scopeMismatch, stale, timedOut, outputLimit, failed, removalUncertain, forgetUncertain, sourceForgetUncertain, sourceInspectionUnavailable, namespaceChanged, mutationUncertain
     public var errorDescription: String? {
         switch self {
         case .invalid: "Invalid input or core response. Review the selected configuration."
+        case .namespaceChanged: "Requires Refresh — project registration changed. Old drafts and displayed context cleared; replacement not adopted."
+        case .mutationUncertain: "Requires Refresh — mutation not confirmed. Drafts retained but cannot be saved until Refresh. Native cached mutations require schema v3/v4; stop legacy workers and explicitly upgrade using the CLI."
         case .unavailable: "Core unavailable. Select an exact executable and private data directory."
         case .canceled: "Canceled. Refresh before trusting persisted state."
         case .scopeMismatch: "Project or source scope mismatch. Resolve explicitly and refresh."
@@ -188,11 +225,18 @@ public enum ServiceError: String, Error, Sendable, LocalizedError {
         case .failed: "Core operation failed. Check permissions and refresh to recover."
         case .removalUncertain: "Removal outcome not confirmed. Refresh projects before trusting persisted state or retrying."
         case .forgetUncertain: "Requires Refresh — Forget outcome not confirmed. History may already be removed; no rollback is claimed. Refresh and inspect suppression markers before retrying."
+        case .sourceForgetUncertain: "Requires Refresh — source Forget outcome not confirmed. Source policy may already be revoked; no rollback is claimed. Refresh and inspect source suppression markers before retrying. Human history and source files are untouched."
+        case .sourceInspectionUnavailable: "Source suppression inspection failed. Check permissions and Refresh. Schema v4 is required; stop older workers and explicitly run store upgrade --to-version 4 --confirm-local-schema-upgrade --confirm-legacy-workers-stopped if needed. This is operator attestation, not proof that workers stopped."
         }
     }
 }
 
 public enum Operation: Sendable {
+    case setSourcesBound(String, String, String, String, [String], [String])
+    case writeContextBound(String, String, String, String, Bool, String, String, String)
+    case retireContextBound(String, String, String, String, String)
+    case forgetSource(String, String, String, String, String, [String])
+    case forgottenSources(String)
     case forgetContext(String, String, String, String, String, Int)
     case forgottenContexts(String)
     case indexBound(String, String, String, [String], String)
@@ -203,6 +247,7 @@ public enum Operation: Sendable {
     case writeContext(String, String, String, String, update: Bool), retireContext(String, String)
 }
 public enum Reply: Sendable {
+    case forgottenSource(ForgottenSource), forgottenSources(ForgottenSources)
     case forgotten(ForgottenContext), forgottenContexts(ForgottenContexts)
     case removed(RemovedProject)
     case projects([Project]), project(Project), indexed(IndexReport), query(QueryReport)
@@ -215,6 +260,15 @@ public protocol CoreService: Sendable {
 }
 
 public enum InputPolicy {
+    public static func sourceMarker(_ path: String) -> Bool {
+        path.utf8.count <= 240 && sources([path]) &&
+        ["rs", "py", "md", "txt"].contains((path as NSString).pathExtension) &&
+        path.split(separator: "/", omittingEmptySubsequences: false).allSatisfy { part in
+            !part.hasPrefix(".") && part.utf8.allSatisfy {
+                (65...90).contains($0) || (97...122).contains($0) || (48...57).contains($0) || [45, 95, 46].contains($0)
+            } && !["credential", "secret", "password", "token"].contains(where: { part.lowercased().contains($0) })
+        }
+    }
     public static func incarnation(_ token: String) -> Bool {
         token.utf8.count == 32 && token.utf8.allSatisfy { (48...57).contains($0) || (97...102).contains($0) }
     }
