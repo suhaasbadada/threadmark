@@ -1,5 +1,28 @@
 # Unit S — backend expected-revision guards
 
+## Primary integration
+
+Primary committed only the nine owned files as `31b7b51` in the completed lane
+and applied them without conflicts as
+`46c66ef9863a523de062f92cfa9ddf89af798a41`, the exact combined tested runtime.
+No baseline/site merges were replayed. Joffrey independently reviewed the exact
+fingerprint **CLEAR** and passed the full offline workspace gate (237 Rust tests
+and two doctests), dedicated core/CLI revision suites, dependency policy, secrets
+and whitespace. Two unchanged production-duration tests remain ignored.
+
+Primary combined full workspace gate, strict serial actual-CLI/C-fixture native
+suite (168 tests/23 suites), ordinary-import model API compile gate, dependency
+policy, staged secrets and whitespace **PASS**. Primary verified transaction
+capture and same-transaction namespace/revision/Forget/budget/append boundaries;
+no native revision protection is inferred from backend completion.
+
+PR #66 merged at `c6b931841be95e9c6238fe460520d93603837db6`; its separate exact
+post-merge runs `43571122968` and `43571122970` both passed. This unit's remote
+publication exact-head CI remains a later gate. Native Refine mode mounting is
+Unit R; native human revision protection follows this backend contract separately.
+Nine inherited progress modifications and all worktrees/reminders are preserved.
+No GUI/AX, live-model quality, host delivery or phase closure is claimed.
+
 ## Scope and baseline
 
 TM-01–TM-04, TM-07, TM-10; partial **P2-A1/P2-A3/P3-A4** only.
