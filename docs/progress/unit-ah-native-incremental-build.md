@@ -1,5 +1,34 @@
 # Unit AH — native explicit incremental lexical Build
 
+## Primary integration and independent review
+
+Primary committed only thirteen owned files as `df82934` and applied cleanly as
+**`71c1fa7d6d0a857072fd7053dc0e4e9bb1193841`**, exact integrated tested runtime.
+The twelve-file payload fingerprint was reverified after integration, identical
+to `42c72d9caf2502c406aa954dd0feafff49299662d4f5f4caa64b44daa2e4566b`.
+No baseline/site merge history replay and no manual source conflict resolution.
+
+Joffrey independently reviewed **CLEAR**, reproduced the payload before/after,
+rebuilt offline CLI and SDK-isolated incremental C fixture, passed 105 strict
+Debug tests/22 suites with actual CLI/C fixtures, all six API gates and whitespace.
+He did not rerun full Rust/Release/deny/secrets/bundle or GUI/older Swift/remote CI.
+
+Primary full workspace **368 Rust tests + two doctests PASS**; strict serial
+actual-CLI/all-C-fixture full Debug and Release each **272 tests/43 suites PASS**;
+all six API gates, offline locked deny, staged secrets/whitespace, release bundle
+and Info.plist **PASS**. Two unchanged long deadlines ignored. Existing Full Build
+and automatic-refresh routes remain unchanged; SQL row reuse is not source I/O,
+lexical CPU, AST or benchmarked performance avoidance. Publication CI remains later.
+
+Atomic note backend PR #83 passed all five checks at
+`2abe58f28f908c90e256255ae42fe4787746a60f` (CI `43592830895`, integrated
+`43592830855`); fresh exact-head/main/check/review/approval/discussion/rules gates
+preceded merge `8ca233f076ca030b985bdfdb90be56362f8b95dd`. Separate exact
+post-merge CI remains unverified. #82 exact post-merge runs `43592319046`/
+`43592319072`, both targeting `9c84f6a826d73b9e51f83151b4e6567e05de9753`, **PASS**.
+Nine inherited progress edits/worktrees/parent reminders preserved. No GUI/AX,
+live-quality, host delivery, deployment or phase closure claim.
+
 Implementation sub-agent Bob. Requirements **TM-01–TM-04, TM-07, TM-10**;
 partial **P2-A1/A2/A3/A4/A5/A6** and **P3-A3/A4/A5/A6**. Phase 2/3 remain open.
 Uses reviewed [AG v1](../contracts/incremental-lexical-index-v1.md) unchanged;
