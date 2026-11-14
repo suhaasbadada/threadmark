@@ -23,10 +23,12 @@ const FLAGS: OFlags = OFlags::RDONLY
 mod export;
 mod forget;
 mod human_search;
+mod ranked_query;
 mod schema;
 mod source_forget;
 pub use forget::{ForgetBinding, ForgetStage};
 pub use human_search::validate_human_search;
+pub use ranked_query::validate_query_terms;
 pub use schema::UpgradeStage;
 pub use source_forget::{SourceForgetBinding, SourceForgetStage, validate_source_forget};
 #[cfg(test)]
@@ -1163,26 +1165,8 @@ impl Store {
         } else {
             self.project(id)?
         };
-        let stored: Option<String> = self
-            .db
-            .query_row("SELECT manifest FROM projects WHERE id=?1", [id], |r| {
-                r.get(0)
-            })
-            .map_err(unavailable)?;
         before_sources();
-        let current_inputs = match (stored, Self::read_sources(&p, cancel)) {
-            (Some(encoded), Ok(inputs)) if encoded.len() <= 32768 => {
-                let expected: Vec<Source> = serde_json::from_str(&encoded).map_err(unavailable)?;
-                if p.snapshot.as_ref() == Some(&sha256(encoded.as_bytes()))
-                    && expected == inputs.iter().map(|(s, _)| s.clone()).collect::<Vec<_>>()
-                {
-                    Some(inputs)
-                } else {
-                    None
-                }
-            }
-            _ => None,
-        };
+        let current_inputs = self.current_query_inputs(&p, cancel)?;
         canceled(cancel)?;
         let mut reply = json!({"project": id, "root_identity":p.root_identity, "snapshot": p.snapshot, "currentness": if current_inputs.is_some() {"current-at-read"} else {"stale-or-unindexed"}, "coverage":"lexical-lines-only; no semantic coverage", "selection":"bounded-path-line-prefix", "truncated":false, "results": []});
         if let Some(inputs) = current_inputs {

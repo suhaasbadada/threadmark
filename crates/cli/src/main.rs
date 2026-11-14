@@ -31,6 +31,9 @@ fn main() -> std::process::ExitCode {
 
 fn usage() -> std::process::ExitCode {
     eprintln!(
+        "explicit lexical ranking: --data-dir EXISTING_STORE query-terms PROJECT QUERY (1..8 deduplicated Unicode-lowercase whitespace terms, <=64 UTF-8 bytes each; query <=256 bytes, no controls; any-term matches, distinct terms then occurrences descending, path/line ascending; no semantic search; literal query and Context/Refine defaults unchanged)"
+    );
+    eprintln!(
         "usage: threadmark --version | status | smoke; or --data-dir ABSOLUTE_NEW_PRIVATE_DIR project add ID ROOT [FILE ...] | project list | project show ID | project sources ID [FILE ...] | project remove ID --confirm-remove-local-data (local policy/evidence/context only; sources untouched; not Forget or forensic erasure) | index PROJECT | query PROJECT TEXT | context prepare PROJECT QUERY (original on stdin) | context add/update PROJECT ID KIND (stdin) | context retire/show PROJECT ID | context list PROJECT"
     );
     eprintln!(
@@ -308,6 +311,7 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
         ["context", "search", project, query] => {
             Command::SearchContext((*project).into(), (*query).into())
         }
+        ["query-terms", id, text] => Command::QueryTerms((*id).into(), (*text).into()),
         ["context", "prepare", project, query] => {
             let mut bytes = Vec::new();
             if std::io::stdin().take(4097).read_to_end(&mut bytes).is_err() || bytes.len() > 4096 {
