@@ -23,12 +23,14 @@ const FLAGS: OFlags = OFlags::RDONLY
 mod context_revision;
 mod export;
 mod forget;
+mod human_read;
 mod human_search;
 mod ranked_query;
 mod schema;
 mod source_forget;
 pub use context_revision::{ContextRevisionBinding, validate_context_kind, validate_context_text};
 pub use forget::{ForgetBinding, ForgetStage};
+pub use human_read::ContextReadBinding;
 pub use human_search::validate_human_search;
 pub use ranked_query::validate_query_terms;
 pub use schema::UpgradeStage;
@@ -1397,8 +1399,12 @@ impl Store {
     pub fn contexts(&self, project: &str) -> Result<Value> {
         let tx = self.db.unchecked_transaction().map_err(unavailable)?;
         self.project(project)?;
-        let marked = forget::markers(&tx, project)?;
-        let mut stmt = self.db.prepare("SELECT id,revision,kind,retired FROM context c WHERE project=?1 AND revision=(SELECT max(revision) FROM context WHERE project=c.project AND id=c.id) ORDER BY id LIMIT 4097").map_err(unavailable)?;
+        Self::contexts_in(&tx, project)
+    }
+
+    fn contexts_in(tx: &rusqlite::Transaction<'_>, project: &str) -> Result<Value> {
+        let marked = forget::markers(tx, project)?;
+        let mut stmt = tx.prepare("SELECT id,revision,kind,retired FROM context c WHERE project=?1 AND revision=(SELECT max(revision) FROM context WHERE project=c.project AND id=c.id) ORDER BY id LIMIT 4097").map_err(unavailable)?;
         let rows = stmt
             .query_map([project], |r| {
                 Ok((
@@ -1432,8 +1438,12 @@ impl Store {
         let tx = self.db.unchecked_transaction().map_err(unavailable)?;
         self.project(project)?;
         identity(id)?;
-        forget::require_unmarked(&tx, project, id)?;
-        let mut stmt = self.db.prepare("SELECT revision,kind,text,retired FROM context WHERE project=?1 AND id=?2 ORDER BY revision LIMIT 33").map_err(unavailable)?;
+        Self::context_in(&tx, project, id)
+    }
+
+    fn context_in(tx: &rusqlite::Transaction<'_>, project: &str, id: &str) -> Result<Value> {
+        forget::require_unmarked(tx, project, id)?;
+        let mut stmt = tx.prepare("SELECT revision,kind,text,retired FROM context WHERE project=?1 AND id=?2 ORDER BY revision LIMIT 33").map_err(unavailable)?;
         let rows = stmt
             .query_map(params![project, id], |r| {
                 Ok((

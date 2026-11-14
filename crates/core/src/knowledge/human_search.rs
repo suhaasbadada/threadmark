@@ -17,6 +17,20 @@ impl Store {
         self.search_context_observed(project, query, cancel, || {})
     }
 
+    /// Opt-in human search bound before any human SQL read in the same snapshot.
+    pub fn search_context_bound(
+        &self,
+        project: &str,
+        query: &str,
+        binding: &ContextReadBinding<'_>,
+        cancel: &AtomicBool,
+    ) -> Result<Value> {
+        validate_human_search(project, query)?;
+        self.read_human_bound(project, binding, cancel, |tx, registration| {
+            self.search_context_in(tx, registration, query, cancel, || {})
+        })
+    }
+
     fn search_context_observed(
         &self,
         project: &str,
@@ -30,7 +44,21 @@ impl Store {
         let tx = self.db.unchecked_transaction().map_err(unavailable)?;
         let registration = self.project(project)?;
         Self::require_project_root(&tx, &registration)?;
-        let marked = forget::markers(&tx, project)?;
+        let reply = self.search_context_in(&tx, &registration, query, cancel, &mut boundary)?;
+        tx.commit().map_err(unavailable)?;
+        Ok(reply)
+    }
+
+    pub(super) fn search_context_in(
+        &self,
+        tx: &rusqlite::Transaction<'_>,
+        registration: &Project,
+        query: &str,
+        cancel: &AtomicBool,
+        mut boundary: impl FnMut(),
+    ) -> Result<Value> {
+        let project = registration.id.as_str();
+        let marked = forget::markers(tx, project)?;
         boundary();
         canceled(cancel)?;
         // At most 4096 persisted revisions are admitted by the writer. Fail on
@@ -121,13 +149,12 @@ impl Store {
         }
         boundary();
         canceled(cancel)?;
-        Self::require_project_root(&tx, &registration)?;
+        Self::require_project_root(tx, registration)?;
         self.healthy()?;
         if serde_json::to_vec(&reply).map_err(unavailable)?.len() + 1 > 8192 {
             return Err(invalid());
         }
         canceled(cancel)?;
-        tx.commit().map_err(unavailable)?;
         Ok(reply)
     }
 }

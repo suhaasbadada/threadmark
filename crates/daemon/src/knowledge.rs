@@ -38,6 +38,8 @@ pub enum Command {
     QueryBound(threadmark_core::knowledge::Project, String),
     /// Bounded human-only active latest context search; never source evidence.
     SearchContext(String, String),
+    /// Opt-in human search scoped before human SQL reads (root, identity, nonce).
+    SearchContextBound(String, String, String, String, String),
     /// Explicit any-term lexical ranking; literal query/default preparation unchanged.
     QueryTerms(String, String),
     /// Cached ranked read; exact binding reaches core before traversal.
@@ -66,6 +68,10 @@ pub enum Command {
     Contexts(String),
     /// Inspect bounded edit history.
     Context(String, String),
+    /// Opt-in latest metadata read scoped to a captured registration.
+    ContextsBound(String, String, String, String),
+    /// Opt-in history read scoped to a captured registration.
+    ContextBound(String, String, String, String, String),
     /// Explicit compatibility-changing schema upgrade of existing storage only.
     UpgradeStore,
     /// Operator attests that all legacy workers have stopped before this migration.
@@ -96,6 +102,25 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         threadmark_core::knowledge::validate_removal_binding(id, root, identity)?;
     }
     match &command {
+        Command::ContextsBound(project, root, identity, token)
+        | Command::ContextBound(project, _, root, identity, token)
+        | Command::SearchContextBound(project, _, root, identity, token) => {
+            threadmark_core::knowledge::ContextReadBinding {
+                root,
+                root_identity: identity,
+                incarnation: token,
+            }
+            .validate(project)?;
+            match &command {
+                Command::ContextBound(_, id, ..) => {
+                    threadmark_core::knowledge::validate_export_project(id)?;
+                }
+                Command::SearchContextBound(_, query, ..) => {
+                    threadmark_core::knowledge::validate_human_search(project, query)?;
+                }
+                _ => {}
+            }
+        }
         Command::UpdateContextRevisionBound(
             project,
             id,
@@ -203,6 +228,9 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
     } else if matches!(
         &command,
         Command::IndexBound(..)
+            | Command::ContextsBound(..)
+            | Command::ContextBound(..)
+            | Command::SearchContextBound(..)
             | Command::UpdateContextRevisionBound(..)
             | Command::RetireContextRevisionBound(..)
             | Command::QueryBound(..)
@@ -234,6 +262,36 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         Store::open(data_dir)?
     };
     let result = match command {
+        Command::ContextsBound(project, root, identity, token) => store.contexts_bound(
+            &project,
+            &threadmark_core::knowledge::ContextReadBinding {
+                root: &root,
+                root_identity: &identity,
+                incarnation: &token,
+            },
+            cancel,
+        )?,
+        Command::ContextBound(project, id, root, identity, token) => store.context_bound(
+            &project,
+            &id,
+            &threadmark_core::knowledge::ContextReadBinding {
+                root: &root,
+                root_identity: &identity,
+                incarnation: &token,
+            },
+            cancel,
+        )?,
+        Command::SearchContextBound(project, query, root, identity, token) => store
+            .search_context_bound(
+                &project,
+                &query,
+                &threadmark_core::knowledge::ContextReadBinding {
+                    root: &root,
+                    root_identity: &identity,
+                    incarnation: &token,
+                },
+                cancel,
+            )?,
         Command::UpdateContextRevisionBound(
             project,
             id,
