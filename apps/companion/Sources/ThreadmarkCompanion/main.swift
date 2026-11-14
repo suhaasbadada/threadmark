@@ -322,6 +322,7 @@ struct ContextView: View {
                 }
                 if let history = model.history {
                     Text("Scope: \(history.project) · \(history.producer) · authority \(history.authority.description)").font(.caption)
+                    HumanComparisonView(model: model)
                     ForEach(history.history, id: \.revision) { revision in
                         VStack(alignment: .leading) {
                             Text("Revision \(revision.revision) · \(revision.kind) · \(revision.retired ? "retired" : "active")").font(.headline)

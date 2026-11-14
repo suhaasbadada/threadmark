@@ -89,6 +89,7 @@ private actor ExplicitFakeCoreService: CoreService {
         calls += 1
         if let error = nextFailure { nextFailure = nil; throw error }
         switch operation {
+        case .compareHumanContextBound: throw ServiceError.invalid // Dedicated comparison fixtures own this read.
         case .contextsBound(let b):
             try b.validate()
             guard projects.contains(where: { (try? HumanContextReadBinding(project: $0)) == b }) else { throw ServiceError.scopeMismatch }

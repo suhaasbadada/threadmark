@@ -77,6 +77,7 @@ public struct ProcessService: CoreService {
         let cancellation = Cancellation()
         var operationLimits = limits
         if case .inspectSourceAnchorBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
+        if case .compareHumanContextBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 65536) }
         if case .refinePreview = operation {
             operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192)
             operationLimits.seconds = min(limits.seconds, 30)
@@ -120,6 +121,8 @@ public struct ProcessService: CoreService {
             switch responseOperation {
             case .inspectSourceAnchorBound(let request):
                 return .sourceInspection(try SourceInspectionDocument.decode(data, request: request))
+            case .compareHumanContextBound(let request):
+                return .humanComparison(try HumanComparison.decode(data, request: request))
             case .exportProjectBound(let execution):
                 return .projectExport(try ProjectExportDocument.decode(data, scope: execution.confirmation.project))
             case .refinePreview(let consent):
@@ -258,6 +261,11 @@ public struct ProcessService: CoreService {
                     "--expected-source-hash", a.source_hash, "--expected-root", p.root,
                     "--expected-root-identity", identity, "--expected-incarnation", token,
                     "--expected-snapshot", snapshot, "--expected-sources"] + p.sources
+        case .compareHumanContextBound(let request):
+            try request.validate()
+            let b = request.binding
+            args = ["context", "compare", b.project, request.contextID, String(request.from.revision), String(request.to.revision),
+                    "--expected-root", b.root, "--expected-root-identity", b.rootIdentity, "--expected-incarnation", b.incarnation]
         case .contextsBound(let binding), .contextBound(let binding, _), .searchHumanContextBound(let binding, _):
             try binding.validate()
             switch operation {
