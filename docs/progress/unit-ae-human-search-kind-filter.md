@@ -1,5 +1,35 @@
 # Unit AE — explicit kind-filtered saved human context search
 
+## Primary integration and independent review
+
+The preliminary child handoff explicitly had native verification still running;
+primary did not treat that as a pass or restart the invocation. Native completion
+then delivered the frozen-source final receipt below. Primary read the settled
+child result and only then requested independent review. No duplicate worker.
+
+Joffrey independently reproduced both fingerprints, reviewed all 21 owned files
+**CLEAR**, and passed six Rust core, four actual CLI, six strict Swift tests/two
+suites (fake/live adapter), filter API gate and whitespace. Full pipeline/bundle
+results at that point remained lane-reported; no GUI/Swift 6.1 or CI claim.
+
+Primary committed only owned files as `3817c6d` and applied cleanly as `bba91e3`,
+reconciling AD's shared core/daemon/CLI additions without textual conflicts or
+baseline/site history replay. CI now invokes the fourth, filter API compiler gate.
+Exact integrated tested runtime **`14adb52d710fdc1245130d7a75d1622ad56a3584`**:
+full workspace **327 Rust tests + two doctests PASS**; strict serial actual-CLI/
+all-C-fixture Debug and full Release each **245 tests/38 suites PASS**; all four
+API gates, offline locked deny, staged secrets/whitespace, release bundle/plist
+**PASS**. Two unchanged long deadlines ignored. Publication CI remains separate.
+
+PR #79 passed all five checks at `26a2efa02e8f315885ee25573d6971ed00fa6f51`
+(CI `43587483663`, integrated `43587483669`), fresh exact-head/main/check/review/
+approval/discussion/rules gates preceded merge
+`e26aea6ec00fabb0e56ba259fa858f61ce2d758e`. Watch removed. Its exact post-merge
+runs `43588017452` and `43588017421`, both targeting that merge, **PASS**.
+Native coverage inspection remains independently active. Nine inherited progress
+edits, worktrees and parent reminders preserved. No GUI/AX/live-quality/host-
+delivery/phase closure inferred from any local/CI/merge gate.
+
 Requirements TM-01–TM-04, TM-07, TM-10; partial P2-A1/A3/A4/A5/A6,
 P3-A4/A6. [Phase 2](../spec/phase-2-knowledge-core.md) and
 [Phase 3](../spec/phase-3-background-experience.md) remain open.
