@@ -59,3 +59,21 @@ Remote exact-head CI/PR outcome remains subsequent. GUI/accessibility and platfo
 fixtures, native upgrade UI, further cached-read hardening, live providers/hosts
 and phase closure remain open. No real user source was forgotten or store migrated.
 All inherited appends, user work, worktrees and orchestration reminders remain.
+
+## PR #51 early-rejection fixture repair
+
+Publication head `40b51452d94deffb5303c155f2d4e03f2e41fe82` failed Linux job
+[132301908649](https://github.com/suhaasbadada/threadmark/actions/runs/43547434593/job/132301908649)
+in CI [43547434593](https://github.com/suhaasbadada/threadmark/actions/runs/43547434593).
+The CLI correctly rejected malformed cached bindings before reading stdin; the
+fixture's unconditional write unwrap raced the exited child and panicked with
+BrokenPipe. The macOS job, security job and integrated run 43547434511 passed on
+that head, but did not waive the required Linux failure.
+
+The coordinator repaired only the test harness: BrokenPipe is accepted solely
+with a failed child; a successful child with lost input still fails. A deterministic
+regression retains the pipe, waits for finite malformed-command exit, proves
+BrokenPipe and verifies collection/no store creation. No sleep/retry or production
+parser change was used. Full local checks then passed 137 Rust tests plus two
+doctests and all 105 strict Swift tests against the actual core. A new exact-head
+remote run remains required; the failed run is retained, not blindly retried.
