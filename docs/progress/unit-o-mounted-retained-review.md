@@ -175,3 +175,24 @@ Unit P independently adds adapter-only immutable retrieval-mode support; mounted
 Refine remains literal here. No live provider, GUI/AX, host copy/draft/send/admission
 or phase closure follows. Nine inherited progress modifications remain excluded;
 all worktrees and parent reminders remain intact.
+# PR #64 compiler-compatibility repair
+
+Required CI [43568244455](https://github.com/suhaasbadada/threadmark/actions/runs/43568244455),
+macOS job [132366726737](https://github.com/suhaasbadada/threadmark/actions/runs/43568244455/job/132366726737),
+failed on `9b900717337c03e84281587c9fa8e54bcc131ea9` before tests ran: that Swift
+compiler rejects a local `weak let`. Changing only to `weak var` then failed the
+newer local compiler's warnings-as-errors unused-mutability diagnostic. Neither
+failure is waived or counted as a test pass.
+
+Exact tested correction `f2b60e6a83c304b298085b58d1d9248fcd4a2ea2` uses a standard
+closure weak capture instead. Clearing the last strong model variable still must
+make the captured weak reference nil; the test still joins the retained lifetime
+and proves actual child reaping and exactly one provider connection. No production
+code, lifecycle assumption, timeout or assertion is removed.
+
+Primary complete strict serial actual-CLI/C-fixture suite **PASS**, 157 tests/20
+suites; ordinary-import API boundary gate, full workspace gate, dependency policy,
+staged secrets and whitespace **PASS**. The older CI compiler is not installed
+locally; the new exact-head remote macOS run remains required evidence. No blind
+job retry, test disabling or merge before that gate. Unit P completion is received
+separately, awaiting independent review/integration; Unit Q remains active.
