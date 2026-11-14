@@ -74,6 +74,8 @@ pub enum Command {
     PrepareContext(String, String, String),
     /// Context selection and revalidation use the same captured project.
     PrepareContextBound(threadmark_core::knowledge::Project, String, String),
+    /// Explicit immutable file-output selection; full source freshness, Context only.
+    PrepareContextFiles(crate::preparation::file_scoped::FileContextPlan, String),
     /// Explicit any-term ranked Context; existing literal command unchanged.
     PrepareContextTerms(String, String, String),
     /// Cached ranked Context, including engine revalidation.
@@ -137,6 +139,9 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         threadmark_core::knowledge::validate_export_binding(expected)?;
     }
     match &command {
+        Command::PrepareContextFiles(_, original) => {
+            crate::preparation::file_scoped::validate_original(original)?;
+        }
         Command::QueryFilesBound(expected, request) => request.validate(expected)?,
         Command::EditContextBatchBound(project, request, root, identity, token) => {
             request.validate(
@@ -327,6 +332,7 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
             | Command::RetireContextRevisionBound(..)
             | Command::QueryBound(..)
             | Command::QueryFilesBound(..)
+            | Command::PrepareContextFiles(..)
             | Command::QueryTermsBound(..)
             | Command::PrepareContextTermsBound(..)
             | Command::PrepareContextBound(..)
@@ -355,6 +361,9 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         Store::open(data_dir)?
     };
     let result = match command {
+        Command::PrepareContextFiles(plan, original) => {
+            crate::preparation::file_scoped::context_files(&store, plan, original, cancel)?
+        }
         Command::QueryFilesBound(expected, request) => {
             store.query_files_bound(&expected, &request, cancel)?
         }

@@ -87,6 +87,9 @@ fn usage() -> std::process::ExitCode {
     );
     eprintln!("{}", local_refinement::USAGE);
     eprintln!(
+        "context prepare-files PROJECT QUERY --mode literal|ranked-any-terms --selected-files FILE ... --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-snapshot HASH|none --expected-sources [FILE ...] (exact order, existing schema v3/v4, immutable full binding; nonempty original UTF-8 on stdin <=4096 bytes, no NUL; whole JSON/LF <=8192 bytes; output candidates only, ALL approved files read for freshness; no I/O avoidance/privacy/AST/performance gain; provider not invoked, approval not requested, delivery not attempted)"
+    );
+    eprintln!(
         "query-files PROJECT QUERY --mode literal|ranked-any-terms --selected-files FILE ... --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-snapshot HASH|none --expected-sources [FILE ...] (1..64 distinct approved output candidates only; FULL approved policy source/freshness reads remain; required exact binding/order; existing store, no stdin; whole JSON plus newline <=8192 bytes; no Context/Refine integration)"
     );
     eprintln!(
@@ -123,6 +126,10 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
     // complete approved policy of up to 64 files. Other grammars keep their cap.
     let argument_limit = if args.get(2).is_some_and(|s| s == "query-files") {
         145 // fixed grammar plus 64 selected and 64 complete-policy paths
+    } else if args.get(2).is_some_and(|s| s == "context")
+        && args.get(3).is_some_and(|s| s == "prepare-files")
+    {
+        146
     } else if args.get(2).is_some_and(|s| s == "source")
         && args.get(3).is_some_and(|s| s == "inspect")
     {
@@ -464,6 +471,48 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
                 return usage();
             }
             Command::QueryFilesBound(expected, request)
+        }
+        [
+            "context",
+            "prepare-files",
+            id,
+            text,
+            "--mode",
+            mode,
+            "--selected-files",
+            rest @ ..,
+        ] => {
+            use threadmark_core::knowledge::{FileQuery, FileQueryMode};
+            use threadmark_daemon::preparation::file_scoped::FileContextPlan;
+            let mode = match *mode {
+                "literal" => FileQueryMode::Literal,
+                "ranked-any-terms" => FileQueryMode::RankedAnyTerms,
+                _ => return usage(),
+            };
+            let Some(end) = rest.iter().position(|w| *w == "--expected-root") else {
+                return usage();
+            };
+            let Some(expected) = read_binding(id, text, &rest[end..]) else {
+                return usage();
+            };
+            let Ok(plan) = FileContextPlan::new(
+                expected,
+                FileQuery {
+                    query: (*text).into(),
+                    mode,
+                    selected_paths: rest[..end].iter().map(|p| (*p).into()).collect(),
+                },
+            ) else {
+                return usage();
+            };
+            let mut bytes = Vec::new();
+            if std::io::stdin().take(4097).read_to_end(&mut bytes).is_err() || bytes.len() > 4096 {
+                return failure();
+            }
+            let Ok(original) = String::from_utf8(bytes) else {
+                return failure();
+            };
+            Command::PrepareContextFiles(plan, original)
         }
         ["query-terms", id, text, binding @ ..] if !binding.is_empty() => {
             let Some(expected) = read_binding(id, text, binding) else {
