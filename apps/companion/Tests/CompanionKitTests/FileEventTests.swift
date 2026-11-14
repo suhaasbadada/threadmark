@@ -398,11 +398,14 @@ struct FileEventTests {
         watches = nil
         #expect(tracker.balanced)
         var driver: TimerRefreshDriver? = TimerRefreshDriver()
-        weak let weakDriver = driver
+        weak var weakDriver = driver
         try await driver?.startAuthorized(consent: fixture.consent(), interval: 60) {} failure: { Issue.record("Unexpected watch failure") }
         let timer = try #require(driver?.timer)
         driver = nil
         #expect(weakDriver == nil && !timer.isValid)
+        // Swift 6.1 requires weak var; newer compilers warn if it is never
+        // mutated. Clear the observer only after checking owner teardown.
+        weakDriver = nil
     }
 
     @Test(arguments: [false, true]) func stoppedOrChangedScopeRejectsLateDebounceEvenIfWaitIgnoresCancellation(changeScope: Bool) async throws {

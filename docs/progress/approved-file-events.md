@@ -60,3 +60,17 @@ filesystem fixtures, native GUI/accessibility runtime, source-derived Forget,
 live providers/hosts and full phase closure remain open. No private user-source
 watching was enabled. All inherited appends, user work and worktrees were preserved;
 the entire inherited Phase 2 ledger remains excluded, including a delegate append.
+
+## PR #49 compiler compatibility repair
+
+Head `370f504f4d80ccb412343a6c288a01d6324bcf22` ran CI
+[43539639858](https://github.com/suhaasbadada/threadmark/actions/runs/43539639858).
+Its macOS job [132276918124](https://github.com/suhaasbadada/threadmark/actions/runs/43539639858/job/132276918124)
+passed Rust checks but failed compiling `FileEventTests.swift:401`: the CI Swift
+compiler requires a weak reference to be mutable (`weak let` is rejected).
+The coordinator changed it to `weak var`; the newer local compiler then correctly
+failed warnings-as-errors because it was never mutated. Clearing the weak observer
+only **after** asserting owner destruction/timer invalidation accommodates both
+toolchains without weakening the lifecycle assertion. All 82 strict Swift tests
+then passed against the actual core. Production runtime is unchanged. A new exact-
+head remote run remains required; the failed run is not retried or waived.
