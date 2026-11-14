@@ -16,6 +16,14 @@ head and verified exact full-tree equality before the one-line runtime patch.
 Local Swift 6.4 checks cannot prove the 6.1.2 workaround; only a new exact-head
 CI run can verify that. Both suites, all fixtures/APIs and bundle remain mandatory.
 
+The next exact-head CI `43608378450` at
+`23c7e2db903600921bebd96f3bf9177575a456a3` also failed: job `132487816137` now
+identified the adjacent **HumanSearchMode** setter thunk, no longer String.
+The same explicit-closure repair is therefore applied to the mode picker. This
+is a second diagnosed source correction, not a retry or an older-compiler pass.
+Both newly introduced direct actor-isolated Binding setter references have now
+been removed; the exact byte-change fence and explicit dispatch stay intact.
+
 Owned implementation committed as `0c0320e`, then applied on AN as
 **`1fbb169e9238756cadfcc587200a622827886b8c`**, exact integrated tested runtime.
 Shared conflicts retain both AN and AP cancellation/history/CAS hooks and both
