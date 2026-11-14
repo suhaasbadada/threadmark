@@ -1,5 +1,52 @@
 # Unit AT — selected human revision export
 
+## Primary integration, independent review and concurrency evidence
+
+Owned implementation committed as `82a4d28`, cleanly applied as
+`d8ce694b9beb120c21ac04b27c3c4902239934c2`. The seven-file runtime/test/contract
+fingerprint was reproduced after integration, identical to
+**`cde141dde5689d65bdfdcd95e6c34995c11732a6621cf125f2f4852421f24c75`**.
+No baseline/site replay, AS code, native export implementation or source-policy
+permission change was included. Joffrey independently reviewed AT **CLEAR**, verified
+the fingerprint and reran full offline **459 tests/doctests**, deny, staged secrets
+and whitespace. He checked the shared history validator and new read-only opener.
+
+Primary's first full gate exposed an inherited simultaneous-CAS test assumption:
+exactly one writer won, but the loser returned `Unavailable`, not `ScopeMismatch`.
+The failing log is retained at `target/unit-at-integrated-check.log`. Sherlock
+confirmed CAS production/test bytes were unchanged by AT, reproduced one identical
+failure in 600 bounded concurrent targeted runs (100 sequential runs passed), and
+verified the frozen revision contract explicitly permits contention/admission/
+dependency refusal before a revision comparison. Exact failing syscall remains
+unproven; transient DELETE-journal disappearance during health checking is the
+strongest hypothesis, not an established production diagnosis.
+
+Test-only repair **`64f374428dd3df46743882283ee4c740af0e3ecc`** retains exactly one
+winner, exactly one append, winner text/retirement and reopen checks; only
+`ScopeMismatch | Unavailable` are admitted as loser errors. Two deterministic tests
+separately require (a) an actually contending captured writer to compare after the
+acknowledged winner commit and return `ScopeMismatch`, and (b) zero-timeout held-lock
+admission to return `Unavailable` with unchanged reopened history. The one-shot
+busy-handler handoff is test-only; no production mutation retry or error remapping.
+
+A fresh Joffrey repair review was **CLEAR**. He passed 12 targeted tests plus
+20 additional concurrent runs (240 test executions). Primary passed 120 bounded
+concurrent targeted invocations across four subprocess workers, then the complete
+offline gate **461 tests/doctests**, deny, secrets and whitespace. Exact integrated
+tested identity is `64f374428dd3df46743882283ee4c740af0e3ecc`; the later main merge
+changes no source bytes. Native full strict Debug and Release each **336 tests/
+54 suites**, actual CLI/all ten C families, all eleven API gates and bundle/plist
+also passed against unchanged AT runtime; only Rust tests changed afterward.
+Two inherited long-deadline tests remain ignored. This evidence is separate from
+exact publication-head CI, GUI/AX/live quality/host delivery and phase closure.
+
+AR #93 all five checks passed at `c036c89d15f89e854e40e3b18c59fb00a00e9801`
+(CI `43613775625`, integrated `43613775617`), followed by fresh head/main/review/
+discussion/rules/acceptance gates and authorized merge
+`cf61d33852354d1cb6ad3b136864aa9ca12181cc`. Watch removed; exact post-merge CI not
+yet verified. Nine inherited progress edits, earlier local receipts, AS's deferred
+worktree and all task worktrees remain intact.
+
 Scope: TM-01–TM-04, TM-07, TM-10; partial P2-A1/A3/A4/A5/A6 and P3-A4.
 [Frozen contract](../contracts/selected-human-revision-export-v1.md).
 Implementation is uncommitted; primary owns integration/review. No native work,
