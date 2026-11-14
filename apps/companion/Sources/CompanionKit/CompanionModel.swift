@@ -18,6 +18,10 @@ public final class CompanionModel: ObservableObject {
     @Published public private(set) var selectedID: String?
     @Published public private(set) var project: Project?
     @Published public private(set) var contexts: [ContextEntry] = []
+    @Published public private(set) var humanSearch: HumanContextSearch?
+    private var humanSearchScope: Project?
+    private var humanSearchTicket: UInt64?
+    private var humanSearchCancellationTicket: UInt64?
     @Published public private(set) var history: ContextHistory?
     @Published public private(set) var evidence: QueryReport?
     @Published public private(set) var preview: ContextPreview?
@@ -409,6 +413,37 @@ public final class CompanionModel: ObservableObject {
             self.history = result; self.status = "Human context history loaded"
         }
     }
+    public var canSearchHumanContext: Bool {
+        configured && canRemoveProject && !policyDirty && !sourceRequiresRefresh && !forgetRequiresRefresh &&
+        pendingRemoval == nil && pendingForget == nil && pendingSourceForget == nil
+    }
+    public func searchHumanContext(_ query: String) {
+        humanSearchQueryChanged()
+        guard canSearchHumanContext, let target = project, InputPolicy.humanSearch(query) else { fail(.invalid); return }
+        start(status: "Searching human-authored context — no source reads or inference") { service in
+            _ = try await Self.checkNamespace(service, target)
+            let reply = try await service.perform(.searchHumanContext(target.id, query))
+            _ = try await Self.checkNamespace(service, target)
+            return [reply]
+        } apply: { replies in
+            guard case .humanContextSearch(let result) = replies[0] else { throw ServiceError.invalid }
+            try result.validate(scope: target)
+            self.humanSearch = result; self.humanSearchScope = target
+            self.status = "Human context: latest active revisions at read only — not source evidence or authorization"
+        }
+        humanSearchTicket = generation
+    }
+    public func humanSearchQueryChanged() {
+        if humanSearchTicket != nil { cancel() }
+        clearHumanSearch()
+    }
+    /// Loads the existing history pane; never copies text into an editor or approves a rule.
+    public func inspectHumanSearchEntry(_ id: String) {
+        guard !busy, let scope = humanSearchScope, let project, Self.sameNamespace(project, scope),
+              humanSearch?.results.contains(where: { $0.id == id }) == true else { return }
+        openContext(id)
+    }
+    private func clearHumanSearch() { humanSearch = nil; humanSearchScope = nil }
     public func editPreparation(query: String, original: String) {
         guard !preparationQuery.utf8.elementsEqual(query.utf8) || !originalDraft.utf8.elementsEqual(original.utf8) else { return }
         cancelOperation(); preparationQuery = query; originalDraft = original
@@ -575,6 +610,10 @@ public final class CompanionModel: ObservableObject {
         cancelOperation()
     }
     private func cancelOperation() {
+        let cancelingSearch = humanSearchTicket
+        if let cancelingSearch { humanSearchCancellationTicket = cancelingSearch }
+        humanSearchTicket = nil
+        clearHumanSearch()
         automaticTicket = nil
         pendingRemoval = nil
         pendingForget = nil
@@ -592,8 +631,9 @@ public final class CompanionModel: ObservableObject {
         }
         if sourceRequiresRefresh { status = refreshRequiredError.localizedDescription }
         busy = false
+        if cancelingSearch != nil { status = "Human search cancel requested — joining owned worker" }
     }
-    private func clearResults() { evidence = nil; history = nil; indexReport = nil; preview = nil; forgottenMarkers = nil; sourceMarkers = nil; inspectedSourceScope = nil }
+    private func clearResults() { clearHumanSearch(); evidence = nil; history = nil; indexReport = nil; preview = nil; forgottenMarkers = nil; sourceMarkers = nil; inspectedSourceScope = nil }
     private func clearProject() {
         disableAutomaticRefresh()
         scopeRevision &+= 1
@@ -617,7 +657,17 @@ public final class CompanionModel: ObservableObject {
         for pending in prior { pending.cancel() }
         busy = true; lastError = nil; self.status = status
         job = Task { [weak self] in
-            defer { self?.ownedOperations.removeValue(forKey: ticket) }
+            defer {
+                self?.ownedOperations.removeValue(forKey: ticket)
+                if self?.humanSearchTicket == ticket { self?.humanSearchTicket = nil }
+                if self?.humanSearchCancellationTicket == ticket {
+                    self?.humanSearchCancellationTicket = nil
+                    if self?.generation == ticket &+ 1, self?.job == nil, self?.quitting == false,
+                       self?.status == "Human search cancel requested — joining owned worker" {
+                        self?.status = "Human search canceled — owned worker joined; no result adopted"
+                    }
+                }
+            }
             do {
                 // UI invalidation is immediate, but persistent effects must not
                 // be overtaken by replacement work, even if a service ignores

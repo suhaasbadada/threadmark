@@ -178,6 +178,65 @@ public struct ContextRevision: Codable, Sendable {
     public let retired: Bool
 }
 
+/// Human declarations only. This receipt is not source evidence or permission.
+public struct HumanContextSearch: Codable, Sendable {
+    public struct Entry: Codable, Identifiable, Sendable {
+        public let id: String
+        public let kind: String
+        public let revision: Int
+        public let text: String
+        public let producer: String
+        public let status: String
+    }
+    public let project: String
+    public let root_identity: String
+    public let incarnation: String?
+    public let producer: String
+    public let status: String
+    public let authority: String
+    public let coverage: String
+    public let selection: String
+    public let matched_entries: Int
+    public let omitted_entries: Int
+    public let truncated: Bool
+    public let results: [Entry]
+    public static let coverageLabel = "human-text-only; Unicode-lowercase literal substring; no normalization, source, semantic or historical search"
+    public static let selectionLabel = "occurrence-count-descending-id-ascending; max-8; max-8192-JSON-bytes-including-newline; whole-entry-omission"
+
+    public func validate(project id: String) throws {
+        guard project == id else { throw ServiceError.scopeMismatch }
+        guard InputPolicy.identifier(project), !root_identity.isEmpty, root_identity.utf8.count <= 128,
+              !root_identity.contains("\0"), incarnation.map(InputPolicy.incarnation) ?? true,
+              producer == "human-authored", status == "active-latest-at-read",
+              authority == "context-not-authorization-or-observed-truth",
+              coverage == Self.coverageLabel, selection == Self.selectionLabel,
+              (0...4096).contains(matched_entries), results.count <= 8,
+              matched_entries >= results.count, omitted_entries == matched_entries - results.count,
+              truncated == (omitted_entries > 0), Set(results.map(\.id)).count == results.count,
+              results.allSatisfy({ InputPolicy.identifier($0.id) && InputPolicy.contextKinds.contains($0.kind) &&
+                  (1...32).contains($0.revision) && !$0.text.isEmpty && $0.text.utf8.count <= 4096 &&
+                  !$0.text.contains("\0") && $0.producer == "human-authored" && $0.status == "active" }) else { throw ServiceError.invalid }
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.withoutEscapingSlashes]
+        guard try encoder.encode(self).count + 1 <= 8192 else { throw ServiceError.outputLimit }
+    }
+    public func validate(scope: Project) throws {
+        try validate(project: scope.id)
+        guard case .string(let identity) = scope.root_identity,
+              let token = scope.incarnation, InputPolicy.incarnation(token),
+              root_identity == identity, incarnation == token else { throw ServiceError.namespaceChanged }
+    }
+    static func decode(_ data: Data, project: String) throws -> Self {
+        guard data.count <= 8192 else { throw ServiceError.outputLimit }
+        guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              Set(object.keys) == ["project", "root_identity", "incarnation", "producer", "status", "authority", "coverage", "selection", "matched_entries", "omitted_entries", "truncated", "results"],
+              let entries = object["results"] as? [[String: Any]],
+              entries.allSatisfy({ Set($0.keys) == ["id", "kind", "revision", "text", "producer", "status"] }) else { throw ServiceError.invalid }
+        let receipt = try JSONDecoder().decode(Self.self, from: data)
+        try receipt.validate(project: project)
+        return receipt
+    }
+}
+
 /// Ephemeral, plain-text review output. No approval or handoff capability.
 public struct ContextPreview: Codable, Equatable, Sendable {
     public let project: String
@@ -232,6 +291,7 @@ public enum ServiceError: String, Error, Sendable, LocalizedError {
 }
 
 public enum Operation: Sendable {
+    case searchHumanContext(String, String)
     case setSourcesBound(String, String, String, String, [String], [String])
     case writeContextBound(String, String, String, String, Bool, String, String, String)
     case retireContextBound(String, String, String, String, String)
@@ -247,6 +307,7 @@ public enum Operation: Sendable {
     case writeContext(String, String, String, String, update: Bool), retireContext(String, String)
 }
 public enum Reply: Sendable {
+    case humanContextSearch(HumanContextSearch)
     case forgottenSource(ForgottenSource), forgottenSources(ForgottenSources)
     case forgotten(ForgottenContext), forgottenContexts(ForgottenContexts)
     case removed(RemovedProject)
@@ -260,6 +321,15 @@ public protocol CoreService: Sendable {
 }
 
 public enum InputPolicy {
+    public static func humanSearch(_ query: String) -> Bool {
+        // Rust char::is_whitespace, not Foundation's platform-dependent trim set.
+        let whitespace: (Unicode.Scalar) -> Bool = {
+            (9...13).contains($0.value) || [32, 133, 160, 5760, 8232, 8233, 8239, 8287, 12288].contains($0.value) ||
+            (8192...8202).contains($0.value)
+        }
+        return query.utf8.count <= 256 && query.unicodeScalars.contains(where: { !whitespace($0) }) &&
+            !query.unicodeScalars.contains { $0.value <= 31 || (127...159).contains($0.value) }
+    }
     public static func sourceMarker(_ path: String) -> Bool {
         path.utf8.count <= 240 && sources([path]) &&
         ["rs", "py", "md", "txt"].contains((path as NSString).pathExtension) &&

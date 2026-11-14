@@ -76,6 +76,7 @@ public struct ProcessService: CoreService {
               limits.inputBytes > 0, limits.inputBytes <= 4096 else { throw ServiceError.invalid }
         let cancellation = Cancellation()
         var operationLimits = limits
+        if case .searchHumanContext = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .query = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .prepareContext = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .removeProject = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 1024) }
@@ -94,6 +95,8 @@ public struct ProcessService: CoreService {
         do {
             let decoder = JSONDecoder()
             switch operation {
+            case .searchHumanContext(let project, _):
+                return .humanContextSearch(try HumanContextSearch.decode(data, project: project))
             case .forgetSource(let project, let path, _, _, _, _):
                 guard data.count <= 1024 else { throw ServiceError.outputLimit }
                 guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -192,6 +195,9 @@ public struct ProcessService: CoreService {
         var args: [String]
         var input = Data()
         switch operation {
+        case .searchHumanContext(let p, let query):
+            guard InputPolicy.humanSearch(query) else { throw ServiceError.invalid }
+            args = ["context", "search", try id(p), query]
         case .setSourcesBound(let p, let root, let identity, let token, let old, let new):
             guard InputPolicy.removal(root: root, identity: identity), InputPolicy.incarnation(token),
                   !old.contains(where: { $0.hasPrefix("--") }), !new.contains(where: { $0.hasPrefix("--") }) else { throw ServiceError.invalid }
