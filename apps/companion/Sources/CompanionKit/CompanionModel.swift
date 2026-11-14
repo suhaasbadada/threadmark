@@ -282,7 +282,7 @@ public final class CompanionModel: ObservableObject {
     }
     public func editPreparation(query: String, original: String) {
         guard !preparationQuery.utf8.elementsEqual(query.utf8) || !originalDraft.utf8.elementsEqual(original.utf8) else { return }
-        cancel(); preparationQuery = query; originalDraft = original
+        cancelOperation(); preparationQuery = query; originalDraft = original
     }
     public var canPrepareContext: Bool {
         configured && project?.id == selectedID && project != nil && !policyDirty &&
@@ -339,25 +339,44 @@ public final class CompanionModel: ObservableObject {
         return AutomaticRefreshConsent(projectID: project.id, root: project.root, rootIdentity: identity, incarnation: token,
                                        sources: sourceDraft, scopeRevision: scopeRevision)
     }
+    public var automaticRefreshSummary: String {
+        paused ? "Automatic refresh: paused" : (automaticRefreshConsent == nil
+            ? "Automatic refresh: off (no consent)" : "File-event + periodic refresh: approved")
+    }
     public func enableAutomaticRefresh(_ consent: AutomaticRefreshConsent) {
         guard !busy, consent == automaticRefreshProposal else { return }
         automaticRefreshConsent = consent
         paused = false
         updateRefreshDriver()
-        status = "Timed lexical refresh enabled — approved files read automatically every 60 seconds"
     }
     public func disableAutomaticRefresh() {
         let wasEnabled = automaticRefreshConsent != nil
         automaticRefreshConsent = nil
         refreshDriver.stop()
-        if automaticTicket != nil { cancel() }
+        if automaticTicket != nil { cancelOperation() }
         if wasEnabled { status = "Automatic reads disabled — refresh persisted state after any canceled work" }
     }
-    private func updateRefreshDriver() {
+    @discardableResult private func updateRefreshDriver() -> Bool {
         refreshDriver.stop()
         guard !paused, !quitting, let consent = automaticRefreshConsent,
-              consent == automaticRefreshProposal else { return }
-        refreshDriver.start(interval: Self.automaticRefreshInterval) { [weak self] in self?.automaticRefreshTick() }
+              consent == automaticRefreshProposal else { return true }
+        do {
+            status = "Checking approved policy — monitoring not yet enabled"
+            try refreshDriver.start(consent: consent, service: service, interval: Self.automaticRefreshInterval,
+                                    ready: { [weak self] in
+                guard let self, !self.paused, !self.quitting,
+                      self.automaticRefreshConsent == consent, self.automaticRefreshProposal == consent else { return }
+                self.status = "File-event + periodic lexical refresh enabled — exact approved files only"
+            }) { [weak self] in
+                self?.automaticRefreshTick()
+            } failure: { [weak self] in self?.automaticRefreshFailed() }
+            return true
+        } catch { automaticRefreshFailed(); return false }
+    }
+    private func automaticRefreshFailed() {
+        disableAutomaticRefresh()
+        lastError = .unavailable
+        status = "Needs attention — approved-file monitoring stopped. Refresh policy, repair unavailable files/permissions, then explicitly enable again."
     }
     /// Busy ticks are skipped, never queued or allowed to cancel manual work.
     private func automaticRefreshTick() {
@@ -365,22 +384,22 @@ public final class CompanionModel: ObservableObject {
         guard consent == automaticRefreshProposal else { disableAutomaticRefresh(); return }
         guard !busy, ownedOperations.isEmpty, pendingRemoval == nil, pendingForget == nil, !forgetRequiresRefresh else { return }
         evidence = nil; indexReport = nil
-        start(status: "Updating — timed bounded full lexical reconciliation", automatic: true) { service in
+        start(status: "Updating — file-event/periodic bounded full lexical reconciliation", automatic: true) { service in
             [try await service.perform(.indexBound(consent.projectID, consent.root, consent.rootIdentity, consent.sources, consent.incarnation))]
         } apply: { replies in
             guard case .indexed(let report) = replies[0], report.project == consent.projectID else { throw ServiceError.scopeMismatch }
             self.indexReport = report
-            self.status = report.empty ? "Partial — timed lexical snapshot empty; inspect coverage" : "Timed lexical refresh completed — currentness checked only at Build"
+            self.status = report.empty ? "Partial — lexical snapshot empty; inspect coverage" : "File-event/periodic lexical refresh completed — currentness checked only at Build"
         }
     }
     public func togglePause() {
         pendingForget = nil
         paused.toggle()
-        if paused, automaticTicket != nil { cancel() }
-        updateRefreshDriver()
+        if paused, automaticTicket != nil { cancelOperation() }
+        guard updateRefreshDriver() else { return }
         if !busy {
             status = paused ? "Paused — no automatic reads; manual actions remain available"
-                : (automaticRefreshConsent == nil ? "Automatic reads off — explicit scope consent required" : "Timed lexical refresh resumed for the same approved scope")
+                : (automaticRefreshConsent == nil ? "Automatic reads off — explicit scope consent required" : status)
         }
     }
     public func showManagement() { managementVisible = true }
@@ -394,6 +413,7 @@ public final class CompanionModel: ObservableObject {
     public func shutdown() async {
         let pending = Array(ownedOperations.values)
         quit()
+        await refreshDriver.shutdown()
         for operation in pending { await operation.value }
     }
     /// Also useful to embed the model without observing its UI. Never starts work.
@@ -402,6 +422,12 @@ public final class CompanionModel: ObservableObject {
         for operation in pending { await operation.value }
     }
     public func cancel() {
+        // An explicit Cancel tears down automatic producers too. Internal
+        // serialized replacements cancel only the operation, preserving consent.
+        disableAutomaticRefresh()
+        cancelOperation()
+    }
+    private func cancelOperation() {
         automaticTicket = nil
         pendingRemoval = nil
         pendingForget = nil
@@ -430,7 +456,7 @@ public final class CompanionModel: ObservableObject {
     private func start(status: String = "Working — bounded local core operation", automatic: Bool = false, work: @escaping @Sendable (any CoreService) async throws -> [Reply],
                        apply: @escaping @MainActor ([Reply]) throws -> Void) {
         guard !quitting else { return }
-        cancel(); let ticket = generation; let service = service
+        cancelOperation(); let ticket = generation; let service = service
         automaticTicket = automatic ? ticket : nil
         let prior = Array(ownedOperations.values)
         for pending in prior { pending.cancel() }

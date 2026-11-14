@@ -297,22 +297,41 @@ struct ModelTests {
         driver.fire(); await model.waitForOperation(); #expect(await service.calls == after)
     }
     @Test func productionFoundationTimerIsOwnedAndInvalidatedSynchronously() async throws {
+        let fixture = try ApprovedWatchFixture()
+        defer { fixture.remove() }
         let driver = TimerRefreshDriver()
-        let (model, _) = await selected(driver: driver)
+        defer { driver.stop() }
+        var ticks = 0
         #expect(driver.timer == nil)
-        let consent = try #require(model.automaticRefreshProposal)
-        model.enableAutomaticRefresh(consent)
+        let consent = try fixture.consent()
+        try await driver.startAuthorized(consent: consent, interval: 60) { ticks += 1 } failure: { Issue.record("Unexpected watch failure") }
         let first = try #require(driver.timer)
         #expect(first.isValid && first.timeInterval >= 60)
-        first.fire(); await model.waitForOperation() // Real Timer closure, no time delay.
-        #expect(model.indexReport?.project == "alpha")
-        model.enableAutomaticRefresh(consent)
+        first.fire() // Real Timer closure, no time delay.
+        await driver.waitForAuthorization()
+        #expect(ticks == 1 && driver.watchCount == 1)
+        try await driver.startAuthorized(consent: consent, interval: 60) { ticks += 1 } failure: { Issue.record("Unexpected watch failure") }
         #expect(!first.isValid && driver.timer?.isValid == true)
         let second = try #require(driver.timer)
-        model.togglePause(); #expect(!second.isValid && driver.timer == nil)
-        model.togglePause(); let third = try #require(driver.timer)
-        model.stageSources([]); #expect(!third.isValid && driver.timer == nil)
+        driver.stop(); #expect(!second.isValid && driver.timer == nil && driver.watchCount == 0)
+        first.fire(); second.fire(); #expect(ticks == 1)
+    }
+    @Test func productionWatchSetupFailureRequiresAttentionAndExplicitCancelStopsProducers() async throws {
+        // Synthetic nonexistent root: fail visibly, not timer-only coverage.
+        let driver = TimerRefreshDriver()
+        let (model, _) = await selected(driver: driver)
+        model.enableAutomaticRefresh(try #require(model.automaticRefreshProposal))
+        await driver.waitForAuthorization()
+        #expect(model.status.hasPrefix("Needs attention") && model.automaticRefreshConsent == nil)
+        #expect(driver.watchCount == 0 && driver.timer == nil && model.indexReport == nil)
         await model.shutdown()
+        let manual = ManualRefreshDriver()
+        let (enabled, _) = await selected(driver: manual)
+        enabled.enableAutomaticRefresh(try #require(enabled.automaticRefreshProposal))
+        #expect(manual.active)
+        enabled.cancel()
+        #expect(!manual.active && enabled.automaticRefreshConsent == nil)
+        await enabled.shutdown()
     }
     @Test func timedTicksSkipManualWorkWithoutInvalidatingPreviewOrQueuing() async throws {
         let driver = ManualRefreshDriver()

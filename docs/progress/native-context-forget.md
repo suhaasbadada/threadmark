@@ -47,3 +47,17 @@ and source/other-project preservation across rebuild/reopen. Remote exact-head C
 and PR outcome remain subsequent gates. GUI/accessibility runtime, source-derived
 Forget, native upgrade UI, event watching, live providers/hosts and full phase
 closure remain open. Inherited appends, user work, worktrees and reminders remain.
+
+## Publication outcome
+
+PR [#48](https://github.com/suhaasbadada/threadmark/pull/48) passed all five
+checks on `ad1052f0ca5bb9c357adee2f750fccd0463f5997`: CI
+[43535434885](https://github.com/suhaasbadada/threadmark/actions/runs/43535434885)
+and integrated [43535434911](https://github.com/suhaasbadada/threadmark/actions/runs/43535434911).
+Fresh exact-head/main/discussion/rules checks found no blocker; independent review
+and exact-binding acceptance above applied. It merged at
+`2026-11-14T00:43:11Z` as `399f0c8d472c6dc7669f0247182dff3de5bb7b47`;
+the PR watch was removed. Post-merge CI
+[43536068601](https://github.com/suhaasbadada/threadmark/actions/runs/43536068601)
+and integrated [43536068641](https://github.com/suhaasbadada/threadmark/actions/runs/43536068641)
+both passed on that exact merge. No real human context was forgotten during testing.

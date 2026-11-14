@@ -5,6 +5,89 @@ import Testing
 @Suite("Explicit opt-in live Rust core adapter integration")
 struct LiveCoreTests {
     @Test(.enabled(if: ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"] != nil,
+                  "Set THREADMARK_CORE_TEST_BINARY explicitly for real native file events into SQLite"))
+    @MainActor func approvedFileEventsUpdateActualSQLiteAndPauseRevokeRejectLateHints() async throws {
+        let path = try #require(ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"])
+        guard path.hasPrefix("/"), FileManager.default.isExecutableFile(atPath: path) else { throw ServiceError.unavailable }
+        let fixture = try ApprovedWatchFixture(); defer { fixture.remove() }
+        let other = fixture.root.appendingPathComponent("other")
+        try FileManager.default.createDirectory(at: other, withIntermediateDirectories: false)
+        try Data("synthetic_beta\n".utf8).write(to: other.appendingPathComponent("b.rs"))
+        try fixture.rewrite(String(repeating: "x", count: 65537), name: "omitted.rs")
+        let store = try StoreSelection.newDirectory(parent: fixture.root, name: "store")
+        let adapter = ProcessService(executable: URL(fileURLWithPath: path), dataDirectory: store)
+        _ = try await adapter.perform(.addProject("alpha", fixture.root.path, ["a.rs"]))
+        _ = try await adapter.perform(.addProject("beta", other.path, ["b.rs"]))
+        _ = try await adapter.perform(.writeContext("alpha", "memo", "note", "Synthetic retained human note", update: false))
+        var watchInstalls = 0, watchOpens = 0
+        let driver = TimerRefreshDriver(watches: AuthorizedFileWatches(willInstall: { watchInstalls += 1 }, opened: { _ in watchOpens += 1 }))
+        let model = CompanionModel(service: adapter, configured: true, refreshDriver: driver)
+        defer { model.quit() }
+        model.select("alpha"); await model.waitForOperation()
+        model.editPreparation(query: "synthetic", original: "Synthetic original retained")
+        let (reports, reportContinuation) = AsyncStream<Bool>.makeStream()
+        let observation = model.$indexReport.sink { if $0 != nil { reportContinuation.yield(true) } }
+        defer { observation.cancel() }
+        model.enableAutomaticRefresh(try #require(model.automaticRefreshProposal))
+        await driver.waitForAuthorization()
+        #expect(driver.watchCount == 1 && model.indexReport == nil)
+        model.closeManagement()
+        try fixture.rewrite("synthetic_event_updated\n")
+        #expect(await watchEvent(reports))
+        await model.waitForOperation()
+        guard case .query(let result) = try await adapter.perform(.query("alpha", "synthetic_event_updated")),
+              case .project(let beta) = try await adapter.perform(.project("beta")),
+              case .context(let note) = try await adapter.perform(.context("alpha", "memo")) else { throw ServiceError.invalid }
+        #expect(result.currentness == "current-at-read" && result.results.map(\.path) == ["a.rs"])
+        #expect(beta.snapshot == nil && note.history[0].text == "Synthetic retained human note")
+        #expect(model.originalDraft == "Synthetic original retained")
+        let first = try #require(model.indexReport?.snapshot)
+        // A replacement and periodic tick occur before any main-actor event
+        // dispatch. The real bound core catches this simulated missed hint.
+        try fixture.rewrite("synthetic_periodic_fallback\n", atomic: true)
+        try #require(driver.timer).fire()
+        #expect(await watchEvent(reports)); await model.waitForOperation()
+        #expect(model.indexReport?.snapshot != first)
+        let reconciled = try #require(model.indexReport?.snapshot)
+        guard case .query(let fallback) = try await adapter.perform(.query("alpha", "synthetic_periodic_fallback")) else { throw ServiceError.invalid }
+        #expect(fallback.snapshot == reconciled && fallback.currentness == "current-at-read" && fallback.results.map(\.path) == ["a.rs"])
+        // Queue a real event, then Pause synchronously before its callback.
+        try fixture.rewrite("synthetic_paused\n")
+        model.togglePause()
+        #expect(driver.watchCount == 0 && driver.timer == nil)
+        #expect(!(await watchEvent(reports, timeout: .milliseconds(800))))
+        guard case .query(let paused) = try await adapter.perform(.query("alpha", "synthetic_periodic_fallback")) else { throw ServiceError.invalid }
+        #expect(paused.snapshot == reconciled && paused.currentness == "stale-or-unindexed")
+        model.togglePause()
+        try fixture.rewrite("synthetic_revoked\n")
+        model.stageSources([]); model.applySources(); await model.waitForOperation()
+        let (late, lateContinuation) = AsyncStream<Bool>.makeStream()
+        let lateObservation = model.$indexReport.sink { if $0 != nil { lateContinuation.yield(true) } }
+        defer { lateObservation.cancel() }
+        #expect(!(await watchEvent(late, timeout: .milliseconds(800))))
+        guard case .project(let revoked) = try await adapter.perform(.project("alpha")) else { throw ServiceError.invalid }
+        #expect(revoked.sources.isEmpty && revoked.snapshot == nil && driver.watchCount == 0)
+        #expect(model.automaticRefreshConsent == nil && model.indexReport == nil)
+        // Real configured CLI authority, not the model's cached project: remove
+        // and register the exact same ID/root/inode with a new incarnation.
+        _ = try await adapter.perform(.setSources("alpha", ["a.rs"]))
+        model.refreshSelected(); await model.waitForOperation()
+        let captured = try #require(model.automaticRefreshProposal)
+        model.enableAutomaticRefresh(captured); await driver.waitForAuthorization()
+        #expect(driver.watchCount == 1)
+        _ = try await adapter.perform(.removeProject("alpha", captured.root, captured.rootIdentity, captured.incarnation))
+        _ = try await adapter.perform(.addProject("alpha", captured.root, captured.sources))
+        let beforeInstalls = watchInstalls, beforeOpens = watchOpens
+        try #require(driver.timer).fire()
+        #expect(driver.watchCount == 0)
+        await driver.waitForAuthorization()
+        #expect(watchInstalls == beforeInstalls && watchOpens == beforeOpens)
+        #expect(model.status.hasPrefix("Needs attention") && model.automaticRefreshConsent == nil)
+        guard case .project(let replacement) = try await adapter.perform(.project("alpha")) else { throw ServiceError.invalid }
+        #expect(replacement.incarnation != captured.incarnation && replacement.snapshot == nil)
+        await model.shutdown()
+    }
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"] != nil,
                   "Set THREADMARK_CORE_TEST_BINARY to the explicitly rebuilt core; synthetic data only"))
     @MainActor func nativeBoundHumanForgetAndStaleApprovalsAgainstActualSQLite() async throws {
         let path = try #require(ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"])

@@ -35,8 +35,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         menu.addItem(withTitle: "Project: \(model.selectedID ?? "None")", action: nil, keyEquivalent: "")
         menu.addItem(withTitle: model.status, action: nil, keyEquivalent: "")
         menu.addItem(.separator())
-        menu.addItem(withTitle: model.automaticRefreshConsent == nil ? "Timed lexical refresh: off (no consent)" : "Timed lexical refresh: approved", action: nil, keyEquivalent: "")
-        add(menu, model.paused ? "Resume approved timed refresh" : "Pause timed refresh", #selector(pause), "p")
+        menu.addItem(withTitle: model.automaticRefreshConsent == nil ? "File-event + periodic refresh: off" : "File-event + periodic refresh: approved", action: nil, keyEquivalent: "")
+        add(menu, model.paused ? "Resume approved refresh" : "Pause approved refresh", #selector(pause), "p")
         add(menu, "Manage projects/context…", #selector(manage), ",")
         add(menu, "Connections / Privacy…", #selector(connections), "")
         if model.busy { add(menu, "Cancel owned operation", #selector(cancel), ".") }
@@ -90,7 +90,7 @@ struct ManagementView: View {
             Text("Local understanding, not another coding environment").font(.headline)
             Text(model.status).textSelection(.enabled).accessibilityLabel("Status: \(model.status)")
             HStack {
-                Text(model.paused ? "Timed refresh: paused" : (model.automaticRefreshConsent == nil ? "Timed refresh: off (no consent)" : "Timed refresh: enabled · every 60 seconds"))
+                Text(model.automaticRefreshSummary)
                 Spacer()
                 if model.busy { ProgressView().controlSize(.small); Button("Cancel", action: model.cancel).keyboardShortcut(".") }
             }
@@ -140,12 +140,12 @@ struct ProjectsView: View {
                     }
                     Text("Manual Build: bounded local lexical lines (30 seconds). No inference. Unsupported/unreadable files are decided by core; inspect coverage.").font(.caption)
                     if let consent = model.automaticRefreshProposal {
-                        Text("Optional timed bounded full lexical reconciliation — not a filesystem watcher or incremental symbol index.").font(.headline)
+                        Text("Optional approved-file events + periodic bounded full lexical reconciliation — not an incremental symbol index.").font(.headline)
                         Text("Project: \(consent.projectID) · root: \(consent.root) · identity: \(consent.rootIdentity)").textSelection(.enabled)
                         Text("Exact files read automatically: \(consent.sources.joined(separator: ", "))").textSelection(.enabled)
-                        Text("Every 60 seconds while unpaused; 30 seconds/job, 64 files, 64 KiB/file, 1 MiB total. Session-only, off on relaunch. Enabling resumes timed refresh; first read is on the next tick. Busy ticks are skipped. Pause cancels in-flight automatic work. No inference, network, notifications or history archive.").font(.caption)
+                        Text("Metadata watches only these exact files; event bursts coalesce for 300 ms. Approved contents are reconciled after hints and every 60 seconds for missed/busy events; 30 seconds/job, 64 files/handles, 64 KiB/file, 1 MiB total. Session-only, off on relaunch. No immediate content read. Busy hints/ticks are skipped. Pause closes watches and cancels automatic work. Missing/unsafe files stop monitoring and require repair and re-enable. No directory discovery, inference, network, notifications or history archive.").font(.caption)
                         if model.automaticRefreshConsent == nil {
-                            Button("Enable automatic reads for this exact scope") { model.enableAutomaticRefresh(consent) }.disabled(model.busy)
+                            Button("Enable file metadata watches + automatic approved-content reads") { model.enableAutomaticRefresh(consent) }.disabled(model.busy)
                         } else {
                             Button("Disable automatic reads", action: model.disableAutomaticRefresh)
                         }
@@ -380,7 +380,7 @@ struct ConnectionsView: View {
             Button("Use selected local core") {
                 if let binary, let dataDirectory { model.configure(executable: binary, dataDirectory: dataDirectory) }
             }.disabled(binary == nil || dataDirectory == nil || !model.manualActionsAvailable)
-            Text("\(model.configured ? "Configured (not certified)" : "Unavailable") · configuration is memory-only; executable runs only for explicit actions or separately opted-in timed lexical refresh.")
+            Text("\(model.configured ? "Configured (not certified)" : "Unavailable") · configuration is memory-only; executable runs only for explicit actions or separately opted-in file-event/periodic lexical refresh.")
             Divider()
             Text("Inference profiles: unavailable / disabled").font(.headline)
             Text("No provider client, credentials, consent or budget transport is implemented. Semantic work cannot start.")
@@ -406,7 +406,7 @@ struct PrivacyView: View {
             Text("Search results, note drafts, configuration and previews remain in process memory. No shell content archive, telemetry, OS notifications or provider calls. Core history retention is separate; Retire preserves history.")
             Text(model.notificationPolicy)
             Button(model.paused ? "Resume automatic scheduling" : "Pause automatic scheduling", action: model.togglePause)
-            Text("Timed lexical refresh is off by default. Projects offers exact-scope session-only consent to automatic local reads every 60 seconds. Pause stops its timer and cancels automatic work; Resume never grants consent. Manual Build remains available while paused. Disable, scope/configuration changes and Quit stop automatic work. Closing Manage does not stop opted-in refresh. No watcher or automatic inference is installed.")
+            Text("File-event + periodic lexical refresh is off by default. Projects offers exact-scope session-only consent to file metadata watches and automatic approved-content reconciliation, with a 60-second fallback for missed/busy events. Pause closes watches, stops debounce/timer and cancels automatic work; Resume never grants consent. Manual Build remains available while paused. Disable, scope/configuration changes and Quit stop automatic work. Closing Manage does not stop opted-in refresh. No directory discovery or automatic inference.")
             Text("Launch at login: off / unavailable in this build. No login item or global preferences are written.")
             Text("System light/dark appearance, standard controls, keyboard focus and text status are used. No custom animation; reduced-motion settings need no override. Native accessibility/runtime acceptance is still pending.")
             Spacer()
