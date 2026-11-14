@@ -124,6 +124,7 @@ fn source_forget_real_cli_suppresses_rebuild_query_prepare_export_and_native_sta
     ];
     let receipt = f.ok(&args, None);
     assert_eq!(receipt["human_context"], "unchanged");
+    assert_eq!(receipt["snapshot"], "invalidated");
     assert!(!f.run(&args, None).status.success());
     assert!(
         !f.run(&["project", "sources", "a", "code.rs"], None)
@@ -134,6 +135,8 @@ fn source_forget_real_cli_suppresses_rebuild_query_prepare_export_and_native_sta
         f.ok(&["source", "forgotten", "a"], None)["forgotten"][0]["path"],
         "code.rs"
     );
+    let mut repeated = receipt;
+    repeated["snapshot"] = serde_json::json!("unchanged");
     assert_eq!(
         f.ok(
             &[
@@ -145,7 +148,7 @@ fn source_forget_real_cli_suppresses_rebuild_query_prepare_export_and_native_sta
             ],
             None
         ),
-        receipt
+        repeated
     );
     f.ok(&["index", "a"], None);
     assert_eq!(
