@@ -89,6 +89,7 @@ private actor ExplicitFakeCoreService: CoreService {
         calls += 1
         if let error = nextFailure { nextFailure = nil; throw error }
         switch operation {
+        case .prepareContextFilesBound: throw ServiceError.invalid // Dedicated AN fixtures own this read.
         case .queryFilesBound: throw ServiceError.invalid // Dedicated AL fixtures own this read.
         case .coverageBound: throw ServiceError.invalid // Dedicated coverage fixtures own this read.
         case .indexIncrementalBound: throw ServiceError.invalid // Dedicated incremental fixtures own this mutation.
