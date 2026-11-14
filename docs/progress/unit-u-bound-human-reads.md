@@ -98,6 +98,18 @@ branch switch, cleanup, Docker resource or external service was used. Full check
 include inherited synthetic loopback transport fixtures, not live providers.
 # Primary combined integration
 
+## Final publication outcome
+
+PR #69's separate exact post-merge runs `43574166276`/`43574166338` passed at
+`93b76c95662f2d88f585688f79c500242721fd46`. PR #70 was retargeted/updated to main;
+all five new-head checks passed at `dfe18b691862b36a906ca221f71232c903ad5594`
+(CI `43574174101`, integrated `43574174088`). Fresh clean main target, exact
+head, complete required checks, review/approval/discussion and rules checks
+preceded merge `3e538259ba3478cee85471aa3c122e6742037ba5`. Its separate exact
+post-merge CI is not yet verified. The PR watch was removed after merge. Native
+read migration and bound-export work remain independently active; no GUI/AX,
+live inference, host delivery or phase closure is inferred.
+
 PR #68's separate exact post-merge CI `43573440000`/`43573440001` passed at
 `5cf014511d28888958353aeb195f018f347ae3de`. PR #69 passed all five checks at
 `8f6de77a82b6728ffe6bfed6b00bdd1a750a9f3e` (CI `43573532206`, integrated
