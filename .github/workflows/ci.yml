@@ -36,6 +36,7 @@ jobs:
           THREADMARK_RETAINED_FIXTURES: ${{ github.workspace }}/target/retained-fixtures
           THREADMARK_EXPORT_FIXTURE: ${{ github.workspace }}/target/export-fixtures/export
           THREADMARK_SOURCE_INSPECTION_FIXTURE_BINARY: ${{ github.workspace }}/target/source-inspection-fixtures/inspection
+          THREADMARK_COVERAGE_FIXTURE_BINARY: ${{ github.workspace }}/target/coverage-fixture
         run: |
           mkdir -p target/retained-fixtures target/export-fixtures target/source-inspection-fixtures
           sdk=$(xcrun --sdk macosx --show-sdk-path)
@@ -46,6 +47,7 @@ jobs:
           done
           xcrun clang -std=c11 -Wall -Wextra -Werror -nostdinc -isystem "$resource/include" -isystem "$sdk/usr/include" -isysroot "$sdk" apps/companion/Tests/ProjectExportFixtures/export.c -o target/export-fixtures/export
           xcrun clang -std=c11 -Wall -Wextra -Werror -nostdinc -isystem "$resource/include" -isystem "$sdk/usr/include" -isysroot "$sdk" apps/companion/Tests/SourceInspectionFixtures/inspection.c -o target/source-inspection-fixtures/inspection
+          xcrun clang -std=c11 -Wall -Wextra -Werror -nostdinc -isystem "$resource/include" -isystem "$sdk/usr/include" -isysroot "$sdk" apps/companion/Tests/CoverageFixtures/coverage.c -o target/coverage-fixture
           # Bound subprocess/socket pressure on shared runners; every case still
           # runs, including each test's explicit concurrent cancellation races.
           sh apps/companion/scripts/swift.sh test --no-parallel --disable-xctest --enable-swift-testing -Xswiftc -strict-concurrency=complete -Xswiftc -warnings-as-errors
@@ -53,6 +55,7 @@ jobs:
           sh apps/companion/Tests/SourceInspectionFixtures/check-api.sh
           sh apps/companion/Tests/ComparisonAPIFixtures/check-api.sh
           sh apps/companion/Tests/HumanSearchFilterAPIFixtures/check-api.sh
+          sh apps/companion/Tests/CoverageFixtures/check-api.sh
           sh apps/companion/scripts/bundle.sh
           plutil -lint apps/companion/dist/Threadmark.app/Contents/Info.plist
 

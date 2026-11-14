@@ -89,6 +89,7 @@ private actor ExplicitFakeCoreService: CoreService {
         calls += 1
         if let error = nextFailure { nextFailure = nil; throw error }
         switch operation {
+        case .coverageBound: throw ServiceError.invalid // Dedicated coverage fixtures own this read.
         case .compareHumanContextBound: throw ServiceError.invalid // Dedicated comparison fixtures own this read.
         case .contextsBound(let b):
             try b.validate()
