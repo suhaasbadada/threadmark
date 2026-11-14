@@ -87,3 +87,31 @@ Owned files: `crates/cli/src/local_review.rs`,
 `crates/daemon/src/review_session.rs`, `crates/cli/tests/local_review.rs`,
 `crates/cli/tests/local_review/ranked_retrieval.rs`,
 `docs/contracts/local-review-stdio-v1.md`, and this progress record.
+# Primary integration and independent review
+
+Primary committed only the six owned files as `05b9007` in the completed task
+checkout and applied that unit as
+`5cd93c3523c1c0c87b86d51b1ca104a8bebd765c`. No baseline site/contract commits or
+other task changes were replayed; all worktrees remain intact.
+
+Joffrey independently reviewed the exact staged fingerprint **CLEAR** and passed
+the full offline workspace gate (224 Rust tests/two doctests), dependency policy,
+secrets and whitespace. Primary combined full workspace gate and actual-CLI/C
+fixture strict serial native suite **PASS**, 149 tests/19 suites. Dependency policy,
+staged secrets and whitespace also passed. The two production-duration deadline
+tests remain explicitly not rerun; timeout paths and budgets are unchanged.
+
+PR #61's failed macOS run was repaired, not retried/waived. All five checks passed
+at `571ab22807ba0bbd83e175566536cb6bfb402522` (CI `43566317275`, integrated
+`43566317243`); fresh main/rules/review/discussion checks preceded merge
+`319ab5e0c86fa7c5f6da5ac9a4062741b2f6d61c`. Separate exact post-merge runs
+`43566846957`/`43566846959` passed. PR #62 was retargeted/updated to main, all five
+new-head checks passed at `149a212fa7ecef22d1f6c4ccb2cccaa7c4ce21a5` (CI
+`43566854610`, integrated `43566854556`), then fresh clean target/review/rules/
+discussion gates preceded merge `30e9f9ca1b66a0db1ad0326a09fea8dfa8e6c195`.
+Its exact post-merge checks remain separate and pending verification.
+
+Native retained mounting remains Unit O, independently active. This unit adds no
+Swift retrieval selection or GUI/AX/live-provider/host-delivery certification.
+New publication exact-head CI remains required; no phase closure. Nine inherited
+progress modifications remain untouched and excluded.
