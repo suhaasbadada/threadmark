@@ -195,7 +195,8 @@ struct ProjectsView: View {
                     Divider()
                     SourceRetrievalModePicker(model: model)
                     HStack {
-                        TextField("Search authorized source evidence", text: $query)
+                        TextField("Search authorized source evidence", text: Binding(
+                            get: { query }, set: { query = $0; model.sourceQueryChanged() }))
                             .accessibilityIdentifier("project-evidence-query")
                         Button("Search") { model.query(query) }.disabled(query.isEmpty || query.utf8.count > 256 || !model.manualActionsAvailable || model.policyDirty || model.sourceRequiresRefresh)
                     }
@@ -209,8 +210,12 @@ struct ProjectsView: View {
                             VStack(alignment: .leading) {
                                 Text("\(item.path):\(item.line) · \(item.producer) · \(item.currentness)").font(.caption)
                                 Text(item.text).textSelection(.enabled)
+                                Button("Inspect source") { model.inspectSource(item) }
+                                    .disabled(!model.canInspectSource(item))
+                                    .accessibilityLabel("Inspect source \(item.path), indexed line \(item.line)")
                             }
                         }
+                        SourceInspectionControls(model: model)
                     }
                 }
                 Divider()

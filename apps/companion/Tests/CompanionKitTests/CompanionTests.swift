@@ -99,6 +99,7 @@ private actor ExplicitFakeCoreService: CoreService {
             return try await perform(.context(b.project, id))
         case .searchHumanContextBound: throw ServiceError.unavailable
         case .exportProjectBound: throw ServiceError.invalid // Dedicated export fixtures own this boundary.
+        case .inspectSourceAnchorBound: throw ServiceError.invalid // Dedicated inspection fixtures own this boundary.
         case .updateContextRevisionBound(let binding, let kind, let text):
             try binding.validate()
             guard projects.contains(where: { $0.id == binding.project && $0.root == binding.root &&

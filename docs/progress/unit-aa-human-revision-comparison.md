@@ -1,5 +1,20 @@
 # Unit AA — explicit bounded human revision comparison
 
+## Publication outcome
+
+PR #76 passed all five checks on full head
+`5edac1aae22ca4b33b66111278c323195d400028` (CI `43583248621`, integrated
+`43583248545`). Fresh exact-head/main/check/review/approval/discussion/rules
+verification found no blocker; authorized merge completed as
+**`099d54714c2d43a38cd6528a3a37f0efe135f357`**. Watch removed after merge.
+Separate exact post-merge CI remains unverified. Native source inspection and
+native note comparison continue in their existing isolated lanes, no duplicates.
+
+PR #75 separate post-merge runs `43583163038` and `43583163102`, both targeting
+`b590caabba494ae33ba95736ce42d5b7c0261e81`, completed **PASS**. Nine inherited
+progress edits/worktrees and parent-owned reminders preserved. No GUI/AX,
+live-provider quality, host delivery, deployment or phase closure claimed.
+
 ## Primary integration and independent review
 
 Primary committed only the eight owned files as `ba31e5b`, applied as
