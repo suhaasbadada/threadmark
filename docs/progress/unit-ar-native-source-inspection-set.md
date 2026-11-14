@@ -1,5 +1,35 @@
 # AR — native explicit coherent selected Query inspection
 
+## Primary integration and independent review
+
+Owned child implementation committed as `870e798`, then cleanly applied on
+merged AQ as **`e80ccc4f020d82a92903f20e60a4ec0d3087b73f`**, exact integrated
+tested runtime. No baseline/site merge replay or source conflict repair. The
+thirteen-file path/NUL/bytes/NUL fingerprint was reproduced after integration,
+identical to **`4e83458270dfd3b904744bdb058fe2247db355ec70dd96b00b999a4162ebe2d8`**.
+
+Joffrey independently reviewed **CLEAR**, verified both child fingerprints and
+all owned paths, and checked opaque Query handles, full binding, exact centers,
+strict retained-frame adoption, joined cancellation and human/CAS/AJ preservation.
+Targeted strict Debug and Release each **13 tests/two suites PASS**, actual CLI
+and AR C fixture enabled, all eleven API gates, C syntax and whitespace **PASS**.
+His review explicitly accepted backend-claimed right EOF as an inherited wire
+observability limit, not independently proven completeness.
+
+Primary full offline Rust **439 tests + two doctests PASS**; strict serial full
+Debug and Release each **336 tests/54 suites PASS**, actual CLI and all ten C
+families enabled, all eleven ordinary-import API gates, bundle/plist, offline
+locked deny, staged secrets and whitespace **PASS**. No runtime changes after
+these gates. Two inherited long-deadline fixtures remain ignored. Publication-
+head CI/Swift 6.1.2, GUI/AX, live quality, host delivery and phase closure remain
+separate gates, not inferred from local Swift 6.4.
+
+AQ #92 exact post-merge runs `43611007674` and `43611007679` both completed
+**success** at `7c84e2c3428879d233c7c42a9ec216ab29c54e42`. AS freshness work is
+preserved/deferred as overlapping existing coverage, not integrated into AR.
+AT selected-revision export is a separate backend unit awaiting review. Nine
+inherited progress edits, earlier local receipts and all worktrees preserved.
+
 ## Predeclared scope and stable acceptance
 
 TM-01–TM-04, TM-07, TM-10; partial P2-A1/A3/A4/A6, P3-A4/A5/A6,
