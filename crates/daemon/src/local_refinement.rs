@@ -27,7 +27,7 @@ pub struct Options {
 }
 
 impl Options {
-    fn identity(&self) -> ProviderIdentity {
+    pub(crate) fn identity(&self) -> ProviderIdentity {
         ProviderIdentity {
             profile: self.profile.clone(),
             model: self.model.clone(),
@@ -49,7 +49,7 @@ impl Options {
         Ok(())
     }
 
-    fn capture(&self, original: String) -> RequestData {
+    pub(crate) fn capture(&self, original: String) -> RequestData {
         RequestData {
             request_id: "local-refinement-preview".into(),
             project: self.expected.project.clone(),

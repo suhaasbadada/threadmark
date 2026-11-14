@@ -11,6 +11,7 @@ pub mod preparation;
 
 /// Explicit one-shot numeric-loopback refinement preview, never approval/delivery.
 pub mod local_refinement;
+pub mod review_session;
 
 /// Metadata-only successful check; not a persisted knowledge snapshot.
 #[derive(Debug, PartialEq, Eq)]

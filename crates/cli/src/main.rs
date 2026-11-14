@@ -1,6 +1,7 @@
 //! Manual local knowledge commands and offline diagnostics; never a service probe.
 
 mod local_refinement;
+mod local_review;
 
 fn main() -> std::process::ExitCode {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
@@ -83,6 +84,13 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
         return usage();
     }
     let data_dir = std::path::Path::new(&args[1]);
+    // Recognize the private protocol before generic argument rejection. Its
+    // watchdog and closed JSON errors must also cover malformed launch arguments.
+    if args.get(2).is_some_and(|word| word == "refine")
+        && args.get(3).is_some_and(|word| word == "review")
+    {
+        return local_review::run(data_dir, &args[2..]);
+    }
     // Bounded parser; untrusted arguments and errors are never echoed.
     if args.len() > 80 {
         return usage();
