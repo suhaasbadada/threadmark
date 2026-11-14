@@ -8,6 +8,14 @@ use threadmark_core::knowledge::{LexicalLines, Store};
 
 /// Typed local-owner commands. No request-supplied root can override registered policy.
 pub enum Command {
+    /// Explicit atomic edits of 2..8 existing human notes in one registration.
+    EditContextBatchBound(
+        String,
+        threadmark_core::knowledge::ContextBatchEdit,
+        String,
+        String,
+        String,
+    ),
     /// Approve a root and exact relative files.
     AddProject(String, PathBuf, Vec<String>),
     /// Explicitly remove this project's local data only, never source files.
@@ -124,6 +132,16 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         threadmark_core::knowledge::validate_export_binding(expected)?;
     }
     match &command {
+        Command::EditContextBatchBound(project, request, root, identity, token) => {
+            request.validate(
+                project,
+                &threadmark_core::knowledge::ContextReadBinding {
+                    root,
+                    root_identity: identity,
+                    incarnation: token,
+                },
+            )?;
+        }
         Command::SearchContextKindsBound(project, query, kinds, root, identity, token) => {
             threadmark_core::knowledge::validate_human_search(project, query)?;
             threadmark_core::knowledge::HumanSearchKinds::new(kinds)?;
@@ -289,6 +307,7 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
     } else if matches!(
         &command,
         Command::IndexBound(..)
+            | Command::EditContextBatchBound(..)
             | Command::IndexIncremental(..)
             | Command::ExportProjectBound(..)
             | Command::ContextsBound(..)
@@ -329,6 +348,19 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         Store::open(data_dir)?
     };
     let result = match command {
+        Command::EditContextBatchBound(project, request, root, identity, token) => {
+            return store.edit_context_batch_bound(
+                &project,
+                &threadmark_core::knowledge::ContextReadBinding {
+                    root: &root,
+                    root_identity: &identity,
+                    incarnation: &token,
+                },
+                &request,
+                cancel,
+                |_| {},
+            );
+        }
         Command::CompareContextBound(project, id, from, to, root, identity, token) => store
             .context_comparison_bound(
                 &project,

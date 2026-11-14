@@ -20,6 +20,7 @@ const FLAGS: OFlags = OFlags::RDONLY
     .union(OFlags::NOFOLLOW)
     .union(OFlags::CLOEXEC);
 
+mod context_batch;
 mod context_comparison;
 mod context_revision;
 mod coverage;
@@ -32,6 +33,7 @@ mod ranked_query;
 mod schema;
 mod source_forget;
 mod source_inspection;
+pub use context_batch::{ContextBatchAction, ContextBatchEdit, ContextBatchStage};
 pub use context_comparison::validate_context_comparison;
 pub use context_revision::{ContextRevisionBinding, validate_context_kind, validate_context_text};
 pub use coverage::validate_coverage_binding;
