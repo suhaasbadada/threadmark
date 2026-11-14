@@ -2,6 +2,20 @@
 
 ## Primary integration and independent review
 
+### Older-compiler binding repair
+
+PR #91 head `f1a8a6e92b129a2c04cd1dadfe422e52931c919d`, CI `43606990554`,
+macOS job `132483653491` **failed** during Swift 6.1.2 IR generation for
+`HumanContextSearchView.swift`: signal 6, "SmallVector unable to grow", in the
+compiler-generated String setter thunk. This is not a passing or retried run.
+The new direct `Binding` setter method reference was the narrowly identified
+trigger candidate; it is replaced with an explicit closure calling the same
+byte-exact `setQuery` implementation. No cancellation, input, matching, UI scope
+or test assertion is removed. The repair checkout normally merged the publication
+head and verified exact full-tree equality before the one-line runtime patch.
+Local Swift 6.4 checks cannot prove the 6.1.2 workaround; only a new exact-head
+CI run can verify that. Both suites, all fixtures/APIs and bundle remain mandatory.
+
 Owned implementation committed as `0c0320e`, then applied on AN as
 **`1fbb169e9238756cadfcc587200a622827886b8c`**, exact integrated tested runtime.
 Shared conflicts retain both AN and AP cancellation/history/CAS hooks and both
