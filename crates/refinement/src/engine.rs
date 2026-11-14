@@ -420,6 +420,9 @@ impl Engine {
                 _ => Error::ProviderFailed,
             })?;
             brief.validate(&self.request)?;
+            // Inference may outlive source/scope authorization. Do not publish a
+            // ready brief from evidence revoked or changed during the call.
+            self.read_authority(authority)?;
             self.brief = Some(brief);
         }
         self.control.checkpoint()?;
