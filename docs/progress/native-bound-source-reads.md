@@ -63,9 +63,10 @@ replacement clears namespace editors; same-namespace policy/snapshot conflict
 requires Refresh and blocks unadopted derived work while preserving original
 text, unsaved human editor identity and loaded history. Ordinary source edits
 without SQL metadata changes return `stale-or-unindexed`/no results rather than
-a fabricated root mismatch. Manual Build's existing index route is retained;
-its actual post-Build metadata is loaded and namespace/policy checked so the next
-read does not carry a pre-Build SQL snapshot.
+a fabricated root mismatch. The initial lane retained manual Build's existing
+index route while refreshing its post-Build metadata; the primary subsequently
+corrected that unbound route as recorded below. Reads use the refreshed SQL
+snapshot, not an obsolete pre-Build snapshot.
 
 Automatic refresh keeps existing root/incarnation/files consent and bound index
 ownership. After indexing, it checks cancellation, loads actual fresh metadata,
@@ -129,3 +130,38 @@ host integration, live authorized inference, publication, exact-head remote CI,
 independent review and all remaining phase gates are **not performed/closed** by
 this local implementation unit. Local CLI/SQLite and synthetic loopback HTTP
 tests are not evidence of production deployment or host admission.
+
+## Primary integration and manual Build correction
+
+Primary integrated the owned lane commits onto PR #57's exact merge
+`2b9abb810d5661259badb5d751d6e30af7e584f0`. The lane correctly reported that the
+inherited manual Build still dispatched unbound `index(id)`, contrary to the task
+brief's assumption. The primary repaired that remaining route rather than claiming
+all cached source operations were already fenced.
+
+Exact tested correction: `686f189d04f0f6c2a267ef88cad86eee2b30e8bf`. Manual Build
+now requires the existing validated root/incarnation metadata and dispatches the
+core's exact-policy/incarnation-bound index operation. Core checks before file
+traversal and transactionally before publication. Post-Build namespace/policy
+checks precede adoption; snapshot changes are legitimate Build output. Ordinary
+file errors remain retryable, while namespace/policy uncertainty requires Refresh.
+Same-namespace errors preserve original and human history/editor revision.
+
+Actual CLI replacement tests prove the old cached Build cannot publish an index
+into a re-registered ID at the same or a different root. Replacement B's snapshot
+remains absent; source-policy conflicts preserve drafts/history. Legacy native
+Build has no unbound fallback. Explicit trusted operator CLI forms remain unchanged.
+
+Two initial Swift runs exposed fake-service assumptions that every bound index
+was automatic and should suspend forever. Fixtures now hold only when explicitly
+requested by teardown tests; no production safety check was weakened. Exact owned
+orphan helper PIDs from timed-out runs were verified/stopped, with no broad process,
+user-data or worktree cleanup. Targeted regressions and then the complete native
+suite passed; no run-owned test helper remains. Synthetic data from aborted runs
+was not glob-deleted.
+
+Joffrey independently reviewed the combined lane/manual-Build correction: no
+substantive findings, 177 Rust tests/two doctests and all 140 strict Swift tests
+against actual rebuilt CLI passed. Primary full workspace gate, native suite,
+dependency policy, staged secrets and whitespace also passed. Exact publication
+head/CI and GUI/live-provider/host/phase gates remain subsequent, not inferred.
