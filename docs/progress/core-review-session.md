@@ -45,3 +45,17 @@ source-change-during-inference regression initially exposed the missing final
 authority read; the engine now revalidates before accepting the brief, and the
 regression passes. No live provider or host was used. Exact publication head and
 remote CI remain pending, not inferred from these local results.
+
+## PR #52 publication outcome
+
+PR [#52](https://github.com/suhaasbadada/threadmark/pull/52) passed all five checks
+on exact head `e56623a0b68af71657908bbcb085ff6c282c76b8`: CI
+[43549487017](https://github.com/suhaasbadada/threadmark/actions/runs/43549487017)
+and integrated [43549487004](https://github.com/suhaasbadada/threadmark/actions/runs/43549487004).
+Fresh exact-head/main/rules/discussion checks found no blocker; recorded independent
+review and acceptance applied. It merged at `2026-11-14T03:15:59Z` as
+`8e46da24ecf14422c580a4c3ef93219d5d8a8bf9`; the PR watch was removed. Separate
+post-merge CI [43550727189](https://github.com/suhaasbadada/threadmark/actions/runs/43550727189)
+and integrated [43550727139](https://github.com/suhaasbadada/threadmark/actions/runs/43550727139)
+both passed on that exact merge. Provider and native integrations are later units,
+not retroactively covered by those checks.

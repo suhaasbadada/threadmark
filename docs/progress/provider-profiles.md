@@ -181,3 +181,27 @@ provider tests (including synthetic loopback HTTP) and the doctest. The coordina
 passed the full workspace gate (152 Rust tests plus two doctests), all 108 strict
 Swift tests against the rebuilt core, dependency policy, secrets and whitespace.
 Publication/exact integrated-head CI and native wiring remain subsequent gates.
+
+## Actual-core/transport integration verification
+
+Exact tested integrated implementation:
+`dd9c89c616cec5ab6aef8f2f58651e42db48fd7a`, including the PR #52 merge baseline
+`8e46da24ecf14422c580a4c3ef93219d5d8a8bf9`, the reviewed provider capability and
+duplicate-member repair. A further synthetic integration now runs actual SQLite
+selection through `ConfiguredProvider` and real numeric-loopback HTTP, then
+fresh preview, explicit approval and `Delivery::NotAttempted` handoff. The server
+sees only the selected synthetic evidence/exact original/model, not credentials.
+
+The full local gate initially exposed a macOS fixture race: a stream accepted from
+a nonblocking listener could inherit nonblocking mode and return WouldBlock during
+`read_exact`. The fixture now explicitly sets bounded blocking mode after accept;
+the production client was unchanged. No retry was used as a fix. The repaired
+full workspace gate passed **153 Rust tests plus two doctests**; strict Swift
+passed **108 tests** against the rebuilt actual CLI. Dependency policy, staged
+secrets and whitespace checks passed. Generated lock changes add only existing
+serde_json/serde edges; versions/checksums remain unchanged. Publication adds only
+this evidence after the tested runtime. Exact remote head/CI remains subsequent.
+
+Native form mounting/private-profile persistence and native human-context search
+are ongoing isolated lanes. Remote TLS/auth/secure credential entry, live inference,
+GUI/accessibility walkthrough, host delivery and quality evaluation remain open.
