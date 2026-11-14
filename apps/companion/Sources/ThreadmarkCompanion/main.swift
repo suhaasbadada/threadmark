@@ -210,15 +210,7 @@ struct ProjectsView: View {
                         Text("Coverage: \(result.coverage.description)")
                         if let terms = result.terms { Text("Ranked lexical terms: \(terms.joined(separator: ", ")) · bounded selection, not semantic completeness").font(.caption) }
                         if result.truncated == true { Text("Additional matches omitted by bounded selection.").font(.caption) }
-                        ForEach(Array(result.results.enumerated()), id: \.offset) { _, item in
-                            VStack(alignment: .leading) {
-                                Text("\(item.path):\(item.line) · \(item.producer) · \(item.currentness)").font(.caption)
-                                Text(item.text).textSelection(.enabled)
-                                Button("Inspect source") { model.inspectSource(item) }
-                                    .disabled(!model.canInspectSource(item))
-                                    .accessibilityLabel("Inspect source \(item.path), indexed line \(item.line)")
-                            }
-                        }
+                        SourceInspectionSetQueryRows(model: model)
                         SourceInspectionControls(model: model)
                     }
                 }

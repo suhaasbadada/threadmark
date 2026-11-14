@@ -69,18 +69,21 @@ public struct ProcessService: CoreService {
         else { batch = nil }
         // Claim once; decoding uses this immutable capture, never claims again.
         let (arguments, input) = try command(operation, batch: batch)
+        let setRead: Bool
+        if case .inspectSourceSetBound = operation { setRead = true } else { setRead = false }
         guard let executable, let dataDirectory,
               executable.isFileURL, dataDirectory.isFileURL,
               executable.path.hasPrefix("/"), dataDirectory.path.hasPrefix("/"),
               !executable.path.contains("\0"), !dataDirectory.path.contains("\0"),
               FileManager.default.isExecutableFile(atPath: executable.path) else { throw ServiceError.unavailable }
-        guard input.count <= (batch == nil ? limits.inputBytes : 65536), limits.seconds > 0,
+        guard input.count <= (batch != nil || setRead ? 65536 : limits.inputBytes), limits.seconds > 0,
               limits.seconds <= 300, limits.stdoutBytes > 0, limits.stdoutBytes <= 1_048_576,
               limits.stderrBytes > 0, limits.stderrBytes <= 16_384,
               limits.inputBytes > 0, limits.inputBytes <= 4096 else { throw ServiceError.invalid }
         let cancellation = Cancellation()
         var operationLimits = limits
         if batch != nil { operationLimits.inputBytes = 65536; operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
+        if setRead { operationLimits.inputBytes = 65536; operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .queryFilesBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .prepareContextFilesBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .indexIncrementalBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 65536) }
@@ -130,6 +133,8 @@ public struct ProcessService: CoreService {
             default: responseOperation = operation
             }
             switch responseOperation {
+            case .inspectSourceSetBound(let request):
+                return .sourceInspectionSet(try SourceInspectionSetDocument.decode(data, request: request))
             case .prepareContextFilesBound(let request):
                 return .fileContext(try FileContextDocument.decode(data, request: request))
             case .editContextBatchBound:
@@ -278,6 +283,14 @@ public struct ProcessService: CoreService {
         var args: [String]
         var input = Data()
         switch operation {
+        case .inspectSourceSetBound(let request):
+            input = try request.encoded()
+            let p = request.project
+            guard case .string(let identity) = p.root_identity, let token = p.incarnation,
+                  case .string(let snapshot) = p.snapshot else { throw ServiceError.invalid }
+            args = ["source", "inspect-set", p.id, "--radius", String(request.radius),
+                    "--expected-root", p.root, "--expected-root-identity", identity,
+                    "--expected-incarnation", token, "--expected-snapshot", snapshot, "--expected-sources"] + p.sources
         case .prepareContextFilesBound(let request):
             try request.validate()
             let p = request.project
