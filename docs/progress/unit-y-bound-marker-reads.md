@@ -1,5 +1,28 @@
 # Unit Y — coherent registration-bound suppression marker reads
 
+## Primary integration
+
+Only the 20 owned files were committed as `94ba4c1` and applied as
+`0c04babbfdb504be4665dce1aa9db34b9885e20a`, the exact integrated tested runtime.
+No prepared baseline/site merge history was replayed. Joffrey independently
+reviewed the documented fingerprint **CLEAR**; passed 16 marker Rust tests,
+the eight-test CLI bound-human-read suite, rebuilt CLI and passed 38 strict Swift
+tests across six suites including actual-CLI replacement races. He did not rerun
+full checks, Release, dependency policy or secrets.
+
+Primary integrated full workspace gate **PASS** (265 Rust tests/two doctests),
+strict serial actual-CLI/retained-C-fixture Debug **PASS** (201 tests/28 suites),
+API compiler gate, offline locked dependency policy, staged secrets and whitespace
+**PASS**. Lane Release evidence remains separately attributed. No unchanged long
+deadline reruns. PR/exact publication CI remain later gates.
+
+PR #72 exact post-merge runs `43577434597` and `43577434604`, both targeting
+`73791de79e0a9c158091dac770a48018556faa31`, **PASS**. X's two export review
+findings were repaired independently and independently rechecked **CLEAR**;
+X integration remains separate. Nine inherited progress edits, worktrees and
+parent-owned reminders remain preserved. GUI/AX, live inference, host delivery
+and phase closure remain unverified.
+
 Requirements: TM-01–TM-04, TM-07, TM-10; partial **P2-A1/A3/A5/A6, P3-A4**.
 Specs: [Phase 2](../spec/phase-2-knowledge-core.md),
 [Phase 3](../spec/phase-3-background-experience.md).
