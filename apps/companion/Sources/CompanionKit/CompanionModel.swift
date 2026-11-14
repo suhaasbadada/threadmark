@@ -23,6 +23,13 @@ public final class CompanionModel: ObservableObject {
     private var humanSearchTicket: UInt64?
     private var humanSearchCancellationTicket: UInt64?
     @Published public private(set) var history: ContextHistory?
+    @Published public private(set) var humanComparisonVisible = false
+    @Published public private(set) var humanComparison: HumanComparison?
+    @Published public private(set) var comparisonFrom = 1
+    @Published public private(set) var comparisonTo = 1
+    @Published public private(set) var comparisonStatus = ""
+    private var comparisonActive = false
+    private var humanHistoryGeneration: UInt64 = 0
     @Published public private(set) var evidence: QueryReport?
     @Published public private(set) var sourceInspection: SourceInspectionDocument?
     @Published public private(set) var inspectionRadius = 2
@@ -275,6 +282,8 @@ public final class CompanionModel: ObservableObject {
     nonisolated private static func checkedHumanRead(_ service: any CoreService, _ operation: Operation, _ captured: Project, prechecked: Bool = false) async throws -> Reply {
         let binding = try HumanContextReadBinding(project: captured) // Legacy fails before service I/O.
         switch operation {
+        case .compareHumanContextBound(let request):
+            guard request.binding == binding else { throw ServiceError.invalid }
         case .contextsBound(let supplied), .contextBound(let supplied, _), .searchHumanContextBound(let supplied, _):
             guard supplied == binding else { throw ServiceError.invalid }
         case .forgottenContextsBound(let supplied), .forgottenSourcesBound(let supplied):
@@ -734,6 +743,87 @@ public final class CompanionModel: ObservableObject {
         inspectionOperation = true
     }
     private var humanHistoryScope: Project?
+    public var humanComparisonRevisions: [ContextRevision] {
+        guard configured, !quitting, !forgetRequiresRefresh, let target = project,
+              target.id == selectedID, let scope = humanHistoryScope,
+              Self.sameHumanNamespace(target, scope), let history,
+              (try? history.validate(project: target.id, id: history.id)) != nil,
+              history.authority == .string("context-not-authorization-or-observed-truth") else { return [] }
+        return history.history
+    }
+    public var canCompareHumanContext: Bool {
+        guard humanComparisonVisible, !humanComparisonRevisions.isEmpty, let target = project, let history else { return false }
+        return (try? HumanComparisonRequest(project: target, history: history, from: comparisonFrom, to: comparisonTo)) != nil
+    }
+    /// Opening and choosing use loaded validated history only; no service I/O.
+    public func openHumanComparison() {
+        guard !busy, !humanComparisonRevisions.isEmpty else { return }
+        humanComparisonVisible = true; humanComparison = nil
+        comparisonFrom = humanComparisonRevisions.first!.revision
+        comparisonTo = humanComparisonRevisions.last!.revision
+        comparisonStatus = "Choose FROM and TO from loaded same-note history, then explicitly Compare. No read yet."
+    }
+    public func chooseHumanComparison(from: Int, to: Int) {
+        guard humanComparisonVisible, humanComparisonRevisions.contains(where: { $0.revision == from }),
+              humanComparisonRevisions.contains(where: { $0.revision == to }) else { return }
+        if comparisonActive { cancelOperation(); humanComparisonVisible = true }
+        comparisonFrom = from; comparisonTo = to; humanComparison = nil
+        comparisonStatus = from <= to ? "Pair changed — explicitly Compare; no read yet." : "FROM must be less than or equal to TO."
+    }
+    public func cancelHumanComparison() {
+        if comparisonActive { cancelOperation() }
+        clearHumanComparison()
+        if lastError == .contextConflict { status = ServiceError.contextConflict.localizedDescription }
+    }
+    private func clearHumanComparison() {
+        humanComparisonVisible = false; humanComparison = nil; comparisonActive = false; comparisonStatus = ""
+    }
+    /// Registry-owned read, never a mutation, history reload, or edit-base refresh.
+    public func compareHumanContext() {
+        guard canCompareHumanContext, !quitting, !busy || comparisonActive,
+              let target = project, let history,
+              let request = try? HumanComparisonRequest(project: target, history: history, from: comparisonFrom, to: comparisonTo) else { return }
+        // Capture both immutable entries before dispatch. Every predecessor joins
+        // before metadata checks or the bound core operation may touch a service.
+        disableAutomaticRefresh(); cancelOperation()
+        let ticket = generation, historyTicket = humanHistoryGeneration, config = configurationGeneration
+        let prior = Array(ownedOperations.values), operationID = UUID(), service = service
+        for pending in prior { pending.cancel() }
+        humanComparisonVisible = true; humanComparison = nil; comparisonActive = true; busy = true
+        comparisonStatus = "Comparing explicit saved revisions — editor and CAS base unchanged."
+        job = Task { [weak self] in
+            defer { self?.ownedOperations.removeValue(forKey: operationID) }
+            do {
+                for pending in prior { await pending.value }
+                guard let self, self.currentComparison(request, ticket, historyTicket, config), !Task.isCancelled else { return }
+                let reply = try await Self.checkedHumanRead(service, .compareHumanContextBound(request), target)
+                guard self.currentComparison(request, ticket, historyTicket, config), !Task.isCancelled else { return }
+                guard case .humanComparison(let result) = reply else { throw ServiceError.invalid }
+                let validated = try HumanComparison.decode(result.bytes, request: request)
+                self.humanComparison = validated; self.comparisonActive = false; self.busy = false; self.job = nil
+                self.comparisonStatus = "Saved human revisions compared. Draft, loaded history and edit base unchanged; no conflict resolution."
+                // In particular do not clear lastError/contextConflict on read success.
+            } catch {
+                guard let self, self.generation == ticket, !self.quitting else { return }
+                self.comparisonActive = false; self.busy = false; self.job = nil; self.humanComparison = nil
+                let failure = error as? ServiceError ?? (error is CancellationError ? .canceled : .invalid)
+                if failure == .namespaceChanged {
+                    self.clearProject(); self.sourceRequiresRefresh = true; self.mutationRefreshError = .namespaceChanged
+                    self.fail(.namespaceChanged)
+                } else { self.comparisonStatus = failure.localizedDescription }
+            }
+        }
+        ownedOperations[operationID] = job
+    }
+    private func currentComparison(_ request: HumanComparisonRequest, _ ticket: UInt64, _ historyTicket: UInt64, _ config: UInt64) -> Bool {
+        guard !quitting, humanComparisonVisible, comparisonActive, generation == ticket,
+              humanHistoryGeneration == historyTicket, configurationGeneration == config,
+              comparisonFrom == request.from.revision, comparisonTo == request.to.revision,
+              let target = project, target.id == selectedID, let scope = humanHistoryScope,
+              Self.sameHumanNamespace(target, scope), (try? HumanContextReadBinding(project: target)) == request.binding,
+              history?.id == request.contextID, !forgetRequiresRefresh else { return false }
+        return true
+    }
     /// Returns the revision currently displayed, not a fresh revision fetched at Save.
     public func humanContextRevisionBinding(_ contextID: String) -> HumanContextRevisionBinding? {
         guard let project, project.id == selectedID, let scope = humanHistoryScope,
@@ -749,6 +839,7 @@ public final class CompanionModel: ObservableObject {
         } apply: { replies in
             guard case .context(let result) = replies[0], result.project == target.id, result.id == contextID else { throw ServiceError.scopeMismatch }
             try result.validate(project: target.id, id: contextID)
+            self.clearHumanComparison(); self.humanHistoryGeneration &+= 1
             self.history = result; self.humanHistoryScope = target; self.status = "Human context history loaded"
         }
     }
@@ -1081,6 +1172,9 @@ public final class CompanionModel: ObservableObject {
             self.contexts = list.contexts; self.history = history; self.humanHistoryScope = target
             self.status = "Human context changed — dependent displayed evidence invalidated"
         }
+        // start must first see an active comparison so its cancellation retains
+        // human history while joining. Clear completed review state as well.
+        clearHumanComparison(); humanHistoryGeneration &+= 1
     }
     public func resolveHostProject(_ hostProject: String) -> Bool {
         guard hostProject == selectedID else { cancel(); clearResults(); fail(.scopeMismatch); return false }
@@ -1202,15 +1296,18 @@ public final class CompanionModel: ObservableObject {
         // serialized replacements cancel only the operation, preserving consent.
         disableAutomaticRefresh()
         cancelOperation()
+        clearHumanComparison()
     }
     private func cancelOperation() {
         let preserveQuery = inspectionOperation
+        let preserveComparisonConflict = comparisonActive && lastError == .contextConflict
         sourceQueryOperation = false
         inspectionOperation = false; sourceInspection = nil
         inspectionQueryGeneration = nil; inspectionQueryScope = nil
         let uncertainExport = exportWriteStarted
         pendingProjectExport = nil; exportPicker = nil; exportActive = false; exportWriteStarted = false
-        let preserveHistory = refinementOperation || retainedOperationActive || preserveQuery
+        let preserveHistory = refinementOperation || retainedOperationActive || preserveQuery || comparisonActive
+        if comparisonActive { clearHumanComparison() }
         let revokeReview = retainedOperationActive
         retainedOperationActive = false
         retainedReviewVisible = false; retainedActionBusy = false
@@ -1258,9 +1355,11 @@ public final class CompanionModel: ObservableObject {
             status = ServiceError.exportUncertain.localizedDescription
             projectExportStatus = status // Other settings/status updates must not hide an uncertain file outcome.
         }
+        if preserveComparisonConflict { status = ServiceError.contextConflict.localizedDescription }
     }
     private func clearResults(preserveHistory: Bool = false) {
         sourceInspection = nil; inspectionQueryScope = nil; inspectionQueryGeneration = nil
+        if !preserveHistory { clearHumanComparison(); humanHistoryGeneration &+= 1 }
         pendingProjectExport = nil; exportPicker = nil
         pendingRefinement = nil; refinementPreview = nil
         clearHumanSearch(); evidence = nil; if !preserveHistory { history = nil }

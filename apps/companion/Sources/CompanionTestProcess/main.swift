@@ -3,6 +3,7 @@ import Foundation
 import Darwin
 
 let args = Array(CommandLine.arguments.dropFirst())
+runComparisonFixture(args)
 let rawMode = args.count > 1 ? URL(fileURLWithPath: args[1]).lastPathComponent : "invalid"
 let boundMarkers = rawMode.hasPrefix("bound-markers-") || rawMode.hasPrefix("bound-source-markers-")
 let mode = boundMarkers ? String(rawMode.dropFirst(6)) : rawMode
