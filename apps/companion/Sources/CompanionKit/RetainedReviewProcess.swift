@@ -56,14 +56,16 @@ final class RetainedReviewProcess: Sendable {
         let store = try StoreSelection.existingDirectory(store)
         guard case .string(let identity) = consent.project.root_identity,
               case .string(let snapshot) = consent.project.snapshot, let incarnation = consent.project.incarnation else { throw ServiceError.invalid }
-        let arguments = ["--data-dir", store.path, "refine", "review", consent.project.id, consent.query,
+        var arguments = ["--data-dir", store.path, "refine", "review", consent.project.id, consent.query,
             "--profile", consent.profile.id, "--model", consent.profile.model, "--endpoint", consent.profile.endpoint,
             "--expected-root", consent.project.root, "--expected-root-identity", identity,
             "--expected-incarnation", incarnation, "--expected-snapshot", snapshot, "--confirm-local-inference"]
+        if consent.retrievalMode == .rankedTerms { arguments.append("--terms") }
+        let capturedArguments = arguments
         let mailbox = RetainedReviewMailbox(); self.mailbox = mailbox
         worker = Task.detached {
             let result: ServiceError?
-            do { try Self.run(executable: executable, store: store, arguments: arguments, consent: consent, seconds: seconds, mailbox: mailbox, didSpawn: didSpawn); result = nil }
+            do { try Self.run(executable: executable, store: store, arguments: capturedArguments, consent: consent, seconds: seconds, mailbox: mailbox, didSpawn: didSpawn); result = nil }
             catch let failure as ServiceError { result = failure }
             catch { result = .failed }
             mailbox.finish(result); return result
