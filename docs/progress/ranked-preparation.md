@@ -143,3 +143,32 @@ Swift wrapper was not needed or invoked. Remote CI, independent integrated revie
 native H compatibility integration and any real-provider/host acceptance remain
 unrun primary gates. The linked Plum environment was reported unreachable, so its
 thread could not be read; no coordination message or scheduled follow-up was sent.
+# Combined native-binding integration
+
+Integrated G/I onto the independently reviewed PR #58 head
+`2d10afb7c071b12f6a6291dfc0c7414d9c4caf16`. Exact tested implementation:
+`59babf6451f4a1ef64f0b1ca8f2ee5650d6f08ab`.
+
+- Captured-project guards remain before the shared manifest/source reader; human
+  search, bound native reads and manual Build fencing remain intact.
+- Literal and ranked Context share one captured expected project and immutable
+  retrieval mode. The generic bound Context parser excludes exactly `--terms`,
+  preserving opt-in dispatch while malformed/repeated flags still fail closed.
+- Primary full `scripts/check.py`: **PASS**, 200 Rust tests + two doctests,
+  including formatting, lint, docs and deliberate failing-test gate.
+- Primary actual-CLI strict Swift suite: **PASS**, 140 tests/17 suites. An initial
+  run failed because a Python child could not publish its PID within 50 ms.
+  The fixture now publishes atomically, allows three seconds for timeout, removes
+  the old marker, waits boundedly for fresh cancellation readiness, always
+  cancels/joins, and still requires positive PIDs and ESRCH after cleanup.
+- Dependency policy and staged secrets/whitespace: **PASS**.
+- Joffrey integration review: **CLEAR**, independently passed relevant offline
+  core/CLI binding, ranking, human search and actual ranked Context cases. His
+  Swift attempt did not run because local Darwin headers lacked `fts_compat.h`;
+  it is not counted as an independent native pass. Primary full native pass is
+  separate evidence.
+
+This is partial P2-A1/A6 and P4-A1/A2/A4 evidence, not retrieval-quality, live-model,
+GUI/accessibility, host-delivery or phase-closure certification. Remote CI and
+publication outcome remain separate gates. Nine inherited progress edits remain
+excluded. PR #58 stays at its original remote head; ranked work is a separate PR.
