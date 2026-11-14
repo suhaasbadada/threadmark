@@ -1,5 +1,35 @@
 # Unit AQ — coherent bounded source inspection set
 
+## Primary integration and independent review
+
+Only the owned diff committed as `9c95259` was applied, cleanly, as
+**`38edf25525526f170cf54138d4efc9fa813251b7`**, exact integrated tested runtime.
+No baseline/site merge replay or source conflict repair. The eight-file path/
+NUL/bytes/NUL fingerprint was reproduced after integration, identical to
+**`50e125e9098ddd510ea10fed510a47755cd96307660ff8ba0a6a385387ae2429`**.
+
+Joffrey independently reviewed **CLEAR**, verified all owned paths/fingerprint,
+checked the shared single-window helper and surrounding DELETE/read-only/source
+containment boundaries, and ran **25 core + eight CLI inspection tests** plus
+full offline workspace (**439 Rust tests + two doctests**), offline locked deny,
+secrets and staged/unstaged whitespace. Peer-lock and same-connection mutation
+evidence were explicitly distinguished; no atomic filesystem lease claimed.
+
+Primary reran full offline workspace **439 Rust tests + two doctests PASS**,
+full strict native Debug/Release with actual CLI and all nine C families (see
+`target/unit-aq-integrated-native.log`), all ten API gates, bundle/plist, offline
+locked deny, secrets and whitespace **PASS**. Existing single inspection and
+native Context/Query/human-note flows passed against the new Rust binary. No
+native inspection-set route is implied by these regression checks. Two inherited
+long-deadline tests remain ignored. Exact publication-head CI remains separate.
+
+AP is separately stacked above repaired AN; AQ publication must preserve those
+separate PR/head/check gates and retarget only after its lower layers merge.
+AN old 12-minute CI cancellation is a diagnosed deadline blocker, not green;
+its macOS-only bounded 20-minute repair retains every test/API/bundle gate.
+Inherited phase edits, local receipts and worktrees remain intact. GUI/AX/live
+quality/host delivery and phase closure remain open.
+
 TM-01–TM-04, TM-07, TM-10; partial P2-A1/A3/A4/A6 and P4-A2.
 The [AQ contract](../contracts/source-inspection-set-v1.md) and stable AQ-A1–A6
 IDs were written before runtime edits. This is an explicit local Rust
