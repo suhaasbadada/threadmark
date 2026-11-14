@@ -183,13 +183,20 @@ struct IncrementalBuildDecoderTests {
         let request = try IncrementalBuildRequest(project: inspectionScope), data = try incrementalBytes(request)
         _ = try IncrementalBuildReport.decode(data, request: request)
         let text = String(decoding: data, as: UTF8.self)
-        for bad in ["{\"version\":1," + text.dropFirst(), "{\"vers\\u0069on\":1," + text.dropFirst(),
-                    text + "{}", String(text.dropLast(2)), String(text.dropLast()),
-                    text.replacingOccurrences(of: "lexical-lines-only; no semantic coverage", with: "semantic"),
-                    text.replacingOccurrences(of: "\"files\":1", with: "\"files\":true"),
-                    text.replacingOccurrences(of: "\"version\":1", with: "\"version\":1.0"),
-                    text.replacingOccurrences(of: "\"files\":1", with: "\"files\":18446744073709551616"),
-                    "{\"extra\":0," + text.dropFirst()] {
+        // Keep String/Substring overload inference out of this heterogeneous
+        // expression: the older CI Swift compiler otherwise times out.
+        let objectTail = String(text.dropFirst())
+        let invalidFrames: [String] = [
+            "{\"version\":1," + objectTail,
+            "{\"vers\\u0069on\":1," + objectTail,
+            text + "{}", String(text.dropLast(2)), String(text.dropLast()),
+            text.replacingOccurrences(of: "lexical-lines-only; no semantic coverage", with: "semantic"),
+            text.replacingOccurrences(of: "\"files\":1", with: "\"files\":true"),
+            text.replacingOccurrences(of: "\"version\":1", with: "\"version\":1.0"),
+            text.replacingOccurrences(of: "\"files\":1", with: "\"files\":18446744073709551616"),
+            "{\"extra\":0," + objectTail
+        ]
+        for bad in invalidFrames {
             #expect(throws: (any Error).self) { try IncrementalBuildReport.decode(Data(bad.utf8), request: request) }
         }
         let original = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
