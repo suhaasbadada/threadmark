@@ -134,6 +134,15 @@ public struct IndexReport: Codable, Sendable {
     public let coverage: JSONValue
     public let empty: Bool
 }
+/// Explicit source Query/Context selection only; Refine remains literal.
+public enum SourceRetrievalMode: String, CaseIterable, Sendable {
+    case literal, rankedTerms
+    public var label: String { self == .literal ? "Literal (default)" : "Ranked lexical terms (opt-in)" }
+    public var explanation: String {
+        self == .literal ? "Literal substring matching; no semantic search."
+            : "Any of 1–8 Unicode-lowercase whitespace terms, at most 64 UTF-8 bytes each; ranked by distinct terms then occurrences, path/line ties. No stemming, normalization or semantic completeness. Refine remains literal."
+    }
+}
 public struct QueryReport: Codable, Equatable, Sendable {
     public let project: String
     public let snapshot: JSONValue?
@@ -142,6 +151,7 @@ public struct QueryReport: Codable, Equatable, Sendable {
     public let results: [Evidence]
     public var truncated: Bool? = nil
     public var selection: String? = nil
+    public var terms: [String]? = nil
 }
 public struct Evidence: Codable, Equatable, Sendable {
     public let project: String
@@ -251,6 +261,8 @@ public struct ContextPreview: Codable, Equatable, Sendable {
     public let approval: String
     public let delivery: String
     public let provider: String
+    public var retrieval_mode: String? = nil
+    public var coverage: String? = nil
 
     public func validate(project id: String, original text: String) throws {
         guard project == id else { throw ServiceError.scopeMismatch }
@@ -296,6 +308,8 @@ public enum ServiceError: String, Error, Sendable, LocalizedError {
 public enum Operation: Sendable {
     case queryBound(Project, String)
     case prepareContextBound(Project, String, String)
+    case queryTermsBound(Project, String)
+    case prepareContextTermsBound(Project, String, String)
     case refinePreview(RefinementConsent)
     case searchHumanContext(String, String)
     case setSourcesBound(String, String, String, String, [String], [String])

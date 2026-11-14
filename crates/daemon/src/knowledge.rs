@@ -40,12 +40,16 @@ pub enum Command {
     SearchContext(String, String),
     /// Explicit any-term lexical ranking; literal query/default preparation unchanged.
     QueryTerms(String, String),
+    /// Cached ranked read; exact binding reaches core before traversal.
+    QueryTermsBound(threadmark_core::knowledge::Project, String),
     /// Prepare a memory-only context preview (project, query, unchanged original).
     PrepareContext(String, String, String),
     /// Context selection and revalidation use the same captured project.
     PrepareContextBound(threadmark_core::knowledge::Project, String, String),
     /// Explicit any-term ranked Context; existing literal command unchanged.
     PrepareContextTerms(String, String, String),
+    /// Cached ranked Context, including engine revalidation.
+    PrepareContextTermsBound(threadmark_core::knowledge::Project, String, String),
     /// Create/revise human context (project, ID, kind, content, update).
     WriteContext(String, String, String, String, bool),
     /// Append a retirement revision.
@@ -88,6 +92,11 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         threadmark_core::knowledge::validate_removal_binding(id, root, identity)?;
     }
     match &command {
+        Command::QueryTermsBound(expected, query)
+        | Command::PrepareContextTermsBound(expected, query, _) => {
+            threadmark_core::knowledge::validate_query_binding(expected, query)?;
+            threadmark_core::knowledge::validate_query_terms(&expected.id, query)?;
+        }
         Command::QueryBound(expected, query) | Command::PrepareContextBound(expected, query, _) => {
             threadmark_core::knowledge::validate_query_binding(expected, query)?;
         }
@@ -112,7 +121,8 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         }
         _ => {}
     }
-    if let Command::PrepareContextBound(_, _, original) = &command
+    if let Command::PrepareContextBound(_, _, original)
+    | Command::PrepareContextTermsBound(_, _, original) = &command
         && (original.is_empty() || original.len() > 4096 || original.contains('\0'))
     {
         return Err(Error::InvalidExtraction);
@@ -161,6 +171,8 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         &command,
         Command::IndexBound(..)
             | Command::QueryBound(..)
+            | Command::QueryTermsBound(..)
+            | Command::PrepareContextTermsBound(..)
             | Command::PrepareContextBound(..)
             | Command::QueryTerms(..)
             | Command::PrepareContextTerms(..)
@@ -275,6 +287,19 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         }
         Command::SearchContext(project, query) => store.search_context(&project, &query, cancel)?,
         Command::QueryTerms(id, text) => store.query_terms(&id, &text, cancel)?,
+        Command::QueryTermsBound(expected, text) => {
+            store.query_terms_bound(&expected, &text, cancel)?
+        }
+        Command::PrepareContextTermsBound(expected, query, original) => {
+            crate::preparation::context_bound_with_retrieval(
+                &store,
+                &expected,
+                &query,
+                original,
+                cancel,
+                crate::preparation::RetrievalMode::RankedTerms,
+            )?
+        }
         Command::PrepareContextTerms(id, query, original) => {
             crate::preparation::context_with_retrieval(
                 &store,

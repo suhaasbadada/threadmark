@@ -83,6 +83,8 @@ public struct ProcessService: CoreService {
         if case .searchHumanContext = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .query = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .queryBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
+        if case .queryTermsBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
+        if case .prepareContextTermsBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .prepareContextBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .prepareContext = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .removeProject = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 1024) }
@@ -102,8 +104,8 @@ public struct ProcessService: CoreService {
             let decoder = JSONDecoder()
             let responseOperation: Operation
             switch operation {
-            case .queryBound(let p, let q): responseOperation = .query(p.id, q)
-            case .prepareContextBound(let p, let q, let original): responseOperation = .prepareContext(p.id, q, original)
+            case .queryBound(let p, let q), .queryTermsBound(let p, let q): responseOperation = .query(p.id, q)
+            case .prepareContextBound(let p, let q, let original), .prepareContextTermsBound(let p, let q, let original): responseOperation = .prepareContext(p.id, q, original)
             default: responseOperation = operation
             }
             switch responseOperation {
@@ -154,6 +156,9 @@ public struct ProcessService: CoreService {
                 guard data.count <= 8192 else { throw ServiceError.outputLimit }
                 let result = try decoder.decode(ContextPreview.self, from: data)
                 try result.validate(project: id, original: original)
+                if case .prepareContextTermsBound = operation {
+                    guard result.retrieval_mode == "ranked-terms", result.coverage?.hasPrefix("ranked-terms;") == true else { throw ServiceError.invalid }
+                }
                 return .preview(result)
             case .projects:
                 let projects = try decoder.decode([Project].self, from: data)
@@ -173,6 +178,12 @@ public struct ProcessService: CoreService {
             case .query(let id, _):
                 guard data.count <= 8192 else { throw ServiceError.outputLimit }
                 let result = try decoder.decode(QueryReport.self, from: data)
+                if case .queryTermsBound = operation {
+                    guard let terms = result.terms, (1...8).contains(terms.count),
+                          terms.allSatisfy({ !$0.isEmpty && $0.utf8.count <= 64 }),
+                          result.selection == "distinct-matched-terms-desc,total-nonoverlap-occurrences-desc,path-line-asc",
+                          result.truncated != nil else { throw ServiceError.invalid }
+                }
                 guard result.project == id, result.results.allSatisfy({ $0.project == id }) else { throw ServiceError.scopeMismatch }
                 guard result.results.count <= 8, Self.currentness(result.currentness), result.results.allSatisfy({
                     $0.line > 0 && $0.kind == "observed-source-line" && Self.currentness($0.currentness) && InputPolicy.sources([$0.path])
@@ -209,7 +220,8 @@ public struct ProcessService: CoreService {
         var args: [String]
         var input = Data()
         switch operation {
-        case .queryBound(let p, let query), .prepareContextBound(let p, let query, _):
+        case .queryBound(let p, let query), .prepareContextBound(let p, let query, _),
+             .queryTermsBound(let p, let query), .prepareContextTermsBound(let p, let query, _):
             guard InputPolicy.identifier(p.id), case .string(let identity) = p.root_identity,
                   InputPolicy.removal(root: p.root, identity: identity),
                   let token = p.incarnation, InputPolicy.incarnation(token), InputPolicy.sources(p.sources),
@@ -221,10 +233,19 @@ public struct ProcessService: CoreService {
                       hash.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }) else { throw ServiceError.invalid }
                 snapshot = hash
             }
-            if case .prepareContextBound(_, _, let original) = operation {
+            let original: String?
+            let ranked: Bool
+            switch operation {
+            case .prepareContextBound(_, _, let text): original = text; ranked = false
+            case .prepareContextTermsBound(_, _, let text): original = text; ranked = true
+            case .queryTermsBound: original = nil; ranked = true
+            default: original = nil; ranked = false
+            }
+            if let original {
                 guard InputPolicy.preparation(query: query, original: original) else { throw ServiceError.invalid }
                 args = ["context", "prepare", p.id, query]; input = Data(original.utf8)
-            } else { args = ["query", p.id, query] }
+                if ranked { args += ["--terms"] }
+            } else { args = [ranked ? "query-terms" : "query", p.id, query] }
             args += ["--expected-root", p.root, "--expected-root-identity", identity,
                      "--expected-incarnation", token, "--expected-snapshot", snapshot, "--expected-sources"] + p.sources
         case .refinePreview(let consent):

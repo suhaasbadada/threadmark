@@ -43,6 +43,22 @@ the real adapter, and removes its data. It does not launch an app GUI or host.
 
 ## Product boundary
 
+- Source Query and Context-only preparation share an explicit, session-memory-only
+  **Literal (default)** / **Ranked lexical terms (opt-in)** picker. Ranking matches
+  any of 1–8 deduplicated Unicode-lowercase whitespace terms (64 UTF-8 bytes per
+  term, 256 bytes/query), by distinct matched terms then occurrences, with
+  path/line ties. It is not semantic completeness, stemming or normalization.
+  Refine stays literal, independently of this picker; selecting ranking invokes
+  no provider. Changing mode cancels owned work, invalidates cached source results,
+  Context/refinement previews and consent, and rejects late output while retaining
+  the original draft. Nothing is automatically copied, delivered or sent.
+  Native `query-terms` and `context prepare ... --terms` carry the exact cached
+  root/root-identity/incarnation/source-policy/snapshot into core before source
+  traversal and through Context engine revalidation; no ID-only reload fallback.
+  The mode flag precedes binding flags, and `--expected-sources` remains the final
+  exact list. Matching metadata is stale-UI protection, not authentication.
+  Ranked results disclose terms, coverage and omitted matches; Context discloses
+  ranked coverage alongside quoted evidence. Literal response defaults are unchanged.
 - Projects offers **Remove local project…** only after loading a root identity
   and a validated schema-v3 registration incarnation.
   An immutable, cancel-default confirmation displays the exact ID/root/identity

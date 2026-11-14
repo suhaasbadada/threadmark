@@ -54,6 +54,93 @@ impl Drop for Fixture {
 }
 
 #[test]
+fn bound_ranked_query_and_context_use_exact_cached_policy_and_registration() {
+    use std::io::Write;
+    use std::process::Stdio;
+    let f = Fixture::new();
+    std::fs::write(f.0.join("source/a.rs"), "alpha_gap_beta\n").unwrap();
+    f.register();
+    let p = f.ok(&["project", "show", "a"]);
+    let binding = vec![
+        "--expected-root",
+        p["root"].as_str().unwrap(),
+        "--expected-root-identity",
+        p["root_identity"].as_str().unwrap(),
+        "--expected-incarnation",
+        p["incarnation"].as_str().unwrap(),
+        "--expected-snapshot",
+        p["snapshot"].as_str().unwrap(),
+        "--expected-sources",
+        "a.rs",
+    ];
+    let run = |context: bool, flags: &[&str]| {
+        let mut args = if context {
+            vec!["context", "prepare", "a", "alpha beta", "--terms"]
+        } else {
+            vec!["query-terms", "a", "alpha beta"]
+        };
+        args.extend_from_slice(flags);
+        let mut child = Command::new(env!("CARGO_BIN_EXE_threadmark"))
+            .arg("--data-dir")
+            .arg(f.0.join("store"))
+            .args(args)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let mut input = child.stdin.take().unwrap();
+        if context {
+            input.write_all(b"Synthetic original; do NOT send").unwrap();
+        }
+        drop(input);
+        child.wait_with_output().unwrap()
+    };
+    for context in [false, true] {
+        let output = run(context, &binding);
+        assert!(output.status.success());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        if context {
+            assert_eq!(value["retrieval_mode"], "ranked-terms");
+            assert_eq!(value["state"], "ready-for-review");
+            assert_eq!(value["provider"], "not-invoked");
+        } else {
+            assert_eq!(value["results"].as_array().unwrap().len(), 1);
+        }
+        for (index, wrong) in [
+            (1, "/synthetic/wrong-root"),
+            (3, "wrong-identity"),
+            (5, "00000000000000000000000000000000"),
+            (
+                7,
+                "0000000000000000000000000000000000000000000000000000000000000000",
+            ),
+            (9, "other.rs"),
+        ] {
+            let mut bad = binding.clone();
+            bad[index] = wrong;
+            let output = run(context, &bad);
+            assert!(!output.status.success());
+            assert!(output.stdout.is_empty());
+        }
+        let output = run(context, &binding[..8]); // Partial binding is never an unbound fallback.
+        assert!(!output.status.success());
+        assert!(output.stdout.is_empty());
+        let mut repeated = binding.clone();
+        repeated.push("--terms");
+        let output = run(context, &repeated);
+        assert!(!output.status.success());
+        assert!(output.stdout.is_empty());
+    }
+    f.ok(&["project", "sources", "a"]);
+    for context in [false, true] {
+        let output = run(context, &binding);
+        assert!(!output.status.success());
+        assert!(output.stdout.is_empty());
+    }
+}
+
+#[test]
 fn real_sqlite_multiterm_journey_preserves_literal_query_and_recovers_after_stale() {
     let f = Fixture::new();
     std::fs::write(
