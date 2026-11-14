@@ -121,3 +121,27 @@ merge. Local tests do not close Phase 4 or certify accessibility.
 
 Plum lookup returned `thread_not_found`; no coordination or external response is
 pending, and no follow-up was scheduled.
+# Primary combined integration
+
+Primary committed only the six owned files in the completed lane as `db2c550`
+and applied them without conflicts as
+`dc2e16c83654e105a281e7ac086fca478b2cd537`. No baseline/site merges were replayed.
+
+Joffrey independently reviewed the exact fingerprint **CLEAR**, and passed all six
+diff tests in strict debug and serial release, including the actual-CLI lifecycle.
+He used existing lane CLI/C artifacts, not a claimed independent rebuild/full Rust
+gate. Primary combined full workspace gate (224 Rust/two doctests), strict serial
+actual-CLI/C-fixture native suite (168 tests/23 suites), ordinary-import model API
+gate, dependency policy, staged secrets and whitespace **PASS**. Original lane
+release/full-suite results remain separately attributed above/below.
+
+Combined native inference boundary corrections from Unit P remain intact: actual
+Rust contextual term parity and byte-exact scope change-back rejection. Diff code
+does not modify those permissions, questions, original, challenge or delivery.
+PR #64's separate exact post-merge runs `43569031098`/`43569031135` both passed
+at `42c89b879f108799c00c76b0178187219803926d`.
+
+Publication exact-head CI, actual GUI/AX and live-provider quality remain separate
+unverified gates. This is textual comparison only, not semantic intent/fidelity
+certification, host delivery or phase closure. Nine inherited progress edits and
+all worktrees/parent reminders remain preserved.
