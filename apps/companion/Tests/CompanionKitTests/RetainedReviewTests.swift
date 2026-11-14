@@ -3,6 +3,15 @@ import Foundation
 import Testing
 @testable import CompanionKit
 
+/// Capture the actual worker's PID without assuming main-actor scheduling before
+/// a deliberately short parent deadline. Never signals or reaps the child.
+private final class RetainedSpawnReceipt: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value: Int32?
+    func record(_ pid: Int32) { lock.lock(); value = pid; lock.unlock() }
+    var pid: Int32? { lock.lock(); defer { lock.unlock() }; return value }
+}
+
 /// Owned numeric-loopback test peer. Every socket is explicitly nonblocking;
 /// accept/read/write/hold are bounded, and stop joins before closing the listener.
 private final class RetainedReviewHTTP: @unchecked Sendable {
@@ -230,17 +239,29 @@ struct RetainedReviewTests {
             let (model, consent) = try await capture(adapter, endpoint: peer.endpoint)
             let controller = RetainedReviewController()
             await controller.synchronize(.init(consent: consent, configurationGeneration: 1))
-            let start = Task { await controller.start(consent: consent, executable: URL(fileURLWithPath: binary), store: store, seconds: action == "timeout" ? 0.4 : 10) }
-            await peer.waitForRequest()
-            let pid = try #require(controller.ownedPID)
+            let spawned = RetainedSpawnReceipt()
+            let start = Task {
+                await controller.start(consent: consent, executable: URL(fileURLWithPath: binary), store: store,
+                    seconds: action == "timeout" ? 0.4 : 10, didSpawn: { spawned.record($0) })
+            }
+            // A deadline may expire before HTTP readiness or before this actor is
+            // scheduled again. Capture identity at spawn, not after that deadline.
+            if action != "timeout" { await peer.waitForRequest() }
             if action == "cancel" { await controller.cancelAndJoin() }
             if action == "rebind" { await controller.synchronize(nil) }
             await start.value
-            #expect(reaped(pid) && peer.count == 1 && peer.request != nil)
+            let pid = try #require(spawned.pid)
+            try #require(pid > 0)
+            #expect(reaped(pid))
+            if action == "timeout" {
+                #expect(controller.lastError == .timedOut && peer.count <= 1)
+            }
+            else { #expect(peer.count == 1 && peer.request != nil) }
             #expect(controller.state == (action == "rebind" ? .idle : (action == "cancel" ? .canceled : .failed)))
             #expect(controller.proposed == nil && controller.challenge == nil)
             // stop joins the server; EOF is observable before that join returns.
-            #expect(peer.stop() && peer.socketClosed)
+            #expect(peer.stop())
+            if peer.request != nil { #expect(peer.socketClosed) }
             await controller.cancelAndJoin(); await model.shutdown()
         }
     }
