@@ -1,4 +1,5 @@
 //! Synthetic SQLite fixtures for P2-A1/A6 and human-history P3-A4 support.
+mod marker_tests;
 use super::*;
 
 struct Fixture(PathBuf);

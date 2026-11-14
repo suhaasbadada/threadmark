@@ -90,3 +90,6 @@ untrusted human-authored context, not observed truth or permission. No forensic
 erasure, listener, credential or external-host support claim is made.
 
 Evidence and remaining gates: [Unit U progress](../progress/unit-u-bound-human-reads.md).
+
+The additive [suppression-marker binding v1](suppression-marker-read-binding-v1.md)
+reuses this exact registration helper for the separately scoped marker endpoints.

@@ -129,9 +129,9 @@ public final class CompanionModel: ObservableObject {
     /// View-local unsaved edits invalidate approval, without saving or changing source authority.
     public func contextEditorChanged() { pendingForget = nil; pendingSourceForget = nil }
     nonisolated private static func sameForgetScope(_ current: Project, _ captured: Project) -> Bool {
-        current.id == captured.id && current.root == captured.root &&
-        current.root_identity == captured.root_identity && current.incarnation == captured.incarnation &&
-        current.sources == captured.sources && current.incarnation.map(InputPolicy.incarnation) == true
+        // Marker inspection/Forget follow-up fences use the same exact bytes as
+        // the bound read; source-policy corroboration remains an additional gate.
+        sameHumanNamespace(current, captured) && current.sources == captured.sources
     }
     nonisolated private static func sameNamespace(_ current: Project, _ captured: Project) -> Bool {
         current.id == captured.id && current.root == captured.root &&
@@ -152,12 +152,14 @@ public final class CompanionModel: ObservableObject {
               sameNamespace(current, captured) else { throw ServiceError.namespaceChanged }
         return current
     }
-    /// Core admits the exact captured registration before human SQL; these
+    /// Core admits the exact captured registration before human/marker SQL; these
     /// checks additionally fence native publication and classify replacement.
     nonisolated private static func checkedHumanRead(_ service: any CoreService, _ operation: Operation, _ captured: Project, prechecked: Bool = false) async throws -> Reply {
         let binding = try HumanContextReadBinding(project: captured) // Legacy fails before service I/O.
         switch operation {
         case .contextsBound(let supplied), .contextBound(let supplied, _), .searchHumanContextBound(let supplied, _):
+            guard supplied == binding else { throw ServiceError.invalid }
+        case .forgottenContextsBound(let supplied), .forgottenSourcesBound(let supplied):
             guard supplied == binding else { throw ServiceError.invalid }
         default: throw ServiceError.invalid // No trusted-operator fallback in this boundary.
         }
@@ -213,14 +215,16 @@ public final class CompanionModel: ObservableObject {
     }
     /// Explicit v4 capability inspection; an incarnation alone proves only v3.
     public func inspectForgottenSources() {
-        guard let target = project, target.id == selectedID, canRemoveProject, !policyDirty else { return }
+        guard let target = project, target.id == selectedID, configured, manualActionsAvailable, !quitting, !policyDirty else { return }
+        guard let binding = try? HumanContextReadBinding(project: target) else { fail(.sourceInspectionUnavailable); return }
+        guard canRemoveProject else { return }
         disableAutomaticRefresh()
         sourceMarkers = nil; inspectedSourceScope = nil
-        start(status: "Inspecting non-content source suppression markers", joinRefreshDriver: true) { service in
+        start(status: "Inspecting non-content source suppression markers", joinRefreshDriver: true, preserveHistory: true) { service in
             do {
                 let before = try await service.perform(.project(target.id))
                 guard case .project(let current) = before, Self.sameForgetScope(current, target) else { throw ServiceError.scopeMismatch }
-                let markers = try await service.perform(.forgottenSources(target.id))
+                let markers = try await Self.checkedHumanRead(service, .forgottenSourcesBound(binding), target)
                 let after = try await service.perform(.project(target.id))
                 guard case .project(let current) = after, Self.sameForgetScope(current, target) else { throw ServiceError.scopeMismatch }
                 return [markers]
@@ -275,7 +279,7 @@ public final class CompanionModel: ObservableObject {
                     rootIdentity: target.root_identity, incarnation: token)
                 let before = try await service.perform(.project(target.id))
                 guard case .project(let current) = before, Self.sameForgetScope(current, expected) else { throw ServiceError.scopeMismatch }
-                let markers = try await service.perform(.forgottenSources(target.id))
+                let markers = try await Self.checkedHumanRead(service, .forgottenSourcesBound(HumanContextReadBinding(project: expected)), expected)
                 let after = try await service.perform(.project(target.id))
                 guard case .project(let current) = after, Self.sameForgetScope(current, expected) else { throw ServiceError.scopeMismatch }
                 return [receipt, after, markers]
@@ -317,7 +321,7 @@ public final class CompanionModel: ObservableObject {
                 let before = try await service.perform(.project(target.id))
                 guard case .project(let project) = before, Self.sameForgetScope(project, target) else { throw ServiceError.scopeMismatch }
                 let contexts = try await Self.checkedHumanRead(service, .contextsBound(HumanContextReadBinding(project: target)), target)
-                let markers = try await service.perform(.forgottenContexts(target.id))
+                let markers = try await Self.checkedHumanRead(service, .forgottenContextsBound(HumanContextReadBinding(project: target)), target)
                 let after = try await service.perform(.project(target.id))
                 guard case .project(let project) = after, Self.sameForgetScope(project, target) else { throw ServiceError.scopeMismatch }
                 return [reply, contexts, markers]
@@ -337,11 +341,14 @@ public final class CompanionModel: ObservableObject {
     }
     public func inspectForgottenContexts() {
         guard let target = project, target.id == selectedID, manualActionsAvailable else { return }
+        guard let binding = try? HumanContextReadBinding(project: target) else { fail(.humanReadRequiresRefresh); return }
         forgottenMarkers = nil
-        start { service in
+        start(preserveHistory: true) { service in
             let before = try await service.perform(.project(target.id))
             guard case .project(let project) = before, Self.sameForgetScope(project, target) else { throw ServiceError.scopeMismatch }
-            let markers = try await service.perform(.forgottenContexts(target.id))
+            let markers: Reply
+            do { markers = try await Self.checkedHumanRead(service, .forgottenContextsBound(binding), target) }
+            catch ServiceError.namespaceChanged { throw ServiceError.scopeMismatch } // Preserve inspection's existing clearing/error policy.
             let after = try await service.perform(.project(target.id))
             guard case .project(let project) = after, Self.sameForgetScope(project, target) else { throw ServiceError.scopeMismatch }
             return [markers]
@@ -876,7 +883,8 @@ public final class CompanionModel: ObservableObject {
                     } catch { throw ServiceError.mutationUncertain }
                 }
                 if !acknowledged, error as? ServiceError == .failed, expected != nil,
-                   let reply = try? await service.perform(.forgottenContexts(projectID)), case .forgottenContexts(let markers) = reply {
+                   let binding = try? HumanContextReadBinding(project: target),
+                   let reply = try? await Self.checkedHumanRead(service, .forgottenContextsBound(binding), target), case .forgottenContexts(let markers) = reply {
                     do { try markers.validate(project: projectID) }
                     catch { throw ServiceError.mutationUncertain }
                     if markers.forgotten.contains(where: { $0.id == contextID }) {

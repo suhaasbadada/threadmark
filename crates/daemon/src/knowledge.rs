@@ -86,12 +86,16 @@ pub enum Command {
     ForgetSourceBound(String, String, String, String, String, Vec<String>),
     /// Inspect source suppression paths only.
     ForgottenSources(String),
+    /// Registration-bound source suppression metadata, existing v4 only.
+    ForgottenSourcesBound(String, String, String, String),
     /// Confirmed removal of all human revisions and same-scope suppression.
     ForgetContext(String, String),
     /// Exact root, identity, incarnation and latest-revision approval.
     ForgetContextBound(String, String, String, String, String, u32),
     /// Inspect non-content suppression markers.
     ForgottenContexts(String),
+    /// Registration-bound human suppression metadata, existing v3/v4 only.
+    ForgottenContextsBound(String, String, String, String),
 }
 
 /// Run one local-owner operation. Source reads, SQLite, and semantics stay in core.
@@ -108,6 +112,8 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
     }
     match &command {
         Command::ContextsBound(project, root, identity, token)
+        | Command::ForgottenContextsBound(project, root, identity, token)
+        | Command::ForgottenSourcesBound(project, root, identity, token)
         | Command::ContextBound(project, _, root, identity, token)
         | Command::SearchContextBound(project, _, root, identity, token) => {
             threadmark_core::knowledge::ContextReadBinding {
@@ -235,6 +241,8 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         Command::IndexBound(..)
             | Command::ExportProjectBound(..)
             | Command::ContextsBound(..)
+            | Command::ForgottenContextsBound(..)
+            | Command::ForgottenSourcesBound(..)
             | Command::ContextBound(..)
             | Command::SearchContextBound(..)
             | Command::UpdateContextRevisionBound(..)
@@ -268,6 +276,26 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         Store::open(data_dir)?
     };
     let result = match command {
+        Command::ForgottenContextsBound(project, root, identity, token) => store
+            .forgotten_contexts_bound(
+                &project,
+                &threadmark_core::knowledge::ContextReadBinding {
+                    root: &root,
+                    root_identity: &identity,
+                    incarnation: &token,
+                },
+                cancel,
+            )?,
+        Command::ForgottenSourcesBound(project, root, identity, token) => store
+            .forgotten_sources_bound(
+                &project,
+                &threadmark_core::knowledge::ContextReadBinding {
+                    root: &root,
+                    root_identity: &identity,
+                    incarnation: &token,
+                },
+                cancel,
+            )?,
         Command::ContextsBound(project, root, identity, token) => store.contexts_bound(
             &project,
             &threadmark_core::knowledge::ContextReadBinding {

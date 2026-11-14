@@ -3,7 +3,11 @@ import Foundation
 import Darwin
 
 let args = Array(CommandLine.arguments.dropFirst())
-let mode = args.count > 1 ? URL(fileURLWithPath: args[1]).lastPathComponent : "invalid"
+let rawMode = args.count > 1 ? URL(fileURLWithPath: args[1]).lastPathComponent : "invalid"
+let boundMarkers = rawMode.hasPrefix("bound-markers-") || rawMode.hasPrefix("bound-source-markers-")
+let mode = boundMarkers ? String(rawMode.dropFirst(6)) : rawMode
+let markerBinding = boundMarkers ? ["--expected-root", "/synthetic/alpha", "--expected-root-identity", "r1",
+    "--expected-incarnation", "0123456789abcdef0123456789abcdef"] : []
 if mode == "human-bound-list" || mode == "human-bound-history" {
     let prefix = mode == "human-bound-list" ? ["context", "list", "alpha"] : ["context", "show", "alpha", "memo"]
     guard Array(args.dropFirst(2)) == prefix + ["--expected-root", "/synthetic/alpha", "--expected-root-identity", "r1",
@@ -50,7 +54,7 @@ if mode.hasPrefix("source-forget-") {
     FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject: response)); exit(0)
 }
 if mode.hasPrefix("source-markers-") {
-    guard Array(args.dropFirst(2)) == ["source", "forgotten", "alpha"],
+    guard Array(args.dropFirst(2)) == ["source", "forgotten", "alpha"] + markerBinding,
           FileHandle.standardInput.readDataToEndOfFile().isEmpty else { exit(1) }
     if mode == "source-markers-large" { print(String(repeating: "x", count: 1_048_577)); exit(0) }
     var response: [String: Any] = ["project": "alpha", "forgotten": [["path": "a.rs"], ["path": "b.rs"]]]
@@ -85,7 +89,7 @@ if mode.hasPrefix("forget-") {
     FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject: response)); exit(0)
 }
 if mode.hasPrefix("markers-") {
-    guard Array(args.dropFirst(2)) == ["context", "forgotten", "alpha"],
+    guard Array(args.dropFirst(2)) == ["context", "forgotten", "alpha"] + markerBinding,
           FileHandle.standardInput.readDataToEndOfFile().isEmpty else { exit(1) }
     if mode == "markers-large" { print(String(repeating: "x", count: 1_048_577)); exit(0) }
     var response: [String: Any] = ["project": "alpha", "forgotten": [["id": "a"], ["id": "memo"]]]

@@ -1,4 +1,6 @@
 //! Real CLI/daemon/core registration-bound human reads; all data synthetic.
+#[path = "bound_human_reads/marker_tests.rs"]
+mod marker_tests;
 use serde_json::Value;
 use std::io::Write;
 use std::path::PathBuf;

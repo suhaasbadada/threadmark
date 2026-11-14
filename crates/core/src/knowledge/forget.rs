@@ -202,10 +202,16 @@ impl Store {
         self.healthy()?;
         let tx = self.db.unchecked_transaction().map_err(unavailable)?;
         self.project(project)?;
-        if schema::version(&tx)? < 2 {
+        let reply = Self::forgotten_contexts_in(&tx, project)?;
+        tx.commit().map_err(unavailable)?;
+        Ok(reply)
+    }
+
+    pub(super) fn forgotten_contexts_in(tx: &Connection, project: &str) -> Result<Value> {
+        if schema::version(tx)? < 2 {
             return Err(Error::Unavailable);
         }
-        let forgotten: Vec<_> = markers(&tx, project)?
+        let forgotten: Vec<_> = markers(tx, project)?
             .into_iter()
             .map(|id| json!({"id":id}))
             .collect();
@@ -213,7 +219,6 @@ impl Store {
         if serde_json::to_vec(&reply).map_err(unavailable)?.len() + 1 > MAX_TOTAL {
             return Err(invalid());
         }
-        tx.commit().map_err(unavailable)?;
         Ok(reply)
     }
 }

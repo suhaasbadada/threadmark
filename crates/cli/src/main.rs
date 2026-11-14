@@ -59,7 +59,7 @@ fn usage() -> std::process::ExitCode {
         "cached export: append --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-snapshot HASH|none --expected-sources [FILE ...] to the confirmed export command (all required once, exact order, list last, max 64; stale-approval guards, not credentials; JSON v1 unchanged)"
     );
     eprintln!(
-        "human-history removal: context forget PROJECT ID --confirm-forget-local-history; context forgotten PROJECT (active removal/suppression only, not forensic erasure; sources untouched)"
+        "human-history removal: context forget PROJECT ID --confirm-forget-local-history; context forgotten PROJECT [--expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN] (bound marker reads require existing schema v3/v4; active removal/suppression only, not forensic erasure; sources untouched)"
     );
     eprintln!(
         "optional exact Forget approval: --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-revision N (all four required together; N=1..32; native always binds; not credentials)"
@@ -77,7 +77,7 @@ fn usage() -> std::process::ExitCode {
         "schema v3: store upgrade --to-version 3 --confirm-local-schema-upgrade --confirm-legacy-workers-stopped (existing store only; stop older workers first; operator attestation is not machine proof); native removal/index bindings additionally require --expected-incarnation TOKEN before --expected-sources"
     );
     eprintln!(
-        "source forget PROJECT PATH --confirm-forget-source [--expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-sources FILE ...]; source forgotten PROJECT; requires existing schema v4; source files and human context untouched; no forensic erasure. Upgrade with store upgrade --to-version 4 --confirm-local-schema-upgrade --confirm-legacy-workers-stopped (stop all legacy workers first; not universal worker fencing)."
+        "source forget PROJECT PATH --confirm-forget-source [--expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-sources FILE ...]; source forgotten PROJECT [--expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN]; requires existing schema v4; source files and human context untouched; no forensic erasure. Upgrade with store upgrade --to-version 4 --confirm-local-schema-upgrade --confirm-legacy-workers-stopped (stop all legacy workers first; not universal worker fencing)."
     );
     eprintln!("{}", local_refinement::USAGE);
     eprintln!(
@@ -154,7 +154,21 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
             (*token).into(),
             files.iter().map(|s| (*s).into()).collect(),
         ),
-        ["source", "forgotten", project] => Command::ForgottenSources((*project).into()),
+        ["source", "forgotten", project, flags @ ..] => {
+            if flags.is_empty() {
+                Command::ForgottenSources((*project).into())
+            } else {
+                let Some(bound) = human_read_binding(project, flags) else {
+                    return usage();
+                };
+                Command::ForgottenSourcesBound(
+                    (*project).into(),
+                    bound.root.into(),
+                    bound.root_identity.into(),
+                    bound.incarnation.into(),
+                )
+            }
+        }
         [
             "store",
             "upgrade",
@@ -232,7 +246,21 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
             id,
             "--confirm-forget-local-history",
         ] => Command::ForgetContext((*project).into(), (*id).into()),
-        ["context", "forgotten", project] => Command::ForgottenContexts((*project).into()),
+        ["context", "forgotten", project, flags @ ..] => {
+            if flags.is_empty() {
+                Command::ForgottenContexts((*project).into())
+            } else {
+                let Some(bound) = human_read_binding(project, flags) else {
+                    return usage();
+                };
+                Command::ForgottenContextsBound(
+                    (*project).into(),
+                    bound.root.into(),
+                    bound.root_identity.into(),
+                    bound.incarnation.into(),
+                )
+            }
+        }
         ["project", "add", id, root, files @ ..] => Command::AddProject(
             (*id).into(),
             (*root).into(),

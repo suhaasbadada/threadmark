@@ -108,6 +108,8 @@ public struct ProcessService: CoreService {
             let responseOperation: Operation
             switch operation {
             case .contextsBound(let b): responseOperation = .contexts(b.project)
+            case .forgottenContextsBound(let b): responseOperation = .forgottenContexts(b.project)
+            case .forgottenSourcesBound(let b): responseOperation = .forgottenSources(b.project)
             case .contextBound(let b, let id): responseOperation = .context(b.project, id)
             case .searchHumanContextBound(let b, let q): responseOperation = .searchHumanContext(b.project, q)
             case .queryBound(let p, let q), .queryTermsBound(let p, let q): responseOperation = .query(p.id, q)
@@ -331,6 +333,10 @@ public struct ProcessService: CoreService {
                     "--expected-root", root, "--expected-root-identity", identity,
                     "--expected-incarnation", token, "--expected-sources"] + (try sources(files))
         case .forgottenSources(let p): args = ["source", "forgotten", try id(p)]
+        case .forgottenSourcesBound(let b):
+            try b.validate()
+            args = ["source", "forgotten", try id(b.project), "--expected-root", b.root,
+                    "--expected-root-identity", b.rootIdentity, "--expected-incarnation", b.incarnation]
         case .forgetContext(let p, let c, let root, let identity, let token, let revision):
             guard InputPolicy.removal(root: root, identity: identity), InputPolicy.incarnation(token),
                   (1...32).contains(revision) else { throw ServiceError.invalid }
@@ -338,6 +344,10 @@ public struct ProcessService: CoreService {
                     "--expected-root", root, "--expected-root-identity", identity,
                     "--expected-incarnation", token, "--expected-revision", String(revision)]
         case .forgottenContexts(let p): args = ["context", "forgotten", try id(p)]
+        case .forgottenContextsBound(let b):
+            try b.validate()
+            args = ["context", "forgotten", try id(b.project), "--expected-root", b.root,
+                    "--expected-root-identity", b.rootIdentity, "--expected-incarnation", b.incarnation]
         case .removeProject(let p, let root, let identity, let token):
             guard InputPolicy.removal(root: root, identity: identity), InputPolicy.incarnation(token) else { throw ServiceError.invalid }
             args = ["project", "remove", try id(p), "--confirm-remove-local-data", "--expected-root", root, "--expected-root-identity", identity, "--expected-incarnation", token]
