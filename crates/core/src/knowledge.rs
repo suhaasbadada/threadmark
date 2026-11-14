@@ -22,9 +22,11 @@ const FLAGS: OFlags = OFlags::RDONLY
 
 mod export;
 mod forget;
+mod human_search;
 mod schema;
 mod source_forget;
 pub use forget::{ForgetBinding, ForgetStage};
+pub use human_search::validate_human_search;
 pub use schema::UpgradeStage;
 pub use source_forget::{SourceForgetBinding, SourceForgetStage, validate_source_forget};
 #[cfg(test)]
