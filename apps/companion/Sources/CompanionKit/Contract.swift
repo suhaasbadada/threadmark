@@ -337,10 +337,11 @@ public struct ContextPreview: Codable, Equatable, Sendable {
 }
 
 public enum ServiceError: String, Error, Sendable, LocalizedError {
-    case invalid, unavailable, canceled, scopeMismatch, stale, timedOut, outputLimit, failed, removalUncertain, forgetUncertain, sourceForgetUncertain, sourceInspectionUnavailable, namespaceChanged, mutationUncertain, readRequiresRefresh, contextConflict, humanReadRequiresRefresh
+    case invalid, unavailable, canceled, scopeMismatch, stale, timedOut, outputLimit, failed, removalUncertain, forgetUncertain, sourceForgetUncertain, sourceInspectionUnavailable, namespaceChanged, mutationUncertain, readRequiresRefresh, contextConflict, humanReadRequiresRefresh, exportUncertain
     public var errorDescription: String? {
         switch self {
         case .humanReadRequiresRefresh: "Human reads require validated schema v3/v4 registration metadata. Loaded history and editor retained; no unbound read fallback. Stop older workers and explicitly upgrade with store upgrade --to-version 3 --confirm-local-schema-upgrade --confirm-legacy-workers-stopped, then Refresh."
+        case .exportUncertain: "Export outcome uncertain: the new file may be present. Inspect your chosen destination before retrying. No existing file was overwritten; published data is never deleted as cleanup. Cancellation is cooperative, not an OS I/O deadline."
         case .contextConflict: "Human history no longer matches the captured edit revision, or matching history was not loaded. Unsaved editor and loaded history retained; mutation outcome not confirmed. Inspect/reload history explicitly, compare your draft, then choose Edit again before saving. No automatic retry or conflict resolution."
         case .readRequiresRefresh: "Requires Refresh — cached source policy/snapshot unavailable or changed. Human drafts retained. Native source operations require schema v3/v4; explicitly upgrade legacy storage after stopping older workers."
         case .invalid: "Invalid input or core response. Review the selected configuration."
@@ -365,6 +366,7 @@ public enum Operation: Sendable {
     case contextsBound(HumanContextReadBinding)
     case contextBound(HumanContextReadBinding, String)
     case searchHumanContextBound(HumanContextReadBinding, String)
+    case exportProjectBound(ProjectExportExecution)
     case updateContextRevisionBound(HumanContextRevisionBinding, String, String)
     case retireContextRevisionBound(HumanContextRevisionBinding)
     case queryBound(Project, String)
@@ -390,6 +392,7 @@ public enum Operation: Sendable {
     case writeContext(String, String, String, String, update: Bool), retireContext(String, String)
 }
 public enum Reply: Sendable {
+    case projectExport(ProjectExportDocument)
     case refinementPreview(RefinementPreview)
     case humanContextSearch(HumanContextSearch)
     case forgottenSource(ForgottenSource), forgottenSources(ForgottenSources)

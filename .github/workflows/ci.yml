@@ -34,14 +34,16 @@ jobs:
         env:
           THREADMARK_CORE_TEST_BINARY: ${{ github.workspace }}/target/debug/threadmark
           THREADMARK_RETAINED_FIXTURES: ${{ github.workspace }}/target/retained-fixtures
+          THREADMARK_EXPORT_FIXTURE: ${{ github.workspace }}/target/export-fixtures/export
         run: |
-          mkdir -p target/retained-fixtures
+          mkdir -p target/retained-fixtures target/export-fixtures
           sdk=$(xcrun --sdk macosx --show-sdk-path)
           resource=$(xcrun clang -print-resource-dir)
           xcrun clang -std=c11 -Wall -Wextra -Werror -nostdinc -isystem "$resource/include" -isystem "$sdk/usr/include" -isysroot "$sdk" apps/companion/Tests/RetainedReviewFixtures/retained.c -o target/retained-fixtures/retained
           for mode in malformed duplicate oversize unknown partial eof pipeclose idle hold deinit; do
             cp target/retained-fixtures/retained "target/retained-fixtures/retained-$mode"
           done
+          xcrun clang -std=c11 -Wall -Wextra -Werror -nostdinc -isystem "$resource/include" -isystem "$sdk/usr/include" -isysroot "$sdk" apps/companion/Tests/ProjectExportFixtures/export.c -o target/export-fixtures/export
           # Bound subprocess/socket pressure on shared runners; every case still
           # runs, including each test's explicit concurrent cancellation races.
           sh apps/companion/scripts/swift.sh test --no-parallel --disable-xctest --enable-swift-testing -Xswiftc -strict-concurrency=complete -Xswiftc -warnings-as-errors
