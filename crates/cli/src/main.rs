@@ -71,6 +71,9 @@ fn usage() -> std::process::ExitCode {
         "opt-in human reads v1: context list PROJECT, context show PROJECT ID, context search PROJECT QUERY accept --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN (all three, exact order, once; existing store only). Checked before human SQL in a coherent snapshot and rechecked before return; not an atomic external revocation lease or source-currentness check. Trusted unbound forms unchanged; metadata is not credentials."
     );
     eprintln!(
+        "human-context-comparison-v1: context compare PROJECT NOTE FROM TO --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN (required once, exact order; 1 <= FROM <= TO <= 32; existing store only; no stdin). Exact textual common-prefix/suffix logical-line delta, not minimal or semantic conflict resolution; metadata is not credentials."
+    );
+    eprintln!(
         "explicit compatibility change: store upgrade --confirm-local-schema-upgrade (existing store only; older binaries cannot open schema v2; no automatic downgrade)"
     );
     eprintln!(
@@ -627,6 +630,36 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
                     bound.incarnation.into(),
                 )
             }
+        }
+        ["context", "compare", project, id, from, to, flags @ ..] => {
+            let Some(binding) = human_read_binding(project, flags) else {
+                return usage();
+            };
+            let parse = |word: &str| -> Option<u32> {
+                if word.is_empty() || !word.bytes().all(|b| b.is_ascii_digit()) {
+                    return None;
+                }
+                word.parse().ok()
+            };
+            let (Some(from), Some(to)) = (parse(from), parse(to)) else {
+                return usage();
+            };
+            if threadmark_core::knowledge::validate_context_comparison(
+                project, id, from, to, &binding,
+            )
+            .is_err()
+            {
+                return usage();
+            }
+            Command::CompareContextBound(
+                (*project).into(),
+                (*id).into(),
+                from,
+                to,
+                binding.root.into(),
+                binding.root_identity.into(),
+                binding.incarnation.into(),
+            )
         }
         ["context", "show", project, id, flags @ ..] => {
             if flags.is_empty() {
