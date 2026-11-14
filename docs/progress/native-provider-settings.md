@@ -144,3 +144,28 @@ certification. Plain Swift was not substituted for the documented SDK wrapper.
   background inference, daemon listener, installation and phase closure excluded.
 - No native app or paused OpenCode host was launched; local callback/real-core tests
   and native build are separate from GUI acceptance and deployment readiness.
+
+## Coordinator integration and review repair
+
+The primary integrated the reviewed PR51-safe onboarding commit `81f8731` and
+Lane D's own commits onto PR #53 merge `b65e3515949ae6b89e04660fe419f34bb4fe2223`.
+Exact tested runtime: `2d67d8a75daee6a523f8175891f18a15df5d8d0e`.
+PR51 incarnation/source-refresh guards remain intact; no old weak guard was adopted.
+
+Joffrey independently reviewed launch, onboarding, mounted state and private file
+admission/publication. A medium finding exposed enabled-profile deselection:
+validation rejected enabled-plus-None before the selection change could disable
+inference. The primary now normalizes profile/selection changes to off before
+validation. The production binding regression covers None with and without profile
+deletion, and proves one invalidation plus no duplicate Picker-follow-up callback.
+Invalid candidates still preserve previous settings. Joffrey independently closed
+the finding and passed nine targeted tests, including actual-core invalidation.
+
+Primary verification passed: full workspace gate (153 Rust tests/two doctests),
+118 strict-concurrency Swift tests using rebuilt core, seven actual-app launch
+validation cases, dependency policy, tracked secrets and whitespace checks.
+The launch driver initially lacked its required executable argument; invoking the
+documented command passed, without a product change. No GUI permission was granted
+or desktop captured, and no live endpoint/host was called. Native GUI/AX remains
+blocked/unverified; exact remote head/CI and process-consent integration are later
+gates. Nine inherited progress-file appends remain excluded and untouched.
