@@ -341,6 +341,8 @@ struct ContextView: View {
                         }.disabled(!model.manualActionsAvailable || model.humanContextRevisionBinding(history.id) == nil)
                         Button("Reload history (keep editor)") { model.openContext(history.id) }.disabled(!model.manualActionsAvailable || model.sourceRequiresRefresh)
                         Button("Retire (retain history)") { model.retireContext(history.id) }.disabled(!model.manualActionsAvailable || model.humanContextRevisionBinding(history.id) == nil || model.sourceRequiresRefresh)
+                        Button("Stage loaded retirement (memory only)", action: model.stageBatchRetire)
+                            .disabled(model.humanContextRevisionBinding(history.id) == nil)
                         Button("Forget entry…", role: .destructive, action: model.requestForget).disabled(!model.canForgetContext)
                     }
                 }
@@ -363,7 +365,11 @@ struct ContextView: View {
                     }.accessibilityIdentifier("human-context-save")
                         .disabled(model.project?.incarnation == nil || model.sourceRequiresRefresh || !model.manualActionsAvailable || !InputPolicy.identifier(id) || text.isEmpty || text.utf8.count > 4096)
                     Button("New entry (discard editor)") { id = ""; text = ""; kind = "note"; editing = false; editBinding = nil }
+                    Button("Stage current update (memory only)") {
+                        model.stageBatchUpdate(id: id, kind: kind, text: text, expected: editBinding)
+                    }.disabled(!editing || editBinding == nil)
                 }
+                BatchEditView(model: model)
                 Button("Inspect non-content suppression markers", action: model.inspectForgottenContexts)
                     .disabled(model.project?.incarnation == nil || !model.manualActionsAvailable)
                 if let markers = model.forgottenMarkers {
