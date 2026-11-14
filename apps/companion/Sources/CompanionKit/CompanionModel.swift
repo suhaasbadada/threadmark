@@ -460,7 +460,14 @@ public final class CompanionModel: ObservableObject {
         cancel()
         evidence = nil; preview = nil
         sourceRetrievalMode = mode
-        status = "Source Query/Context mode changed — cached results discarded; Refine remains literal"
+        status = "Source Query/Context mode changed — cached results discarded; Refine mode unchanged"
+    }
+    @Published public private(set) var refinementRetrievalMode: SourceRetrievalMode = .literal
+    public func setRefinementRetrievalMode(_ mode: SourceRetrievalMode) {
+        guard mode != refinementRetrievalMode else { return }
+        cancel()
+        refinementRetrievalMode = mode
+        status = "Refine retrieval mode changed — inspect again for fresh consent; original and human history unchanged"
     }
     public func query(_ text: String) {
         guard !sourceRequiresRefresh else { fail(refreshRequiredError); return }
@@ -535,15 +542,21 @@ public final class CompanionModel: ObservableObject {
             guard profile.locality == .local else { throw ServiceError.invalid }
         } catch { cancel(); fail(.invalid); return }
         let query = preparationQuery, original = originalDraft, revision = scopeRevision
+        let mode = refinementRetrievalMode
+        let inspection = RetainedReviewBinding(consentID: UUID(), project: target, original: original,
+            query: query, settings: settings, generation: generation, scopeRevision: revision,
+            configurationGeneration: configurationGeneration, retrievalMode: mode)
         disableAutomaticRefresh()
         start(status: "Inspecting exact local inference data — no provider call", joinRefreshDriver: true, preserveHistory: true) { service in
-            let selection = try await Self.checkedSourceRead(service, .queryBound(target, query), target)
+            let selection = try await Self.refinementSelection(service, inspection)
             return [.project(target), selection]
         } apply: { replies in
             guard case .project(let current) = replies[0], case .query(let selection) = replies[1] else { throw ServiceError.invalid }
             let consent = RefinementConsent(id: UUID(), project: current, query: query, original: original,
-                settings: settings, profile: profile, selection: selection, generation: self.generation, scopeRevision: revision)
+                settings: settings, profile: profile, selection: selection, generation: self.generation, scopeRevision: revision,
+                retrievalMode: mode)
             try consent.validate()
+            guard self.currentRefinementBinding(consentID: consent.id, settings: settings)?.matches(consent) == true else { throw ServiceError.scopeMismatch }
             self.project = current; self.pendingRefinement = consent
             self.status = "Review exact request, selection, destination and budget; Cancel is the default"
         }
@@ -551,31 +564,43 @@ public final class CompanionModel: ObservableObject {
     public func cancelRefinement() { cancel() }
     /// All app profile mutations, including disable/load, revoke old actions now.
     public func refinementSettingsChanged(_ settings: ProviderSettings) {
-        guard refinementSettings != settings else { return }
+        guard refinementSettings.map({ Self.sameRefinementValue($0, settings) }) != true else { return }
         cancel(); refinementSettings = settings
+    }
+    nonisolated private static func sameRefinementValue<T: Encodable>(_ lhs: T, _ rhs: T) -> Bool {
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+        guard let left = try? encoder.encode(lhs), let right = try? encoder.encode(rhs) else { return false }
+        return left == right
+    }
+    private func currentRefinementBinding(consentID: UUID, settings: ProviderSettings) -> RetainedReviewBinding? {
+        guard !quitting, let project, let refinementSettings,
+              Self.sameRefinementValue(refinementSettings, settings),
+              selectedID?.utf8.elementsEqual(project.id.utf8) == true,
+              sourceDraft.count == project.sources.count,
+              zip(sourceDraft, project.sources).allSatisfy({ $0.utf8.elementsEqual($1.utf8) }),
+              !policyDirty, !sourceRequiresRefresh, !forgetRequiresRefresh,
+              pendingRemoval == nil, pendingForget == nil, pendingSourceForget == nil else { return nil }
+        return RetainedReviewBinding(consentID: consentID, project: project, original: originalDraft,
+            query: preparationQuery, settings: settings, generation: generation, scopeRevision: scopeRevision,
+            configurationGeneration: configurationGeneration, retrievalMode: refinementRetrievalMode)
     }
     /// Mounted human confirmation uses the retained engine, never the finite path.
     public func confirmRetainedRefinement(_ consent: RefinementConsent, settings: ProviderSettings) {
-        guard !quitting, !busy, pendingRefinement == consent, refinementSettings == settings,
-              consent.settings == settings, consent.generation == generation,
-              consent.scopeRevision == scopeRevision, let project, consent.project == project,
-              sourceDraft == project.sources, !policyDirty, !sourceRequiresRefresh, !forgetRequiresRefresh,
-              pendingRemoval == nil, pendingForget == nil, pendingSourceForget == nil,
-              selectedID == project.id, originalDraft.utf8.elementsEqual(consent.original.utf8),
-              preparationQuery.utf8.elementsEqual(consent.query.utf8) else { cancel(); return }
+        guard !busy, pendingRefinement == consent, let pending = pendingRefinement,
+              Self.sameRefinementValue(pending.selection, consent.selection),
+              Self.sameRefinementValue(pending.settings, consent.settings),
+              let binding = currentRefinementBinding(consentID: consent.id, settings: settings),
+              binding.matches(consent) else { cancel(); return }
         guard let transport = service as? ProcessService,
               let executable = transport.executable, let store = transport.dataDirectory else {
             cancel(); fail(.unavailable); return
         }
         do { try consent.validate() } catch { cancel(); fail(.invalid); return }
-        let binding = RetainedReviewBinding(consentID: consent.id, project: project,
-            original: originalDraft, query: preparationQuery, settings: settings, generation: generation,
-            scopeRevision: scopeRevision, configurationGeneration: configurationGeneration)
         let ticket = generation, controller = retainedReview
         let prior = Array(ownedOperations.values)
         pendingRefinement = nil; refinementPreview = nil; retainedReviewVisible = false; retainedOperationActive = true
         refinementOperation = true; busy = true; lastError = nil
-        status = "Preparing retained literal review — one local call; delivery not attempted"
+        status = "Preparing retained \(consent.retrievalMode.label) review — one local call; delivery not attempted"
         let startID = UUID(), ownerID = UUID()
         let preparation = Task { [weak self] in
             defer { self?.ownedOperations.removeValue(forKey: startID) }
@@ -611,15 +636,11 @@ public final class CompanionModel: ObservableObject {
     func waitForRetainedAction() async { await retainedActionTask?.value }
     public var retainedActionsAvailable: Bool {
         guard retainedReviewVisible, !quitting, !busy, !retainedActionBusy, !retainedReview.busy,
-              retainedReview.challenge != nil, let consent = retainedReview.consent, let project,
-              let settings = refinementSettings, !policyDirty, !sourceRequiresRefresh, !forgetRequiresRefresh,
-              pendingRemoval == nil, pendingForget == nil, pendingSourceForget == nil,
-              selectedID == project.id, sourceDraft == project.sources,
-              originalDraft.utf8.elementsEqual(consent.original.utf8),
-              preparationQuery.utf8.elementsEqual(consent.query.utf8) else { return false }
-        return retainedReview.binding == RetainedReviewBinding(consentID: consent.id, project: project,
-            original: originalDraft, query: preparationQuery, settings: settings, generation: generation,
-            scopeRevision: scopeRevision, configurationGeneration: configurationGeneration)
+              retainedReview.challenge != nil, let consent = retainedReview.consent,
+              let settings = refinementSettings, Self.sameRefinementValue(settings, consent.settings),
+              let current = currentRefinementBinding(consentID: consent.id, settings: settings),
+              current.matches(consent) else { return false }
+        return retainedReview.binding == current
     }
     public func editRetainedReview(_ challenge: RetainedReviewChallenge, objective: String, outputExpectations: String) {
         retainedAction { await $0.edit(challenge, objective: objective, outputExpectations: outputExpectations) }
@@ -646,18 +667,17 @@ public final class CompanionModel: ObservableObject {
         ownedOperations[id] = operation
     }
     public func confirmRefinement(_ consent: RefinementConsent, settings: ProviderSettings) {
-        guard pendingRefinement == consent, consent.settings == settings, consent.generation == generation,
-              consent.scopeRevision == scopeRevision, consent.project == project, !policyDirty,
-              pendingRemoval == nil, pendingForget == nil, pendingSourceForget == nil,
-              !sourceRequiresRefresh, !forgetRequiresRefresh, selectedID == consent.project.id,
-              originalDraft.utf8.elementsEqual(consent.original.utf8),
-              preparationQuery.utf8.elementsEqual(consent.query.utf8) else { cancel(); return }
+        guard !busy, pendingRefinement == consent, let pending = pendingRefinement,
+              Self.sameRefinementValue(pending.selection, consent.selection),
+              Self.sameRefinementValue(pending.settings, consent.settings),
+              let binding = currentRefinementBinding(consentID: consent.id, settings: settings),
+              binding.matches(consent) else { cancel(); return }
         do { try consent.validate() } catch { cancel(); fail(.invalid); return }
         start(status: "Preparing local refinement preview — one call; no Send", preserveHistory: true) { service in
             try await Self.checkRefinementScope(service, consent)
             // Re-inspect the exact selection before giving the CLI the confirmation flag.
-            guard case .query(let selection) = try await Self.checkedSourceRead(service, .queryBound(consent.project, consent.query), consent.project),
-                  selection == consent.selection else { throw ServiceError.scopeMismatch }
+            guard case .query(let selection) = try await Self.refinementSelection(service, binding),
+                  Self.sameRefinementValue(selection, consent.selection) else { throw ServiceError.scopeMismatch }
             try await Self.checkRefinementScope(service, consent)
             try Task.checkCancellation()
             let reply = try await service.perform(.refinePreview(consent))
@@ -672,8 +692,29 @@ public final class CompanionModel: ObservableObject {
         }
     }
     nonisolated private static func checkRefinementScope(_ service: any CoreService, _ consent: RefinementConsent) async throws {
-        let current = try await checkNamespace(service, consent.project)
-        guard current == consent.project else { throw ServiceError.readRequiresRefresh }
+        try await checkRefinementBinding(service, RetainedReviewBinding(consent: consent, configurationGeneration: 0))
+    }
+    nonisolated private static func checkRefinementBinding(_ service: any CoreService, _ binding: RetainedReviewBinding) async throws {
+        let current = try await checkNamespace(service, binding.project)
+        let observed = RetainedReviewBinding(consentID: binding.consentID, project: current,
+            original: binding.original, query: binding.query, settings: binding.settings, generation: binding.generation,
+            scopeRevision: binding.scopeRevision, configurationGeneration: binding.configurationGeneration,
+            retrievalMode: binding.retrievalMode)
+        guard observed == binding else { throw ServiceError.readRequiresRefresh }
+    }
+    nonisolated private static func refinementSelection(_ service: any CoreService, _ binding: RetainedReviewBinding) async throws -> Reply {
+        guard binding.project.incarnation.map(InputPolicy.incarnation) == true else { throw ServiceError.readRequiresRefresh }
+        try Task.checkCancellation()
+        try await checkRefinementBinding(service, binding)
+        try Task.checkCancellation()
+        let operation: Operation = binding.retrievalMode == .literal
+            ? .queryBound(binding.project, binding.query) : .queryTermsBound(binding.project, binding.query)
+        // Retain existing legacy/namespace/recovery classification as well as
+        // the stricter byte-exact refinement binding checks around the read.
+        let selection = try await checkedSourceRead(service, operation, binding.project)
+        try Task.checkCancellation()
+        try await checkRefinementBinding(service, binding)
+        return selection
     }
     public var canPrepareContext: Bool {
         configured && project?.id == selectedID && project != nil && !policyDirty && !sourceRequiresRefresh && pendingSourceForget == nil &&
