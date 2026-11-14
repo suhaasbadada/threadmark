@@ -1,5 +1,33 @@
 # Unit AG — opt-in bounded incremental lexical index
 
+## Primary integration and independent review
+
+Primary committed only the eight owned files as `ca9f638` and applied cleanly as
+**`2192eb4d9b63786bf4035c956520b02fb01cf726`**, exact combined tested runtime.
+No lane baseline/site history replay. Joffrey independently reproduced payload
+fingerprint and reviewed **CLEAR**; ran all 188 core tests (16 AG), four AG CLI
+tests and surrounding CLI regressions, full offline workspace pipeline, offline
+locked deny, secrets and staged/unstaged whitespace **PASS**. Native/AF and remote
+CI were not independently tested by that review.
+
+Primary full workspace **348 Rust tests + two doctests PASS**; strict serial
+actual-CLI/all-C-fixture Swift **260 tests/40 suites PASS**; all five API gates,
+offline locked deny, staged secrets and whitespace **PASS**. No fresh Release
+claim for this runtime-only backend addition; AF's earlier full Release is separate.
+Unchanged long deadlines ignored. Full source reads and complete lexical output
+validation remain mandatory: measured reuse concerns SQL rows, not source I/O or
+extraction CPU avoided, and no performance benchmark is claimed.
+
+Native coverage PR #81 at `070654ab226f3487b60212d1318d53c18eb011ba` has four
+green checks and macOS pending in CI `43590580220` (integrated `43590580246`
+green). This unit will be published as a separate stack layer against its branch,
+not duplicate AF scope against main or merge before required gates. Parent/base
+retargeting and fresh exact-head CI after any update remain explicit later gates.
+PR #80 exact post-merge CI `43590490587` remains pending; integrated `43590490702`
+passed at merge `6e4223cb7cd279086e2672ec5a16c07f89e4da42`, not AG evidence.
+Nine inherited progress edits/worktrees/parent reminders preserved. No GUI/AX,
+live-quality, host delivery, deployment or phase closure claim.
+
 Scope: TM-01–TM-04, TM-07, TM-10; partial P2-A1/A2/A3/A4/A5/A6.
 Contract: [incremental-lexical-index-v1](../contracts/incremental-lexical-index-v1.md),
 defined before implementation. Phase 2 remains open.
