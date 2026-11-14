@@ -136,3 +136,42 @@ Plum coordination lookup returned `thread_not_found`; no coordination message,
 watch, polling, reminder or scheduled follow-up exists. No external dependency
 or promised update is being awaited by this unit. All phase/privacy/host/quality
 gates remain open; local passes do not close a phase.
+# Primary integration and review correction
+
+Primary committed only the six owned files as `8394587` in the completed lane
+and integrated them as `050ea41`, excluding all baseline site/contract merges.
+Exact combined tested correction:
+`4d53e1900b6b2f0cb271a4e4501df748a7c1fbf5`.
+
+Joffrey independently passed all eight actual-core model tests in strict debug
+and serial release. His review found a P2 API escape: the public model controller
+reference let ordinary clients bypass current model consent and the owned-task
+registry. Primary made that reference module-internal. The CompanionKit-owned
+view can observe it, but ordinary importers must use model methods. This is an API
+guardrail, not authentication against arbitrary code running inside the process.
+
+Added `scripts/check-retained-api.sh`: a positive ordinary-import fixture proves
+public model actions compile; a negative ordinary-import fixture must fail with
+the specific internal-access diagnostic for `retainedReview`. CI runs that gate
+after building the complete native suite. This regression passed locally. No
+testable-only access is mistaken for ordinary client access. The original
+public standalone controller adapter is unchanged; no model registry escape is
+exposed through the model API.
+
+Primary combined workspace gate (224 Rust tests/two doctests), dependency policy,
+staged secrets and whitespace **PASS**. Strict actual-CLI/C-fixture full native
+debug and serial release **PASS**, 157 tests/20 suites each, including all eight
+model cases. Release bundle build and plist lint **PASS** without GUI launch.
+The small access correction is primary-verified, not claimed as an independent
+re-review. Existing native CI serialization/spawn-receipt repair is preserved.
+
+PR #62's separate exact post-merge runs `43567236474` and `43567236561` passed.
+PR #63 passed all five checks on `770b3bd68a055dfce2e2206972c34081ed7609bb` (CI
+`43567303996`, integrated `43567303988`); fresh main/rules/approvals/discussions
+checks preceded merge `a0d002436b314573970b5146334932be1a251d81`. Its separate
+post-merge runs and this mounted workflow's publication CI remain later gates.
+
+Unit P independently adds adapter-only immutable retrieval-mode support; mounted
+Refine remains literal here. No live provider, GUI/AX, host copy/draft/send/admission
+or phase closure follows. Nine inherited progress modifications remain excluded;
+all worktrees and parent reminders remain intact.
