@@ -15,10 +15,13 @@ final class WindowNavigation: ObservableObject {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let model = CompanionModel()
+    let launch: LaunchConfiguration
     private var item: NSStatusItem!
     private var window: NSWindow?
     private var observation: AnyCancellable?
     private let navigation = WindowNavigation()
+
+    init(launch: LaunchConfiguration) { self.launch = launch; super.init() }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -29,6 +32,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             Task { @MainActor in self?.updateMenu() }
         }
         updateMenu()
+        if let executable = launch.executable, let directory = launch.dataDirectory {
+            model.configure(executable: executable, dataDirectory: directory)
+        }
+        // Configuration is session-only, so every launch needs a visible next step.
+        open(tab: model.configured ? 0 : 2)
     }
     private func updateMenu() {
         let menu = NSMenu()
@@ -100,6 +108,11 @@ struct ManagementView: View {
                 ConnectionsView(model: model).tabItem { Text("Connections") }.tag(2)
                 PrivacyView(model: model).tabItem { Text("Privacy / Settings") }.tag(3)
             }
+            HStack {
+                Button("1. Connections") { navigation.tab = 2 }
+                Button("2. Projects / Build") { navigation.tab = 0 }
+                Button("3. Notes / Context preview") { navigation.tab = 1 }
+            }.font(.caption)
             Text("Closing this window keeps Threadmark in the menu bar. Quit cancels owned work.").font(.caption)
         }.padding(16)
     }
@@ -114,6 +127,10 @@ struct ProjectsView: View {
     @ViewState<String> private var query = ""
     @ViewState<String> private var selectionError = ""
     private var newSources: [String] { lines(files) }
+    private var approvalRoot: String? {
+        guard root.hasPrefix("/"), !root.contains("\0") else { return nil }
+        return try? StoreSelection.existingDirectory(URL(fileURLWithPath: root)).path
+    }
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
@@ -151,6 +168,7 @@ struct ProjectsView: View {
                     HStack {
                         Button("Apply source policy", action: model.applySources).disabled(!model.policyDirty || model.busy || model.sourceRequiresRefresh)
                         Button("Build project understanding", action: model.build).disabled(!model.canBuild).keyboardShortcut("b", modifiers: [.command, .shift])
+                            .accessibilityIdentifier("project-build")
                     }
                     Text("Manual Build: bounded local lexical lines (30 seconds). No inference. Unsupported/unreadable files are decided by core; inspect coverage.").font(.caption)
                     if let consent = model.automaticRefreshProposal {
@@ -171,6 +189,7 @@ struct ProjectsView: View {
                     Divider()
                     HStack {
                         TextField("Search authorized source evidence", text: $query)
+                            .accessibilityIdentifier("project-evidence-query")
                         Button("Search") { model.query(query) }.disabled(query.isEmpty || query.utf8.count > 256 || !model.manualActionsAvailable || model.policyDirty || model.sourceRequiresRefresh)
                     }
                     Text("Search input is limited to 256 UTF-8 bytes; input is never truncated.").font(.caption)
@@ -188,13 +207,22 @@ struct ProjectsView: View {
                 Divider()
                 Text("Register a project — explicit approval before any Build").font(.headline)
                 TextField("Project ID (letters, digits, hyphen, underscore)", text: $newID)
+                    .accessibilityIdentifier("registration-project-id")
                 HStack { Button("Choose project root…") { chooseRoot() }; Text(root.isEmpty ? "No root selected" : root).textSelection(.enabled) }
+                TextField("Exact absolute project root (or choose above)", text: $root)
+                    .accessibilityIdentifier("registration-root")
+                    .onChange(of: root) { _ in files = ""; selectionError = "" }
+                Text(approvalRoot.map { "Root used for approval: \($0)" } ?? "Choose an existing absolute root before approving.")
+                    .textSelection(.enabled)
                 Text("Choose exact files below this root, or enter relative file paths. No globs, directories, traversal or external paths. Nothing is scanned now. Omitted files are excluded; core enforces 64 files / 64 KiB each / 1 MiB total.")
-                Button("Choose exact source files…") { chooseFiles() }.disabled(root.isEmpty)
+                Button("Choose exact source files…") { chooseFiles() }.disabled(approvalRoot == nil)
                 TextEditor(text: $files).frame(minHeight: 85).accessibilityLabel("New project exact relative file allowlist")
                 if !selectionError.isEmpty { Text(selectionError) }
-                Button("Approve root and file allowlist") { model.addProject(id: newID, root: root, sources: newSources) }
-                    .disabled(root.isEmpty || !InputPolicy.identifier(newID) || !InputPolicy.sources(newSources) || newSources.isEmpty || !model.manualActionsAvailable)
+                Button("Approve root and file allowlist") {
+                    if let approvalRoot { model.addProject(id: newID, root: approvalRoot, sources: newSources) }
+                }
+                    .accessibilityIdentifier("registration-approve")
+                    .disabled(!model.configured || approvalRoot == nil || !InputPolicy.identifier(newID) || !InputPolicy.sources(newSources) || newSources.isEmpty || !model.manualActionsAvailable)
             }.padding()
         }
         .sheet(item: Binding(get: { model.pendingRemoval }, set: { if $0 == nil { model.cancelRemoval() } })) { confirmation in
@@ -237,10 +265,11 @@ struct ProjectsView: View {
         if panel.runModal() == .OK, let url = panel.url { root = url.path; files = ""; selectionError = "" }
     }
     private func chooseFiles() {
+        guard let approvalRoot else { return }
         let panel = NSOpenPanel(); panel.allowsMultipleSelection = true; panel.canChooseDirectories = false
-        panel.directoryURL = URL(fileURLWithPath: root)
+        panel.directoryURL = URL(fileURLWithPath: approvalRoot)
         if panel.runModal() == .OK {
-            let prefix = URL(fileURLWithPath: root).standardizedFileURL.path + "/"
+            let prefix = URL(fileURLWithPath: approvalRoot).standardizedFileURL.path + "/"
             guard panel.urls.allSatisfy({ $0.standardizedFileURL.path.hasPrefix(prefix) }) else {
                 selectionError = "Selection rejected: external paths are not authorized."; return
             }
@@ -293,15 +322,18 @@ struct ContextView: View {
                 Divider()
                 Text(editing ? "Edit human context" : "Add human context").font(.headline)
                 TextField("Context ID", text: $id).disabled(editing)
+                    .accessibilityIdentifier("human-context-id")
                 Picker("Kind", selection: $kind) {
                     ForEach(InputPolicy.contextKinds, id: \.self) { Text($0).tag($0) }
                 }
                 TextEditor(text: $text).frame(minHeight: 120).accessibilityLabel("Human context text")
+                    .accessibilityIdentifier("human-context-draft")
                 Text("Human context is limited to 4 KiB of UTF-8 text; input is never truncated.").font(.caption)
                 HStack {
                     Button(editing ? "Save new revision" : "Add context") {
                         model.writeContext(id: id, kind: kind, text: text, update: editing)
-                    }.disabled(model.project?.incarnation == nil || model.sourceRequiresRefresh || !model.manualActionsAvailable || !InputPolicy.identifier(id) || text.isEmpty || text.utf8.count > 4096)
+                    }.accessibilityIdentifier("human-context-save")
+                        .disabled(model.project?.incarnation == nil || model.sourceRequiresRefresh || !model.manualActionsAvailable || !InputPolicy.identifier(id) || text.isEmpty || text.utf8.count > 4096)
                     Button("New entry") { id = ""; text = ""; kind = "note"; editing = false }
                 }
                 Button("Inspect non-content suppression markers", action: model.inspectForgottenContexts)
@@ -353,7 +385,9 @@ struct ContextPreparationView: View {
                 .frame(minHeight: 100).accessibilityLabel("In-memory original request, not a saved human note")
             HStack {
                 Button("Prepare context", action: model.prepareContext).disabled(!model.canPrepareContext)
+                    .accessibilityIdentifier("context-prepare")
                 Button("Cancel / dismiss preview", action: model.dismissPreview)
+                    .accessibilityIdentifier("context-dismiss")
             }
             if let preview = model.preview {
                 Text("State: \(preview.state) · snapshot: \(preview.snapshot?.description ?? "none")").textSelection(.enabled)
@@ -390,6 +424,7 @@ struct ConnectionsView: View {
     var body: some View {
         ScrollView { VStack(alignment: .leading, spacing: 14) {
             Text("Local core transport — client-v1 / bounded subprocess").font(.headline)
+            Text("Start here: select a trusted core and private store, then use Projects to approve exact files and Build. Context saves human notes separately and offers an in-memory, no-AI preview. No coding environment is replaced.")
             Text("Choose an exact trusted threadmark executable and explicitly select a new or existing core store. Core owns authorization and storage. No shell, PATH lookup, inherited credential environment, or network listener. Binary version/test status: unverified until coordinator acceptance.")
             Button("Select exact threadmark executable…") { binary = choose(directory: false) }
             Text(binary?.path ?? "Executable not configured").textSelection(.enabled)
@@ -444,7 +479,18 @@ struct PrivacyView: View {
     }
 }
 
+let launch: LaunchConfiguration
+do {
+    launch = try LaunchConfiguration.parse(Array(CommandLine.arguments.dropFirst()))
+} catch {
+    FileHandle.standardError.write(Data("Invalid or unavailable launch configuration; use paired absolute --core-binary and --data-dir paths.\n".utf8))
+    exit(2)
+}
+if launch.validateOnly {
+    print("Launch configuration valid; core not invoked; store not created or inspected by core.")
+    exit(0)
+}
 let app = NSApplication.shared
-let delegate = AppDelegate()
+let delegate = AppDelegate(launch: launch)
 app.delegate = delegate
 app.run()
