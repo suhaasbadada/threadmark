@@ -89,6 +89,7 @@ private actor ExplicitFakeCoreService: CoreService {
         calls += 1
         if let error = nextFailure { nextFailure = nil; throw error }
         switch operation {
+        case .searchHumanContext, .refinePreview: throw ServiceError.unavailable
         case .forgetContext, .forgottenContexts, .forgetSource, .forgottenSources: throw ServiceError.unavailable
         case .removeProject(let id, let root, let identity, let token):
             removalCalls += 1

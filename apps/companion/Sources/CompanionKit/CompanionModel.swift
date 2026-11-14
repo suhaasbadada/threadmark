@@ -18,9 +18,16 @@ public final class CompanionModel: ObservableObject {
     @Published public private(set) var selectedID: String?
     @Published public private(set) var project: Project?
     @Published public private(set) var contexts: [ContextEntry] = []
+    @Published public private(set) var humanSearch: HumanContextSearch?
+    private var humanSearchScope: Project?
+    private var humanSearchTicket: UInt64?
+    private var humanSearchCancellationTicket: UInt64?
     @Published public private(set) var history: ContextHistory?
     @Published public private(set) var evidence: QueryReport?
     @Published public private(set) var preview: ContextPreview?
+    @Published public private(set) var pendingRefinement: RefinementConsent?
+    @Published public private(set) var refinementPreview: RefinementPreview?
+    private var refinementOperation = false
     @Published public private(set) var originalDraft = ""
     @Published public private(set) var preparationQuery = ""
     @Published public private(set) var indexReport: IndexReport?
@@ -409,9 +416,97 @@ public final class CompanionModel: ObservableObject {
             self.history = result; self.status = "Human context history loaded"
         }
     }
+    public var canSearchHumanContext: Bool {
+        configured && canRemoveProject && !policyDirty && !sourceRequiresRefresh && !forgetRequiresRefresh &&
+        pendingRemoval == nil && pendingForget == nil && pendingSourceForget == nil
+    }
+    public func searchHumanContext(_ query: String) {
+        humanSearchQueryChanged()
+        guard canSearchHumanContext, let target = project, InputPolicy.humanSearch(query) else { fail(.invalid); return }
+        start(status: "Searching human-authored context — no source reads or inference") { service in
+            _ = try await Self.checkNamespace(service, target)
+            let reply = try await service.perform(.searchHumanContext(target.id, query))
+            _ = try await Self.checkNamespace(service, target)
+            return [reply]
+        } apply: { replies in
+            guard case .humanContextSearch(let result) = replies[0] else { throw ServiceError.invalid }
+            try result.validate(scope: target)
+            self.humanSearch = result; self.humanSearchScope = target
+            self.status = "Human context: latest active revisions at read only — not source evidence or authorization"
+        }
+        humanSearchTicket = generation
+    }
+    public func humanSearchQueryChanged() {
+        if humanSearchTicket != nil { cancel() }
+        clearHumanSearch()
+    }
+    /// Loads the existing history pane; never copies text into an editor or approves a rule.
+    public func inspectHumanSearchEntry(_ id: String) {
+        guard !busy, let scope = humanSearchScope, let project, Self.sameNamespace(project, scope),
+              humanSearch?.results.contains(where: { $0.id == id }) == true else { return }
+        openContext(id)
+    }
+    private func clearHumanSearch() { humanSearch = nil; humanSearchScope = nil }
     public func editPreparation(query: String, original: String) {
         guard !preparationQuery.utf8.elementsEqual(query.utf8) || !originalDraft.utf8.elementsEqual(original.utf8) else { return }
         cancelOperation(); preparationQuery = query; originalDraft = original
+    }
+    /// Preflight is provider-free. Enabling a saved profile never grants this consent.
+    public func requestRefinement(settings: ProviderSettings) {
+        guard canPrepareContext, !forgetRequiresRefresh, let target = project,
+              pendingRemoval == nil, pendingForget == nil else { cancel(); fail(.invalid); return }
+        let profile: ProviderProfile
+        do {
+            profile = try settings.selectedProfile()
+            guard profile.locality == .local else { throw ServiceError.invalid }
+        } catch { cancel(); fail(.invalid); return }
+        let query = preparationQuery, original = originalDraft, revision = scopeRevision
+        disableAutomaticRefresh()
+        start(status: "Inspecting exact local inference data — no provider call", preserveHistory: true) { service in
+            guard case .project(let current) = try await service.perform(.project(target.id)),
+                  Self.sameForgetScope(current, target) else { throw ServiceError.scopeMismatch }
+            let selection = try await service.perform(.query(target.id, query))
+            guard case .project(let after) = try await service.perform(.project(target.id)), after == current else { throw ServiceError.scopeMismatch }
+            return [.project(current), selection]
+        } apply: { replies in
+            guard case .project(let current) = replies[0], case .query(let selection) = replies[1] else { throw ServiceError.invalid }
+            let consent = RefinementConsent(id: UUID(), project: current, query: query, original: original,
+                settings: settings, profile: profile, selection: selection, generation: self.generation, scopeRevision: revision)
+            try consent.validate()
+            self.project = current; self.pendingRefinement = consent
+            self.status = "Review exact request, selection, destination and budget; Cancel is the default"
+        }
+    }
+    public func cancelRefinement() { cancel() }
+    public func confirmRefinement(_ consent: RefinementConsent, settings: ProviderSettings) {
+        guard pendingRefinement == consent, consent.settings == settings, consent.generation == generation,
+              consent.scopeRevision == scopeRevision, consent.project == project, !policyDirty,
+              pendingRemoval == nil, pendingForget == nil, pendingSourceForget == nil,
+              !sourceRequiresRefresh, !forgetRequiresRefresh, selectedID == consent.project.id,
+              originalDraft.utf8.elementsEqual(consent.original.utf8),
+              preparationQuery.utf8.elementsEqual(consent.query.utf8) else { cancel(); return }
+        do { try consent.validate() } catch { cancel(); fail(.invalid); return }
+        start(status: "Preparing local refinement preview — one call; no Send", preserveHistory: true) { service in
+            try await Self.checkRefinementScope(service, consent)
+            // Re-inspect the exact selection before giving the CLI the confirmation flag.
+            guard case .query(let selection) = try await service.perform(.query(consent.project.id, consent.query)),
+                  selection == consent.selection else { throw ServiceError.scopeMismatch }
+            try await Self.checkRefinementScope(service, consent)
+            try Task.checkCancellation()
+            let reply = try await service.perform(.refinePreview(consent))
+            try Task.checkCancellation()
+            try await Self.checkRefinementScope(service, consent)
+            return [reply]
+        } apply: { replies in
+            guard case .refinementPreview(let result) = replies[0] else { throw ServiceError.invalid }
+            try result.validate(consent: consent)
+            self.refinementPreview = result
+            self.status = result.state == "needs-input" ? "Material questions require input — nothing sent" : "Reviewable preview only — engine approval and host delivery unavailable"
+        }
+    }
+    nonisolated private static func checkRefinementScope(_ service: any CoreService, _ consent: RefinementConsent) async throws {
+        guard case .project(let current) = try await service.perform(.project(consent.project.id)),
+              current == consent.project else { throw ServiceError.scopeMismatch }
     }
     public var canPrepareContext: Bool {
         configured && project?.id == selectedID && project != nil && !policyDirty && !sourceRequiresRefresh && pendingSourceForget == nil &&
@@ -575,6 +670,13 @@ public final class CompanionModel: ObservableObject {
         cancelOperation()
     }
     private func cancelOperation() {
+        let preserveHistory = refinementOperation
+        refinementOperation = false
+        pendingRefinement = nil; refinementPreview = nil
+        let cancelingSearch = humanSearchTicket
+        if let cancelingSearch { humanSearchCancellationTicket = cancelingSearch }
+        humanSearchTicket = nil
+        clearHumanSearch()
         automaticTicket = nil
         pendingRemoval = nil
         pendingForget = nil
@@ -585,15 +687,20 @@ public final class CompanionModel: ObservableObject {
             status = "Canceled — refresh persisted state before continuing"
             if sourceRequiresRefresh {
                 evidence = nil; indexReport = nil; preview = nil; sourceMarkers = nil; inspectedSourceScope = nil
-            } else { clearResults() }
+            } else { clearResults(preserveHistory: preserveHistory) }
         }
         if forgetRequiresRefresh {
             contexts = []; forgottenMarkers = nil; status = ServiceError.forgetUncertain.localizedDescription
         }
         if sourceRequiresRefresh { status = refreshRequiredError.localizedDescription }
         busy = false
+        if cancelingSearch != nil { status = "Human search cancel requested — joining owned worker" }
     }
-    private func clearResults() { evidence = nil; history = nil; indexReport = nil; preview = nil; forgottenMarkers = nil; sourceMarkers = nil; inspectedSourceScope = nil }
+    private func clearResults(preserveHistory: Bool = false) {
+        pendingRefinement = nil; refinementPreview = nil
+        clearHumanSearch(); evidence = nil; if !preserveHistory { history = nil }
+        indexReport = nil; preview = nil; forgottenMarkers = nil; sourceMarkers = nil; inspectedSourceScope = nil
+    }
     private func clearProject() {
         disableAutomaticRefresh()
         scopeRevision &+= 1
@@ -608,16 +715,27 @@ public final class CompanionModel: ObservableObject {
     private func fail(_ error: ServiceError) {
         lastError = error; status = error.localizedDescription
     }
-    private func start(status: String = "Working — bounded local core operation", automatic: Bool = false, joinRefreshDriver: Bool = false, work: @escaping @Sendable (any CoreService) async throws -> [Reply],
+    private func start(status: String = "Working — bounded local core operation", automatic: Bool = false, joinRefreshDriver: Bool = false, preserveHistory: Bool = false, work: @escaping @Sendable (any CoreService) async throws -> [Reply],
                        apply: @escaping @MainActor ([Reply]) throws -> Void) {
         guard !quitting else { return }
         cancelOperation(); let ticket = generation; let service = service
+        refinementOperation = preserveHistory
         automaticTicket = automatic ? ticket : nil
         let prior = Array(ownedOperations.values)
         for pending in prior { pending.cancel() }
         busy = true; lastError = nil; self.status = status
         job = Task { [weak self] in
-            defer { self?.ownedOperations.removeValue(forKey: ticket) }
+            defer {
+                self?.ownedOperations.removeValue(forKey: ticket)
+                if self?.humanSearchTicket == ticket { self?.humanSearchTicket = nil }
+                if self?.humanSearchCancellationTicket == ticket {
+                    self?.humanSearchCancellationTicket = nil
+                    if self?.generation == ticket &+ 1, self?.job == nil, self?.quitting == false,
+                       self?.status == "Human search cancel requested — joining owned worker" {
+                        self?.status = "Human search canceled — owned worker joined; no result adopted"
+                    }
+                }
+            }
             do {
                 // UI invalidation is immediate, but persistent effects must not
                 // be overtaken by replacement work, even if a service ignores
@@ -641,7 +759,7 @@ public final class CompanionModel: ObservableObject {
                 if self.sourceRequiresRefresh {
                     self.evidence = nil; self.indexReport = nil; self.preview = nil
                     self.sourceMarkers = nil; self.inspectedSourceScope = nil
-                } else { self.clearResults() }
+                } else { self.clearResults(preserveHistory: preserveHistory) }
                 self.busy = false; self.job = nil
                 self.fail(error as? ServiceError ?? (error is CancellationError ? .canceled : .failed))
                 self.automaticTicket = nil
