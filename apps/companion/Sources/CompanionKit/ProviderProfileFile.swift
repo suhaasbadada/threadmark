@@ -150,11 +150,13 @@ public final class CompanionProviderSession: ObservableObject {
 
     public func update(_ candidate: ProviderSettings) {
         do {
-            try ProviderProfileFile.validate(candidate)
-            guard candidate != settings else { return }
             // Enablement may only survive a toggle, not an identity/profile edit.
+            // Normalize before validation: clearing an enabled selection is a
+            // valid disabling action, not an invalid enabled-without-profile state.
             var next = candidate
             if next.profiles != settings.profiles || next.selectedProfileID != settings.selectedProfileID { next.enabled = false }
+            try ProviderProfileFile.validate(next)
+            guard next != settings else { return }
             settings = next; invalidate()
             status = "Session settings updated. No request sent; per-request consent is still required."
         } catch { status = "Invalid profile settings; previous settings retained." }

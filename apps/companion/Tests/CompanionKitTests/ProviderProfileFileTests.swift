@@ -169,6 +169,32 @@ struct ProviderProfileFileTests {
         #expect(!model.busy && model.preview == nil && !model.configured)
     }
 
+    @Test @MainActor func clearingEnabledSelectionDisablesAndInvalidatesExactlyOnce() throws {
+        for removeProfiles in [false, true] {
+            var invalidations = 0
+            let session = CompanionProviderSession { invalidations += 1 }
+            let binding = session.binding
+            binding.wrappedValue = try profileSettings()
+            var enabled = session.settings
+            enabled.enabled = true
+            binding.wrappedValue = enabled
+            #expect(session.settings.enabled && invalidations == 2)
+            var cleared = session.settings
+            cleared.selectedProfileID = nil
+            if removeProfiles { cleared.profiles = [] }
+            binding.wrappedValue = cleared
+            #expect(session.settings.selectedProfileID == nil)
+            #expect(!session.settings.enabled && invalidations == 3)
+            #expect(session.status.contains("updated"))
+            // The Picker's existing onChange may deliver this identical off value.
+            var followUp = session.settings
+            followUp.enabled = false
+            binding.wrappedValue = followUp
+            #expect(invalidations == 3)
+            #expect(throws: (any Error).self) { try session.settings.selectedProfile() }
+        }
+    }
+
     @Test func rustEndpointBoundaryParity() throws {
         for endpoint in ["HTTP://127.0.0.1/", "http://127.0.0.1:/", "http://127.0.0.1:0/", "http://127.0.0.1:65536/", "http://127.0.0.1", "http://user@127.0.0.1/", "http://127.0.0.1/%61", "http://127.0.0.1/?x", "http://[::1]extra/"] {
             #expect(throws: (any Error).self) { try ProviderProfile(id: "p", endpoint: endpoint, model: "m", locality: .local).validate() }
