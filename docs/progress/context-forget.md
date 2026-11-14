@@ -52,3 +52,17 @@ Remote exact-head CI and PR outcome remain subsequent gates. No dependency,
 generated lock, UI or live integration changed. Native Forget UX, source-derived
 Forget, event watching, GUI/accessibility runtime, live providers/hosts and phase
 closure remain open. User work, inherited appends and worktrees were preserved.
+
+## Publication outcome
+
+PR [#46](https://github.com/suhaasbadada/threadmark/pull/46) passed all five
+checks on `44aeec1d44154de4baf7d5a909607cd06dc68a79`: CI
+[43528898128](https://github.com/suhaasbadada/threadmark/actions/runs/43528898128)
+and integrated [43528897646](https://github.com/suhaasbadada/threadmark/actions/runs/43528897646).
+Fresh exact-head/main/discussion/rules checks found no blocker; independent review
+and repaired schema acceptance above applied. It merged at
+`2026-11-13T23:45:42Z` as `17a482b05dee1e7c80ec6f8c1b1313c8ae66377b`;
+the PR watch was removed. Post-merge CI
+[43529505794](https://github.com/suhaasbadada/threadmark/actions/runs/43529505794)
+and integrated [43529505796](https://github.com/suhaasbadada/threadmark/actions/runs/43529505796)
+both passed on that exact merge. No real user data was upgraded or forgotten.

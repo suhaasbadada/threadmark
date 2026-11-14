@@ -41,10 +41,11 @@ the real adapter, and removes its data. It does not launch an app GUI or host.
 
 ## Product boundary
 
-- Projects offers **Remove local project…** only after loading a root identity.
+- Projects offers **Remove local project…** only after loading a root identity
+  and a validated schema-v3 registration incarnation.
   An immutable, cancel-default confirmation displays the exact ID/root/identity
   and loss of all local notes, history, evidence and policy. Confirmation runs
-  `project remove ID --confirm-remove-local-data --expected-root ROOT --expected-root-identity IDENTITY`
+  `project remove ID --confirm-remove-local-data --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN`
   through the actual core, with exact stale-approval binding (not authentication).
   Project/source/configuration changes invalidate the prompt. Confirm clears
   drafts/evidence/selection immediately; success requires a validated, content-free
@@ -89,7 +90,10 @@ the real adapter, and removes its data. It does not launch an app GUI or host.
   approved files, 60-second interval and bounds before explicit Enable consent.
   Enable resumes this scope and installs one owned Foundation Timer (no immediate
   read); only its ticks can start automatic work. Resume alone never grants consent.
-  A clean nonempty loaded policy, known root identity and configured core are required.
+  A clean nonempty loaded policy, known root identity, validated registration
+  incarnation and configured core are required. Automatic CLI calls include
+  `--expected-incarnation` and revalidate transactionally before publication,
+  even after identical-directory re-registration.
   Pause invalidates the timer and cancels automatic work; resume reuses only the
   same valid consent. Manual operations take priority; busy ticks are skipped with
   no queue, overlap or cancellation thrashing. Closing Manage leaves opted-in work
@@ -100,6 +104,12 @@ the real adapter, and removes its data. It does not launch an app GUI or host.
   Successful reconciliation updates the snapshot report and invalidates prepared
   evidence, but never changes the original draft, query, human notes or editor scope.
   This is not a watcher, debounce/incremental symbol index or full phase acceptance.
+- Legacy v1/v2 projects show explicit v3 upgrade guidance and disable cached
+  removal/automatic refresh; noncached manual actions remain available. Stop
+  older companions/workers and let pending work terminate, then explicitly run
+  `store upgrade --to-version 3 --confirm-local-schema-upgrade --confirm-legacy-workers-stopped`.
+  This is operator attestation, not machine proof or fencing of old pending
+  workers. No implicit migration, upgrade panel or native Forget is introduced.
   Explicit Build remains manual and available while paused.
 - Closing Manage retains the window/model and owned job. A one-time close
   explanation distinguishes it from Quit. Quit cancels **all** outstanding owned

@@ -14,6 +14,8 @@ pub enum Command {
     RemoveProject(String),
     /// Exact caller-bound approval; IDs and binding values are not credentials.
     RemoveProjectBound(String, String, String),
+    /// Native cached removal bound to a registration nonce.
+    RemoveProjectIncarnationBound(String, String, String, String),
     /// Inspect registered projects.
     Projects,
     /// Inspect one project's source policy.
@@ -26,6 +28,8 @@ pub enum Command {
     Index(String),
     /// Timed reconciliation bound to exact previously approved scope.
     IndexBound(String, String, String, Vec<String>),
+    /// Native automatic reconciliation bound to a registration nonce.
+    IndexIncarnationBound(String, String, String, Vec<String>, String),
     /// Bounded source-backed lexical inspection.
     Query(String, String),
     /// Prepare a memory-only context preview (project, query, unchanged original).
@@ -40,6 +44,8 @@ pub enum Command {
     Context(String, String),
     /// Explicit compatibility-changing schema upgrade of existing storage only.
     UpgradeStore,
+    /// Operator attests that all legacy workers have stopped before this migration.
+    UpgradeStoreV3,
     /// Confirmed removal of all human revisions and same-scope suppression.
     ForgetContext(String, String),
     /// Inspect non-content suppression markers.
@@ -58,13 +64,24 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
     if let Command::IndexBound(id, root, identity, sources) = &command {
         threadmark_core::knowledge::validate_index_binding(id, root, identity, sources)?;
     }
+    if let Command::RemoveProjectIncarnationBound(id, root, identity, token) = &command {
+        threadmark_core::knowledge::validate_removal_binding(id, root, identity)?;
+        threadmark_core::knowledge::validate_incarnation(token)?;
+    }
+    if let Command::IndexIncarnationBound(id, root, identity, sources, token) = &command {
+        threadmark_core::knowledge::validate_index_binding(id, root, identity, sources)?;
+        threadmark_core::knowledge::validate_incarnation(token)?;
+    }
     let mut store = if let Command::ExportProject(id) = &command {
         threadmark_core::knowledge::validate_export_project(id)?;
         Store::open_existing(data_dir)?
     } else if matches!(
         &command,
         Command::IndexBound(..)
+            | Command::IndexIncarnationBound(..)
+            | Command::RemoveProjectIncarnationBound(..)
             | Command::UpgradeStore
+            | Command::UpgradeStoreV3
             | Command::ForgetContext(..)
             | Command::ForgottenContexts(..)
     ) {
@@ -78,6 +95,7 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         // Core's final cancellation boundary precedes commit. Do not turn an
         // authoritative committed Forget/upgrade into a misleading cancel error.
         Command::UpgradeStore => return store.upgrade(cancel),
+        Command::UpgradeStoreV3 => return store.upgrade_to_v3(cancel),
         Command::ForgetContext(project, id) => return store.forget_context(&project, &id, cancel),
         Command::ForgottenContexts(project) => store.forgotten_contexts(&project)?,
         Command::AddProject(id, root, sources) => {
@@ -85,6 +103,9 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
             json!({"project":id,"registered":true})
         }
         Command::RemoveProject(id) => store.remove_project(&id, cancel)?,
+        Command::RemoveProjectIncarnationBound(id, root, identity, token) => {
+            store.remove_project_incarnation_bound(&id, &root, &identity, &token, cancel)?
+        }
         Command::RemoveProjectBound(id, root, identity) => {
             store.remove_project_bound(&id, &root, &identity, cancel)?
         }
@@ -100,6 +121,9 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
             json!({"project":id,"source_evidence_invalidated":true})
         }
         Command::Index(id) => store.index(&id, &mut LexicalLines, cancel)?,
+        Command::IndexIncarnationBound(id, root, identity, sources, token) => {
+            store.index_incarnation_bound(&id, &root, &identity, &sources, &token, cancel)?
+        }
         Command::IndexBound(id, root, identity, sources) => {
             store.index_bound(&id, &root, &identity, &sources, cancel)?
         }

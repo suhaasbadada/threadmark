@@ -4,8 +4,14 @@ import Darwin
 
 let args = Array(CommandLine.arguments.dropFirst())
 let mode = args.count > 1 ? URL(fileURLWithPath: args[1]).lastPathComponent : "invalid"
+if mode.hasPrefix("index-bound-") {
+    guard Array(args.dropFirst(2)) == ["index", "alpha", "--expected-root", "/synthetic/alpha", "--expected-root-identity", "r1", "--expected-incarnation", "0123456789abcdef0123456789abcdef", "--expected-sources", "a.rs"],
+          FileHandle.standardInput.readDataToEndOfFile().isEmpty else { exit(1) }
+    let project = mode == "index-bound-wrong" ? "beta" : "alpha"
+    print("{\"project\":\"\(project)\",\"snapshot\":\"s1\",\"files\":1,\"anchors\":1,\"coverage\":\"lexical\",\"empty\":false}"); exit(0)
+}
 if mode.hasPrefix("removal-") {
-    guard Array(args.dropFirst(2)) == ["project", "remove", "alpha", "--confirm-remove-local-data", "--expected-root", "/synthetic/alpha", "--expected-root-identity", "r1"],
+    guard Array(args.dropFirst(2)) == ["project", "remove", "alpha", "--confirm-remove-local-data", "--expected-root", "/synthetic/alpha", "--expected-root-identity", "r1", "--expected-incarnation", "0123456789abcdef0123456789abcdef"],
           FileHandle.standardInput.readDataToEndOfFile().isEmpty else { exit(1) }
     if mode == "removal-ack" { print("{}"); exit(0) }
     if mode == "removal-large" { print(String(repeating: "x", count: 1025)); exit(0) }
@@ -75,7 +81,7 @@ if mode == "contract" {
     let command = Array(args.dropFirst(2))
     switch command {
     case ["project", "show", "alpha"]:
-        print(#"{"id":"alpha","root":"/synthetic","root_identity":"r1","sources":["a.rs"],"snapshot":null}"#)
+        print(#"{"id":"alpha","root":"/synthetic","root_identity":"r1","incarnation":"0123456789abcdef0123456789abcdef","sources":["a.rs"],"snapshot":null}"#)
     case ["project", "add", "alpha", "/synthetic", "a.rs"], ["project", "sources", "alpha", "a.rs"], ["project", "sources", "alpha"], ["context", "retire", "alpha", "memo"]:
         print("{}")
     case ["context", "update", "alpha", "memo", "decision"]:
@@ -89,7 +95,7 @@ if mode == "contract" {
     }
     exit(0)
 }
-if args.suffix(2) == ["project", "list"] { print(#"[{"id":"alpha","root":"/synthetic","root_identity":"r1","sources":["a.rs"],"snapshot":null}]"#) }
+if args.suffix(2) == ["project", "list"] { print(#"[{"id":"alpha","root":"/synthetic","root_identity":"r1","incarnation":"0123456789abcdef0123456789abcdef","sources":["a.rs"],"snapshot":null}]"#) }
 else if args.contains("query") {
     print(#"{"project":"alpha","snapshot":"s1","currentness":"stale-or-unindexed","coverage":"partial","results":[]}"#)
 } else { print(#"{"project":"alpha","snapshot":"s1","files":1,"anchors":1,"coverage":"partial","empty":false}"#) }

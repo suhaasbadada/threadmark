@@ -53,10 +53,20 @@ never a way to clear human history. CLI-only `context forget PROJECT ID
 --confirm-forget-local-history` removes all revisions and suppresses same-ID
 recreation; `context forgotten PROJECT` lists non-content markers. This is not
 forensic erasure: SQLite free pages, journals, backups, earlier exports and displayed
-copies may retain bytes; source files are untouched. New stores use schema v2.
+copies may retain bytes; source files are untouched. New stores use schema v3.
 Existing v1 stores stay v1 until explicit `store upgrade
 --confirm-local-schema-upgrade` (existing store only); older binaries cannot open
 v2 and there is no automatic downgrade. See the [reviewed contract](docs/contracts/context-forget-v1.md).
+Existing v1/v2 stores never implicitly upgrade. Registration-incarnation safety
+for native cached removal and timed refresh requires explicit `store upgrade
+--to-version 3 --confirm-local-schema-upgrade --confirm-legacy-workers-stopped`.
+Stop older companions/workers and let pending operations finish first: that flag
+is operator attestation, not a machine-verifiable stop or a fence for old workers.
+V3 insert/delete triggers maintain fresh tokens even for legacy registration
+writers; only incarnation-aware operations reject stale captured work. Older
+binaries cannot open v3; no automatic downgrade. The default upgrade command
+keeps v1→v2 behavior and reports v3 unchanged. Export v1 is unchanged and carries
+no incarnation/restore authority. See the [registration contract](docs/contracts/registration-incarnation-v1.md).
 Indexing is manual lexical capture, not AST/semantic understanding or permission to execute.
 No model, network endpoint or host credentials are used.
 `context prepare` produces an in-memory original-versus-context preview through

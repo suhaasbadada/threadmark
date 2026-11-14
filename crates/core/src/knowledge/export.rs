@@ -252,6 +252,7 @@ impl Store {
         }
         let latest = self.project(id)?;
         if latest.root != p.root
+            || latest.incarnation != p.incarnation
             || latest.root_identity != p.root_identity
             || latest.sources != p.sources
             || latest.snapshot != p.snapshot

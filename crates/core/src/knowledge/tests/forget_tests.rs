@@ -1,7 +1,7 @@
 //! TM-01–04/07/10, partial P2-A3/A5: synthetic Forget and migration boundaries.
 use super::*;
 
-fn v1_fixture() -> (Fixture, Store) {
+pub(super) fn v1_fixture() -> (Fixture, Store) {
     let f = Fixture::new();
     let root = f.0.join("private-store");
     std::fs::DirBuilder::new()

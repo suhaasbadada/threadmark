@@ -63,7 +63,8 @@ public final class CompanionModel: ObservableObject {
     }
     public var canRemoveProject: Bool {
         guard configured, manualActionsAvailable, !quitting, let project, project.id == selectedID,
-              case .string(let identity) = project.root_identity else { return false }
+              case .string(let identity) = project.root_identity,
+              let token = project.incarnation, InputPolicy.incarnation(token) else { return false }
         return InputPolicy.identifier(project.id) && InputPolicy.removal(root: project.root, identity: identity)
     }
     /// Opening/canceling this immutable approval performs no core operation.
@@ -76,14 +77,15 @@ public final class CompanionModel: ObservableObject {
     public func confirmRemoval(_ confirmation: RemovalConfirmation) {
         guard pendingRemoval == confirmation, confirmation.generation == generation,
               confirmation.scopeRevision == scopeRevision, canRemoveProject,
-              project == confirmation.project, case .string(let identity) = confirmation.project.root_identity else {
+              project == confirmation.project, case .string(let identity) = confirmation.project.root_identity,
+              let token = confirmation.project.incarnation, InputPolicy.incarnation(token) else {
             pendingRemoval = nil; return
         }
         let target = confirmation.project
         invalidate(clearProject: true); selectedID = nil; projects = []
         start(status: "Removing local project data — cancellation may require Refresh") { service in
             do {
-                let reply = try await service.perform(.removeProject(target.id, target.root, identity))
+                let reply = try await service.perform(.removeProject(target.id, target.root, identity, token))
                 guard case .removed(let receipt) = reply else { throw ServiceError.invalid }
                 try receipt.validate(project: target.id)
                 try Task.checkCancellation()
@@ -115,6 +117,9 @@ public final class CompanionModel: ObservableObject {
             self.contexts = contexts.contexts
             self.status = project.snapshot == nil || project.snapshot == .null
                 ? "Not built — explicit Build required" : "Snapshot recorded — currentness not checked"
+            if project.incarnation == nil {
+                self.status = "Schema v3 required for cached removal/automatic refresh. Stop older workers, then explicitly run store upgrade --to-version 3 --confirm-local-schema-upgrade --confirm-legacy-workers-stopped. Manual operations remain available."
+            }
         }
     }
     public func addProject(id: String, root: String, sources: [String]) {
@@ -242,8 +247,9 @@ public final class CompanionModel: ObservableObject {
         guard configured, !quitting, !policyDirty, let project, project.id == selectedID,
               InputPolicy.identifier(project.id), !sourceDraft.isEmpty, InputPolicy.sources(sourceDraft),
               sourceDraft == project.sources, case .string(let identity) = project.root_identity,
+              let token = project.incarnation, InputPolicy.incarnation(token),
               InputPolicy.removal(root: project.root, identity: identity) else { return nil }
-        return AutomaticRefreshConsent(projectID: project.id, root: project.root, rootIdentity: identity,
+        return AutomaticRefreshConsent(projectID: project.id, root: project.root, rootIdentity: identity, incarnation: token,
                                        sources: sourceDraft, scopeRevision: scopeRevision)
     }
     public func enableAutomaticRefresh(_ consent: AutomaticRefreshConsent) {
@@ -273,7 +279,7 @@ public final class CompanionModel: ObservableObject {
         guard !busy, ownedOperations.isEmpty, pendingRemoval == nil else { return }
         evidence = nil; indexReport = nil
         start(status: "Updating — timed bounded full lexical reconciliation", automatic: true) { service in
-            [try await service.perform(.indexBound(consent.projectID, consent.root, consent.rootIdentity, consent.sources))]
+            [try await service.perform(.indexBound(consent.projectID, consent.root, consent.rootIdentity, consent.sources, consent.incarnation))]
         } apply: { replies in
             guard case .indexed(let report) = replies[0], report.project == consent.projectID else { throw ServiceError.scopeMismatch }
             self.indexReport = report
