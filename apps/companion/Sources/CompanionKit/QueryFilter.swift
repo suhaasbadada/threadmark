@@ -124,7 +124,7 @@ public struct FilteredQuery: Sendable {
         let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
         guard selectedPaths == checked.selectedPaths, try encoder.encode(report) == encoder.encode(checked.report) else { throw ServiceError.invalid }
     }
-    private static func count(_ text: [UInt8], _ term: [UInt8]) -> Int {
+    static func count(_ text: [UInt8], _ term: [UInt8]) -> Int {
         guard !term.isEmpty, text.count >= term.count else { return 0 }
         var offset = 0, count = 0
         while offset <= text.count - term.count {
@@ -136,7 +136,7 @@ public struct FilteredQuery: Sendable {
 }
 
 /// Frame-bounded, depth-bounded, decoded-duplicate-key rejecting parser.
-private struct QueryFilterJSONParser {
+struct QueryFilterJSONParser {
     let bytes: [UInt8]
     var offset = 0
     init(_ data: Data) { bytes = Array(data) }

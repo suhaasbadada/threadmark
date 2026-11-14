@@ -424,6 +424,7 @@ struct ContextPreparationView: View {
             Text("Context-only preview · no AI").font(.headline)
             SourceRetrievalModePicker(model: model)
             Text("Occasional local evidence review, not a chat or coding-tool composer. Drafts and previews stay in memory; nothing is saved, copied or sent.")
+            FileContextControls(model: model)
             TextField("Evidence query (up to 256 UTF-8 bytes)", text: Binding(
                 get: { model.preparationQuery },
                 set: { model.editPreparation(query: $0, original: model.originalDraft) }))

@@ -40,6 +40,7 @@ jobs:
           THREADMARK_INCREMENTAL_FIXTURE_BINARY: ${{ github.workspace }}/target/incremental-fixture
           THREADMARK_BATCH_FIXTURE_BINARY: ${{ github.workspace }}/target/batch-fixture
           THREADMARK_QUERY_FILTER_FIXTURE_BINARY: ${{ github.workspace }}/target/query-filter-fixture
+          THREADMARK_FILE_CONTEXT_FIXTURE_BINARY: ${{ github.workspace }}/target/file-context-fixture
         run: |
           mkdir -p target/retained-fixtures target/export-fixtures target/source-inspection-fixtures
           sdk=$(xcrun --sdk macosx --show-sdk-path)
@@ -54,9 +55,11 @@ jobs:
           xcrun clang -std=c11 -Wall -Wextra -Werror -nostdinc -isystem "$resource/include" -isystem "$sdk/usr/include" -isysroot "$sdk" apps/companion/Tests/IncrementalBuildFixtures/incremental.c -o target/incremental-fixture
           xcrun clang -std=c11 -Wall -Wextra -Werror -nostdinc -isystem "$resource/include" -isystem "$sdk/usr/include" -isysroot "$sdk" apps/companion/Tests/BatchEditAPIFixtures/batch.c -o target/batch-fixture
           xcrun clang -std=c11 -Wall -Wextra -Werror -nostdinc -isystem "$resource/include" -isystem "$sdk/usr/include" -isysroot "$sdk" apps/companion/Tests/QueryFilterFixtures/query-filter.c -o target/query-filter-fixture
+          xcrun clang -std=c11 -Wall -Wextra -Werror -nostdinc -isystem "$resource/include" -isystem "$sdk/usr/include" -isysroot "$sdk" apps/companion/Tests/FileContextFixtures/context.c -o target/file-context-fixture
           # Bound subprocess/socket pressure on shared runners; every case still
           # runs, including each test's explicit concurrent cancellation races.
           sh apps/companion/scripts/swift.sh test --no-parallel --disable-xctest --enable-swift-testing -Xswiftc -strict-concurrency=complete -Xswiftc -warnings-as-errors
+          sh apps/companion/scripts/swift.sh test -c release --no-parallel --disable-xctest --enable-swift-testing -Xswiftc -strict-concurrency=complete -Xswiftc -warnings-as-errors
           sh apps/companion/scripts/check-retained-api.sh
           sh apps/companion/Tests/SourceInspectionFixtures/check-api.sh
           sh apps/companion/Tests/ComparisonAPIFixtures/check-api.sh
@@ -65,6 +68,7 @@ jobs:
           sh apps/companion/Tests/IncrementalBuildFixtures/check-api.sh
           sh apps/companion/Tests/BatchEditAPIFixtures/check-api.sh
           sh apps/companion/Tests/QueryFilterFixtures/check-api.sh
+          sh apps/companion/Tests/FileContextFixtures/check-api.sh
           sh apps/companion/scripts/bundle.sh
           plutil -lint apps/companion/dist/Threadmark.app/Contents/Info.plist
 
