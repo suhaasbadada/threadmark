@@ -32,7 +32,7 @@ impl ContextReadBinding<'_> {
 
 impl Store {
     // Only this registration's metadata, not source policies/other projects.
-    fn human_registration(&self, project: &str) -> Result<Project> {
+    pub(super) fn human_registration(&self, project: &str) -> Result<Project> {
         if schema::version(&self.db)? < 3 {
             return Err(Error::ScopeMismatch);
         }

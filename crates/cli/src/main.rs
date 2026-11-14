@@ -68,6 +68,9 @@ fn usage() -> std::process::ExitCode {
         "opt-in human revision guard v1: context update PROJECT ID KIND (bounded stdin) or context retire PROJECT ID, followed by --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-revision N (all four, exact order, N=1..32). Existing store required; stale revision appends nothing. CAS only, not semantic conflict resolution; trusted forms unchanged."
     );
     eprintln!(
+        "human-context-batch-edit-v1: context batch-edit PROJECT --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN (all required once, exact order). One closed JSON document on stdin, <=65536 bytes; 2..8 distinct existing IDs, update/retire only, all expected revisions compared atomically. Human declarations, not source truth or semantic resolution; existing schema v3/v4 only."
+    );
+    eprintln!(
         "opt-in human reads v1: context list PROJECT, context show PROJECT ID, context search PROJECT QUERY accept --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN (all three, exact order, once; existing store only). Checked before human SQL in a coherent snapshot and rechecked before return; not an atomic external revocation lease or source-currentness check. Trusted unbound forms unchanged; metadata is not credentials."
     );
     eprintln!(
@@ -532,6 +535,32 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
             } else {
                 Command::PrepareContext((*project).into(), (*query).into(), original)
             }
+        }
+        ["context", "batch-edit", project, flags @ ..] => {
+            let Some(binding) = human_read_binding(project, flags) else {
+                return usage();
+            };
+            let mut bytes = Vec::new();
+            if std::io::stdin()
+                .take(65_537)
+                .read_to_end(&mut bytes)
+                .is_err()
+            {
+                return failure();
+            }
+            let Ok(request) = threadmark_core::knowledge::ContextBatchEdit::parse(&bytes) else {
+                return failure();
+            };
+            if request.validate(project, &binding).is_err() {
+                return failure();
+            }
+            Command::EditContextBatchBound(
+                (*project).into(),
+                request,
+                binding.root.into(),
+                binding.root_identity.into(),
+                binding.incarnation.into(),
+            )
         }
         ["context", "update", project, id, kind, binding @ ..]
             if binding.contains(&"--expected-revision") =>
