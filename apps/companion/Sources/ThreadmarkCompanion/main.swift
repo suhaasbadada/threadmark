@@ -177,6 +177,7 @@ struct ProjectsView: View {
                             .accessibilityIdentifier("project-build")
                     }
                     Text("Manual Build: bounded local lexical lines (30 seconds). No inference. Unsupported/unreadable files are decided by core; inspect coverage.").font(.caption)
+                    IncrementalBuildView(model: model)
                     if let consent = model.automaticRefreshProposal {
                         Text("Optional approved-file events + periodic bounded full lexical reconciliation — not an incremental symbol index.").font(.headline)
                         Text("Project: \(consent.projectID) · root: \(consent.root) · identity: \(consent.rootIdentity)").textSelection(.enabled)

@@ -78,6 +78,15 @@ public final class CompanionModel: ObservableObject {
     @Published public private(set) var originalDraft = ""
     @Published public private(set) var preparationQuery = ""
     @Published public private(set) var indexReport: IndexReport?
+    @Published public private(set) var incrementalBuildReport: IncrementalBuildReport?
+    private var incrementalBuildOperation = false
+    private var incrementalMutationTicket: UInt64?
+    private struct IncrementalBuildAction: Sendable {
+        let request: IncrementalBuildRequest
+        let generation: UInt64
+        let configurationGeneration: UInt64
+        let scopeRevision: UInt64
+    }
     @Published public private(set) var status = "Core unavailable — configure Connections"
     @Published public private(set) var busy = false
     @Published public private(set) var paused = true
@@ -240,7 +249,7 @@ public final class CompanionModel: ObservableObject {
     }
     /// Opening/canceling this immutable approval performs no core operation.
     public func requestRemoval() {
-        if coverageOperation { cancel() }
+        if coverageOperation || incrementalBuildOperation { cancel() }
         guard canRemoveProject, let project else { return }
         cancelProjectExport()
         if automaticTicket != nil { cancel() }
@@ -257,7 +266,7 @@ public final class CompanionModel: ObservableObject {
         return history.history.map(\.revision).sorted() == Array(1...history.history.count)
     }
     public func requestForget() {
-        if coverageOperation { cancel() }
+        if coverageOperation || incrementalBuildOperation { cancel() }
         guard canForgetContext, let project, let history else { return }
         cancelProjectExport()
         disableAutomaticRefresh()
@@ -392,7 +401,7 @@ public final class CompanionModel: ObservableObject {
         return InputPolicy.sourceMarker(path)
     }
     public func requestSourceForget(_ path: String) {
-        if coverageOperation { cancel() }
+        if coverageOperation || incrementalBuildOperation { cancel() }
         guard canForgetSource(path), let target = project else { return }
         cancelProjectExport()
         let markers = sourceMarkers, retainedHistory = history
@@ -637,6 +646,64 @@ public final class CompanionModel: ObservableObject {
     }
     public var manualActionsAvailable: Bool { !busy || automaticTicket != nil }
     public var canBuild: Bool { canRemoveProject && !policyDirty && !sourceRequiresRefresh && !sourceDraft.isEmpty && pendingSourceForget == nil }
+    /// A separate explicit choice. Empty approved policy is valid; never changes automatic refresh mode.
+    public var canBuildIncrementally: Bool {
+        guard configured, !quitting, !policyDirty, !sourceRequiresRefresh, !forgetRequiresRefresh,
+              pendingRemoval == nil, pendingForget == nil, pendingSourceForget == nil,
+              let project, selectedID == project.id, sourceDraft.count == project.sources.count,
+              zip(sourceDraft, project.sources).allSatisfy({ $0.utf8.elementsEqual($1.utf8) }) else { return false }
+        return (try? IncrementalBuildRequest(project: project)) != nil
+    }
+    private func currentIncrementalBuild(_ action: IncrementalBuildAction) -> Bool {
+        !quitting && generation == action.generation && configurationGeneration == action.configurationGeneration &&
+        scopeRevision == action.scopeRevision && !policyDirty && selectedID == action.request.project.id &&
+        project.map { ProjectExportDocument.exact($0, action.request.project) } == true &&
+        sourceDraft.count == action.request.project.sources.count &&
+        zip(sourceDraft, action.request.project.sources).allSatisfy({ $0.utf8.elementsEqual($1.utf8) }) &&
+        pendingRemoval == nil && pendingForget == nil && pendingSourceForget == nil
+    }
+    private func beginIncrementalBuild(_ action: IncrementalBuildAction) -> Bool {
+        guard currentIncrementalBuild(action), !Task.isCancelled else { return false }
+        incrementalMutationTicket = action.generation
+        return true
+    }
+    /// No selection/appearance/query/coverage/event caller. No preflight ID reload or Full Build fallback.
+    public func buildIncrementally() {
+        guard canBuildIncrementally, let captured = project,
+              let request = try? IncrementalBuildRequest(project: captured) else { return }
+        disableAutomaticRefresh()
+        let action = IncrementalBuildAction(request: request, generation: generation &+ 1,
+            configurationGeneration: configurationGeneration, scopeRevision: scopeRevision)
+        clearResults(preserveHistory: true)
+        start(status: "Updating — explicit incremental lexical Build; all approved sources read, SQL rows may be reused",
+              joinRefreshDriver: true, preserveHistory: true, preserveConflict: true) { [weak self] service in
+            try Task.checkCancellation()
+            guard await self?.beginIncrementalBuild(action) == true else { throw ServiceError.canceled }
+            do {
+                let reply = try await service.perform(.indexIncrementalBound(request))
+                guard case .incrementalBuild(let supplied) = reply else { throw ServiceError.invalid }
+                let report = try IncrementalBuildReport.decode(supplied.bytes, request: request)
+                try Task.checkCancellation()
+                // Only after the valid receipt: metadata must retain exact old registration/policy
+                // and AG's reported new snapshot. A racing unrelated snapshot is never adopted.
+                guard case .project(let fresh) = try await service.perform(.project(captured.id)) else { throw ServiceError.invalid }
+                try report.validateAdoption(fresh, request: request)
+                try Task.checkCancellation()
+                return [.incrementalBuild(report), .project(fresh)]
+            } catch { throw ServiceError.mutationUncertain }
+        } apply: { replies in
+            guard self.currentIncrementalBuild(action),
+                  case .incrementalBuild(let supplied) = replies[0], case .project(let fresh) = replies[1] else { throw ServiceError.mutationUncertain }
+            let report = try IncrementalBuildReport.decode(supplied.bytes, request: request)
+            try report.validateAdoption(fresh, request: request)
+            self.incrementalMutationTicket = nil; self.incrementalBuildOperation = false
+            self.incrementalBuildReport = report; self.project = fresh
+            self.sourceRequiresRefresh = false; self.mutationRefreshError = nil; self.coverageNeedsMetadata = false
+            self.status = "Incremental lexical Build receipt — SQL row accounting only; all sources freshness-read. Not AST/semantic coverage or a CPU/performance gain. Inspect coverage separately."
+            if self.lastError == .contextConflict { self.status += " " + ServiceError.contextConflict.localizedDescription }
+        }
+        incrementalBuildOperation = true
+    }
     public func build() {
         if inspectionOperation || coverageOperation { cancel() }
         pendingSourceForget = nil
@@ -1387,6 +1454,11 @@ public final class CompanionModel: ObservableObject {
         clearHumanComparison()
     }
     private func cancelOperation(preservingReadState: Bool = false) {
+        let incrementalUnknown = incrementalMutationTicket != nil
+        if incrementalUnknown {
+            sourceRequiresRefresh = true; mutationRefreshError = .mutationUncertain
+        }
+        incrementalMutationTicket = nil; incrementalBuildOperation = false; incrementalBuildReport = nil
         let wasCoverage = coverageOperation || preservingReadState
         let preserveQuery = inspectionOperation || coverageOperation || preservingReadState
         let preserveComparisonConflict = (comparisonActive || coverageOperation || preservingReadState || (humanSearchTicket != nil && humanSearchConflict)) && lastError == .contextConflict
@@ -1450,8 +1522,10 @@ public final class CompanionModel: ObservableObject {
             projectExportStatus = status // Other settings/status updates must not hide an uncertain file outcome.
         }
         if preserveComparisonConflict { status = ServiceError.contextConflict.localizedDescription }
+        if incrementalUnknown { status += " Incremental Build persisted outcome unknown; cancellation is cooperative, not proof of rollback. Refresh metadata explicitly; no retry." }
     }
     private func clearResults(preserveHistory: Bool = false) {
+        incrementalBuildReport = nil
         coverageReport = nil
         sourceInspection = nil; inspectionQueryScope = nil; inspectionQueryGeneration = nil
         if !preserveHistory { clearHumanComparison(); humanHistoryGeneration &+= 1 }
@@ -1509,6 +1583,9 @@ public final class CompanionModel: ObservableObject {
                 try apply(replies); self.busy = false; self.job = nil; self.automaticTicket = nil; self.inspectionOperation = false; self.coverageOperation = false
             } catch {
                 guard let self, self.generation == ticket, !self.quitting else { return }
+                let incrementalUnknown = self.incrementalMutationTicket == ticket
+                self.incrementalMutationTicket = nil; self.incrementalBuildOperation = false; self.incrementalBuildReport = nil
+                if incrementalUnknown { self.sourceRequiresRefresh = true; self.mutationRefreshError = .mutationUncertain }
                 if error as? ServiceError == .namespaceChanged {
                     self.clearProject(); self.sourceRequiresRefresh = true
                     self.mutationRefreshError = .namespaceChanged
@@ -1531,7 +1608,7 @@ public final class CompanionModel: ObservableObject {
                 self.coverageOperation = false; self.coverageReport = nil
                 self.sourceQueryOperation = false
                 self.busy = false; self.job = nil
-                self.fail(error as? ServiceError ?? (error is CancellationError ? .canceled : .failed))
+                self.fail(incrementalUnknown ? .mutationUncertain : (error as? ServiceError ?? (error is CancellationError ? .canceled : .failed)))
                 if self.humanSearchTicket == ticket, self.humanSearchConflict, error as? ServiceError != .namespaceChanged {
                     self.fail(.contextConflict)
                 } else if retainedConflict, error as? ServiceError != .namespaceChanged {
