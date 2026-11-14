@@ -122,3 +122,33 @@ The supplied base CI evidence (PR 51 runs 43548355679 / 43548355730) applies onl
 to base main, not this lane. No push, PR, release, deploy or merge-to-main was run.
 No phase is closed. Daemon ReviewSession/integration, preparation, refinement,
 Companion/native hosts, source indexing and inherited progress docs are excluded.
+
+## Local verification record
+
+Tested implementation SHA: `1c49e1ab41f75d8a72c35639bd437f74f6ef9e0d`.
+The subsequent evidence-only commit appends this record without runtime changes;
+the final handoff also identifies the fully rechecked evidence-head SHA.
+Environment: macOS, rustc 1.97.1, cargo 1.97.1, Python 3.12.6.
+
+- `python3 scripts/check.py`: **PASS**. Formatting, locked workspace build,
+  warnings-denied Clippy, all workspace tests/doctests, warnings-denied Rust docs,
+  CLI/daemon diagnostics, local documentation links and intentional-failure gate
+  all passed. Six new core tests and three new CLI tests passed. An earlier run
+  found two Clippy `int_plus_one` test assertions; fixed before the passing run.
+- `cargo deny --locked check`: **PASS** (advisories, bans, licenses, sources).
+- `python3 scripts/secrets.py`: **PASS**, with only owned new files staged first;
+  tracked-file scan and synthetic-negative probe both passed.
+- `git diff --check` and `git diff --cached --check`: **PASS**.
+- Independent review: **NOT RUN**; primary review/integration required.
+- This lane's remote CI: **NOT RUN**; no CI run/head exists for these changes.
+  Prior main runs are not evidence for this SHA.
+- No Docker, real user content, global configuration, credentials, installer,
+  source modifications, host launch, inference, push or remote publication.
+
+Implementation files are the new `knowledge/human_search.rs`, its new targeted
+test module, the new CLI integration test file, minimal core module/export lines,
+daemon command/preflight/routing and CLI parsing/help. This document owns the
+output/provenance/privacy contract and local evidence; no inherited progress
+document was changed. Remaining gates: primary independent review, integration,
+authorization to publish and exact integrated-head CI. Representative scale and
+quality evaluation, native UI/handoff and complete phase acceptance remain open.
