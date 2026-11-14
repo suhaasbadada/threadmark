@@ -76,6 +76,7 @@ public struct ProcessService: CoreService {
               limits.inputBytes > 0, limits.inputBytes <= 4096 else { throw ServiceError.invalid }
         let cancellation = Cancellation()
         var operationLimits = limits
+        if case .inspectSourceAnchorBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .refinePreview = operation {
             operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192)
             operationLimits.seconds = min(limits.seconds, 30)
@@ -117,6 +118,8 @@ public struct ProcessService: CoreService {
             default: responseOperation = operation
             }
             switch responseOperation {
+            case .inspectSourceAnchorBound(let request):
+                return .sourceInspection(try SourceInspectionDocument.decode(data, request: request))
             case .exportProjectBound(let execution):
                 return .projectExport(try ProjectExportDocument.decode(data, scope: execution.confirmation.project))
             case .refinePreview(let consent):
@@ -246,6 +249,15 @@ public struct ProcessService: CoreService {
         var args: [String]
         var input = Data()
         switch operation {
+        case .inspectSourceAnchorBound(let request):
+            try request.validate()
+            let p = request.project, a = request.anchor
+            guard case .string(let identity) = p.root_identity, let token = p.incarnation,
+                  case .string(let snapshot) = p.snapshot else { throw ServiceError.invalid }
+            args = ["source", "inspect", p.id, a.path, String(a.line), "--radius", String(request.radius),
+                    "--expected-source-hash", a.source_hash, "--expected-root", p.root,
+                    "--expected-root-identity", identity, "--expected-incarnation", token,
+                    "--expected-snapshot", snapshot, "--expected-sources"] + p.sources
         case .contextsBound(let binding), .contextBound(let binding, _), .searchHumanContextBound(let binding, _):
             try binding.validate()
             switch operation {

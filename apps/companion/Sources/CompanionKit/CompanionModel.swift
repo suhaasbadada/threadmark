@@ -24,6 +24,20 @@ public final class CompanionModel: ObservableObject {
     private var humanSearchCancellationTicket: UInt64?
     @Published public private(set) var history: ContextHistory?
     @Published public private(set) var evidence: QueryReport?
+    @Published public private(set) var sourceInspection: SourceInspectionDocument?
+    @Published public private(set) var inspectionRadius = 2
+    private var inspectionQueryScope: Project?
+    private var inspectionQueryGeneration: UInt64?
+    private var inspectionOperation = false
+    private var sourceQueryOperation = false
+    private let inspectionOwner = UUID()
+    private struct InspectionAction: Sendable {
+        let request: SourceInspectionRequest
+        let owner: UUID
+        let generation: UInt64
+        let configurationGeneration: UInt64
+        let scopeRevision: UInt64
+    }
     @Published public private(set) var preview: ContextPreview?
     @Published public private(set) var pendingRefinement: RefinementConsent?
     @Published public private(set) var refinementPreview: RefinementPreview?
@@ -593,6 +607,7 @@ public final class CompanionModel: ObservableObject {
     public var manualActionsAvailable: Bool { !busy || automaticTicket != nil }
     public var canBuild: Bool { canRemoveProject && !policyDirty && !sourceRequiresRefresh && !sourceDraft.isEmpty && pendingSourceForget == nil }
     public func build() {
+        if inspectionOperation { cancel() }
         pendingSourceForget = nil
         guard !sourceRequiresRefresh else { fail(refreshRequiredError); return }
         guard let target = project, target.id == selectedID,
@@ -658,9 +673,65 @@ public final class CompanionModel: ObservableObject {
             guard case .query(let result) = replies[0], result.project == id,
                   result.results.allSatisfy({ $0.project == id && self.sourceDraft.contains($0.path) }) else { throw ServiceError.scopeMismatch }
             self.evidence = result
+            self.sourceQueryOperation = false
+            self.inspectionQueryScope = target
+            self.inspectionQueryGeneration = self.generation
             self.status = result.currentness == "current-at-read"
                 ? "Current at read — inspect coverage, not complete comprehension" : "Stale or unindexed — Build explicitly"
         }
+        sourceQueryOperation = true
+    }
+    /// Changing the window never reads sources or silently renews query eligibility.
+    public func setInspectionRadius(_ radius: Int) {
+        guard (0...3).contains(radius), radius != inspectionRadius else { return }
+        if inspectionOperation { cancel() }
+        inspectionRadius = radius; sourceInspection = nil
+    }
+    /// Called when the source query text changes; displayed rows are not fresh authority.
+    public func sourceQueryChanged() {
+        if inspectionOperation || sourceQueryOperation { cancel() }
+        inspectionQueryGeneration = nil; sourceInspection = nil
+    }
+    public func canInspectSource(_ anchor: Evidence) -> Bool {
+        guard configured, manualActionsAvailable, !quitting, !policyDirty,
+              !sourceRequiresRefresh, !forgetRequiresRefresh,
+              pendingRemoval == nil, pendingForget == nil, pendingSourceForget == nil,
+              let target = project, selectedID == target.id,
+              let captured = inspectionQueryScope, ProjectExportDocument.exact(target, captured),
+              inspectionQueryGeneration == generation, let evidence,
+              evidence.currentness == "current-at-read", evidence.snapshot == target.snapshot,
+              evidence.results.contains(where: { SourceInspectionRequest.exact($0, anchor) }),
+              sourceDraft == target.sources else { return false }
+        return (try? SourceInspectionRequest(project: captured, anchor: anchor, radius: inspectionRadius)) != nil
+    }
+    public func inspectSource(_ anchor: Evidence) {
+        guard canInspectSource(anchor), let captured = inspectionQueryScope,
+              let request = try? SourceInspectionRequest(project: captured, anchor: anchor, radius: inspectionRadius) else { return }
+        // Reuse the normal owned read registry. No inference/export consent token,
+        // preflight source read, automatic refresh grant or unbound fallback.
+        disableAutomaticRefresh()
+        let action = InspectionAction(request: request, owner: inspectionOwner, generation: generation &+ 1,
+            configurationGeneration: configurationGeneration, scopeRevision: scopeRevision)
+        start(status: "Inspecting explicitly selected source anchor — local lexical text only",
+              joinRefreshDriver: true, preserveHistory: true, preserveQuery: true) { service in
+            try Task.checkCancellation()
+            // Z owns the complete transactional binding/currentness checks. Even
+            // metadata-only normal commands use a writable store opener: never
+            // run one before/after inspection or to diagnose an opaque failure.
+            let reply = try await service.perform(.inspectSourceAnchorBound(action.request))
+            try Task.checkCancellation()
+            return [reply]
+        } apply: { replies in
+            guard case .sourceInspection(let document) = replies[0],
+                  self.inspectionOwner == action.owner, self.generation == action.generation,
+                  self.configurationGeneration == action.configurationGeneration,
+                  self.scopeRevision == action.scopeRevision, let current = self.project,
+                  ProjectExportDocument.exact(current, captured) else { throw ServiceError.invalid }
+            self.sourceInspection = try SourceInspectionDocument.decode(document.bytes, request: request)
+            self.inspectionQueryScope = captured; self.inspectionQueryGeneration = self.generation
+            self.status = "Source inspected · current-at-read · lexical only; neighbors are observed text, not indexed claims. No edit, copy, send or inference."
+        }
+        inspectionOperation = true
     }
     private var humanHistoryScope: Project?
     /// Returns the revision currently displayed, not a fresh revision fetched at Save.
@@ -1133,9 +1204,13 @@ public final class CompanionModel: ObservableObject {
         cancelOperation()
     }
     private func cancelOperation() {
+        let preserveQuery = inspectionOperation
+        sourceQueryOperation = false
+        inspectionOperation = false; sourceInspection = nil
+        inspectionQueryGeneration = nil; inspectionQueryScope = nil
         let uncertainExport = exportWriteStarted
         pendingProjectExport = nil; exportPicker = nil; exportActive = false; exportWriteStarted = false
-        let preserveHistory = refinementOperation || retainedOperationActive
+        let preserveHistory = refinementOperation || retainedOperationActive || preserveQuery
         let revokeReview = retainedOperationActive
         retainedOperationActive = false
         retainedReviewVisible = false; retainedActionBusy = false
@@ -1168,13 +1243,16 @@ public final class CompanionModel: ObservableObject {
             status = "Canceled — refresh persisted state before continuing"
             if sourceRequiresRefresh {
                 evidence = nil; indexReport = nil; preview = nil; sourceMarkers = nil; inspectedSourceScope = nil
-            } else { clearResults(preserveHistory: preserveHistory) }
+            } else if !preserveQuery { clearResults(preserveHistory: preserveHistory) }
         }
         if forgetRequiresRefresh {
             contexts = []; forgottenMarkers = nil; status = ServiceError.forgetUncertain.localizedDescription
         }
         if sourceRequiresRefresh { status = refreshRequiredError.localizedDescription }
         busy = false
+        if preserveQuery, !sourceRequiresRefresh, !forgetRequiresRefresh {
+            status = "Source inspection canceled — owned teardown requested; prior query and human history retained. Explicitly Query again before Inspect source."
+        }
         if cancelingSearch != nil { status = "Human search cancel requested — joining owned worker" }
         if uncertainExport {
             status = ServiceError.exportUncertain.localizedDescription
@@ -1182,6 +1260,7 @@ public final class CompanionModel: ObservableObject {
         }
     }
     private func clearResults(preserveHistory: Bool = false) {
+        sourceInspection = nil; inspectionQueryScope = nil; inspectionQueryGeneration = nil
         pendingProjectExport = nil; exportPicker = nil
         pendingRefinement = nil; refinementPreview = nil
         clearHumanSearch(); evidence = nil; if !preserveHistory { history = nil }
@@ -1201,7 +1280,7 @@ public final class CompanionModel: ObservableObject {
     private func fail(_ error: ServiceError) {
         lastError = error; status = error.localizedDescription
     }
-    private func start(status: String = "Working — bounded local core operation", automatic: Bool = false, joinRefreshDriver: Bool = false, preserveHistory: Bool = false, work: @escaping @Sendable (any CoreService) async throws -> [Reply],
+    private func start(status: String = "Working — bounded local core operation", automatic: Bool = false, joinRefreshDriver: Bool = false, preserveHistory: Bool = false, preserveQuery: Bool = false, work: @escaping @Sendable (any CoreService) async throws -> [Reply],
                        apply: @escaping @MainActor ([Reply]) throws -> Void) {
         guard !quitting else { return }
         cancelOperation(); let ticket = generation; let service = service; let operationID = UUID()
@@ -1232,7 +1311,7 @@ public final class CompanionModel: ObservableObject {
                 guard self.generation == ticket, !Task.isCancelled, !self.quitting else { return }
                 let replies = try await work(service)
                 guard self.generation == ticket, !Task.isCancelled, !self.quitting else { return }
-                try apply(replies); self.busy = false; self.job = nil; self.automaticTicket = nil
+                try apply(replies); self.busy = false; self.job = nil; self.automaticTicket = nil; self.inspectionOperation = false
             } catch {
                 guard let self, self.generation == ticket, !self.quitting else { return }
                 if error as? ServiceError == .namespaceChanged {
@@ -1248,9 +1327,15 @@ public final class CompanionModel: ObservableObject {
                 if self.sourceRequiresRefresh {
                     self.evidence = nil; self.indexReport = nil; self.preview = nil
                     self.sourceMarkers = nil; self.inspectedSourceScope = nil
-                } else { self.clearResults(preserveHistory: preserveHistory) }
+                } else if !preserveQuery { self.clearResults(preserveHistory: preserveHistory) }
+                if preserveQuery {
+                    self.sourceInspection = nil; self.inspectionQueryGeneration = nil; self.inspectionQueryScope = nil
+                }
+                self.inspectionOperation = false
+                self.sourceQueryOperation = false
                 self.busy = false; self.job = nil
                 self.fail(error as? ServiceError ?? (error is CancellationError ? .canceled : .failed))
+                if preserveQuery { self.status += " Source inspection discarded; explicitly Query again before Inspect source. No automatic retry." }
                 self.automaticTicket = nil
                 if automatic {
                     self.disableAutomaticRefresh()
