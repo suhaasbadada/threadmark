@@ -103,25 +103,51 @@ the real adapter, and removes its data. It does not launch an app GUI or host.
   owned operations before calling the service. A canceled mutation cannot commit
   after a replacement policy or refresh overtakes it. Join and Quit also include
   outstanding work whose visible job was already canceled.
-- Optional **timed bounded full lexical reconciliation** is off by default and
+- Optional **approved-file events + periodic bounded full lexical reconciliation** is off by default and
   session-memory-only. Projects shows the selected ID, root, root identity, exact
   approved files, 60-second interval and bounds before explicit Enable consent.
-  Enable resumes this scope and installs one owned Foundation Timer (no immediate
-  read); only its ticks can start automatic work. Resume alone never grants consent.
+  Explicit consent covers metadata watches and automatic approved-content reads.
+  Enable resumes this scope and installs `DispatchSourceFileSystemObject` watches
+  on only the exact approved files plus one owned 60-second Foundation Timer.
+  Setup opens metadata-only `O_EVTONLY` descriptors, never reads source contents,
+  enumerates directories or watches parent directories/the whole project.
+  Absolute root and relative components are descriptor-walked with `O_NOFOLLOW`;
+  the opened root must match the captured device/inode. Symlinks, hardlinks,
+  nonregular files, nested repositories/submodules and cross-device sources are
+  rejected, consistent with the core boundary. There are at most 64 watched file
+  descriptors and a fixed few temporary descriptors during setup (directory
+  walk plus one native registration-preflight kqueue). A successful `EV_RECEIPT`
+  vnode registration is required for each file; DispatchSource itself has no
+  registration-error callback. The preflight never watches a directory or reads
+  contents, and is closed after setup.
+  Failed setup closes the entire set; there is no partial-coverage fallback.
+  There is no immediate content read. Resume alone never grants consent.
   A clean nonempty loaded policy, known root identity, validated registration
   incarnation and configured core are required. Automatic CLI calls include
   `--expected-incarnation` and revalidate transactionally before publication,
   even after identical-directory re-registration.
-  Pause invalidates the timer and cancels automatic work; resume reuses only the
-  same valid consent. Manual operations take priority; busy ticks are skipped with
+  File events coalesce into one pending 300-ms trigger, including a bounded
+  dispatch-to-main-actor hop. Event hints never grant authority: every resulting
+  full lexical reconciliation uses the existing scope-bound core operation.
+  The timer reconciles all approved contents for missed/busy events; this is not
+  platform overflow detection/certification. Before every event or periodic hint,
+  watches are closed/joined and securely rebound to the current exact paths.
+  Atomic replacement therefore watches the replacement inode for later edits.
+  Deleted/unavailable paths stop monitoring with Needs attention; no automatic
+  permission repair or silent incomplete watch coverage is claimed.
+  Pause invalidates watches, debounce and timer and cancels automatic work; resume
+  reuses only the same valid consent after validating setup again. Manual
+  operations take priority; busy event hints/ticks are skipped with
   no queue, overlap or cancellation thrashing. Closing Manage leaves opted-in work
   active. Disable, selection/refresh, source-policy edits/revocation, configuration,
-  removal and Quit immediately stop the timer and invalidate consent/late results.
-  Cancellation joins teardown before replacement work. Failure stops the timer and
+  removal, explicit Cancel and Quit immediately stop all producers and invalidate
+  consent/late results. Generation checks reject already-queued old callbacks.
+  Cancellation joins teardown before replacement work. Failure stops all producers and
   shows content-free Needs attention; repair and explicit re-enable are required.
   Successful reconciliation updates the snapshot report and invalidates prepared
   evidence, but never changes the original draft, query, human notes or editor scope.
-  This is not a watcher, debounce/incremental symbol index or full phase acceptance.
+  This is bounded full lexical work, not incremental AST/symbol extraction,
+  debounced inference, broad source discovery or full phase acceptance.
 - Legacy v1/v2 projects show explicit v3 upgrade guidance and disable native
   Forget/cached removal/automatic refresh; noncached manual actions remain available. Stop
   older companions/workers and let pending work terminate, then explicitly run
@@ -139,7 +165,7 @@ the real adapter, and removes its data. It does not launch an app GUI or host.
 - Configuration and drafts/previews are memory-only. Relaunch requires selecting
   the executable/data directory again; core persistence is not shell persistence.
 - No notifications, telemetry, content archive, custom animation, login startup
-  or automatic provider calls. Automatic source reads require the separate timed
+  or automatic provider calls. Automatic source reads require the separate file-event/periodic
   refresh consent above. Standard native controls/system appearance
   provide the compiled accessibility starting point, not a runtime certification.
 
@@ -211,13 +237,34 @@ After separate authorization and core CLI integration:
 
 Phase 1 live host/inference gates stay OPEN. Full P3-A1–P3-A6 acceptance remains
 open pending these observed journeys. Forget, conflict resolution, export,
-login startup, event-driven incremental indexing, host certification and inference are visibly
+login startup, incremental structural indexing, host certification and inference are visibly
 unavailable or outside client-v1, not simulated by the shell.
 
-The deterministic tests exercise injected ticks and the real Foundation Timer
-callback without waiting 60 seconds. Opt-in live-core tests drive consent/ticks
+The deterministic model tests exercise injected ticks. Synthetic native tests
+exercise actual DispatchSource approved-file events with bounded async delivery
+expectations, burst collapse, atomic replacement/further edits, stop/scope-change
+late-callback rejection, deletion failure, unsafe path rejection, the 64-handle
+bound and exact close tracking on setup failure/stop. The real Foundation Timer
+callback simulates missed events without waiting 60 seconds. No mount fixture is
+created; cross-device rejection is implemented, not independently runtime-proven.
+Opt-in live-core tests drive real native events and consent/ticks
 through the actual adapter and built Rust CLI into SQLite, including source
 modification, pause/revocation, human-note/draft preservation, omitted-file and
 other-project isolation, and an external same-ID/root replacement. These cover
 bounded parts of P2-A1–P2-A3/P2-A6 and P3-A1/P3-A3–P3-A5; observed GUI/accessibility,
-event watchers, structural/symbol extraction and complete phase acceptance stay open.
+structural/symbol extraction and complete phase acceptance stay open. Native
+event tests are headless synthetic tests, not observed GUI/runtime certification
+on all supported macOS versions. This unit covers bounded parts of P2-A2/P2-A3
+and P3-A1/P3-A5; no platform-wide lost-event guarantee is claimed.
+
+Every initial enable, resume, event rebind and periodic rebind first queries
+`project show` through the configured core service and compares the exact approved
+ID/root/root identity/incarnation/source list. Monitoring remains pending until
+that query and native setup succeed. Reconciliation closes the previous watch set
+before awaiting authority; a mismatch/failure stops monitoring with Needs attention.
+One owned query is retained through cancellation and joined by shutdown; repeated
+starts replace only the latest desired scope, and hints during a query coalesce.
+Generation checks prevent late canceled results from opening descriptors or
+reporting readiness. This preflight is not an atomic external-revocation lease:
+changes after observation are caught at the next validation, and content indexing
+still requires the core's transactional `indexBound` scope check.
