@@ -2,6 +2,125 @@
 use super::*;
 
 #[test]
+fn cached_native_bindings_reject_replacement_at_preflight_and_transaction() {
+    for different_root in [false, true] {
+        let (f, mut s) = removal_fixture();
+        let captured = s.project("a").unwrap();
+        let binding = SourceForgetBinding {
+            root: &captured.root,
+            root_identity: &captured.root_identity,
+            incarnation: captured.incarnation.as_deref().unwrap(),
+            sources: &captured.sources,
+        };
+        s.remove_project("a", &token()).unwrap();
+        let other = f.0.join("replacement");
+        std::fs::create_dir(&other).unwrap();
+        std::fs::write(other.join("code.rs"), "fn synthetic_replacement() {}\n").unwrap();
+        let root = if different_root {
+            other.as_path()
+        } else {
+            Path::new(&captured.root)
+        };
+        s.add_project("a", root, captured.sources.clone()).unwrap();
+        s.write_context(
+            "a",
+            "note",
+            "note",
+            "Synthetic replacement human note",
+            false,
+        )
+        .unwrap();
+        index(&mut s);
+        let before = s.export_project("a", &token()).unwrap();
+        let namespace = (binding.root, binding.root_identity, binding.incarnation);
+        assert_eq!(
+            s.set_sources_bound("a", &binding, vec![]),
+            Err(Error::ScopeMismatch)
+        );
+        assert_eq!(
+            s.write_context_bound(
+                "a",
+                namespace,
+                "note",
+                "note",
+                "Synthetic stale draft",
+                true
+            ),
+            Err(Error::ScopeMismatch)
+        );
+        assert_eq!(
+            s.write_context_bound(
+                "a",
+                namespace,
+                "new-note",
+                "note",
+                "Synthetic stale draft",
+                false
+            ),
+            Err(Error::ScopeMismatch)
+        );
+        assert_eq!(
+            s.retire_context_bound("a", namespace, "note"),
+            Err(Error::ScopeMismatch)
+        );
+        // The same captured Project is what bound preflight passes to the private
+        // write functions; a peer replacement after preflight is fenced in SQL.
+        assert_eq!(
+            s.set_sources_for_policy(&captured, vec![]),
+            Err(Error::ScopeMismatch)
+        );
+        assert_eq!(
+            s.write_context_for_policy(&captured, "note", "note", "Synthetic stale draft", true),
+            Err(Error::ScopeMismatch)
+        );
+        assert_eq!(
+            s.retire_context_for_policy(&captured, "note"),
+            Err(Error::ScopeMismatch)
+        );
+        assert_eq!(s.export_project("a", &token()).unwrap(), before);
+    }
+}
+
+#[test]
+fn captured_source_policy_conflicts_before_mutation_and_inside_transaction() {
+    let (_f, mut s) = removal_fixture();
+    let captured = s.project("a").unwrap();
+    let binding = SourceForgetBinding {
+        root: &captured.root,
+        root_identity: &captured.root_identity,
+        incarnation: captured.incarnation.as_deref().unwrap(),
+        sources: &captured.sources,
+    };
+    s.set_sources("a", vec![]).unwrap();
+    let before = s.export_project("a", &token()).unwrap();
+    assert_eq!(
+        s.set_sources_bound("a", &binding, captured.sources.clone()),
+        Err(Error::ScopeMismatch)
+    );
+    assert_eq!(
+        s.set_sources_for_policy(&captured, captured.sources.clone()),
+        Err(Error::ScopeMismatch)
+    );
+    assert_eq!(s.export_project("a", &token()).unwrap(), before);
+    let current = s.project("a").unwrap();
+    let empty = SourceForgetBinding {
+        root: &current.root,
+        root_identity: &current.root_identity,
+        incarnation: current.incarnation.as_deref().unwrap(),
+        sources: &[],
+    };
+    s.set_sources_bound("a", &empty, vec![]).unwrap();
+    s.set_sources_bound("a", &empty, captured.sources).unwrap();
+    assert_eq!(
+        s.context("a", "note").unwrap()["history"]
+            .as_array()
+            .unwrap()
+            .len(),
+        3
+    );
+}
+
+#[test]
 fn v3_upgrade_child() {
     use std::io::Write;
     let Some(path) = std::env::var_os("THREADMARK_SYNTHETIC_V3_CHILD") else {

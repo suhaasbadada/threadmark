@@ -97,5 +97,7 @@ prepare/export suppression, held-index policy races, capacity/duplicate markers,
 missing/unreadable source forgetting and strict pre-open CLI confirmation/bindings.
 Legacy open policy/evidence/removal SQL guards and same-root incarnation rejection;
 new removal/re-registration cleans markers without old content. No real user store
-is upgraded or forgotten during tests. Native source Forget UI and whole-phase
-closure remain subsequent work; independent implementation review/CI are required.
+is upgraded or forgotten during tests. Native source Forget uses the exact bound
+variant and fresh marker/policy checks before reporting success; no automatic
+upgrade follows. GUI runtime and whole-phase closure remain separate acceptance;
+independent implementation review/CI are required.

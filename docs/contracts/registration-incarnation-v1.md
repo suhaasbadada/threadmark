@@ -59,13 +59,18 @@ for mutations and index publication. A migration between preflight and transacti
 must fail stale work rather than infer the new token. Same-directory/same-policy/
 same-content re-registration must invalidate captured operations.
 
-Native cached removal/automatic-refresh approvals require a non-null incarnation
+Native cached removal, automatic-refresh, policy replacement and human write/
+retirement approvals require a non-null incarnation
 and pass `--expected-incarnation TOKEN` through CLI/core before source access or
-deletion, then revalidate transactionally. Root-only explicit legacy CLI variants
+persistent mutation, then revalidate transactionally. Root-only explicit legacy CLI variants
 remain available but must not be used as incarnation-bound native approvals.
 Malformed token/binding shape fails before opening or creating storage. V1/v2
 native clients show truthful explicit-upgrade guidance; they neither invent a token
 nor migrate automatically. Project/config/policy changes still clear approvals.
+Policy replacement additionally compares the captured old source policy inside
+the transaction. Replacement metadata is not adopted with old human drafts; reads
+used for context/history publication are bracketed by incarnation checks. Source-
+only changes in the same namespace preserve unsaved human text.
 Native human Forget additionally binds the latest human revision, as specified
 in [Human-context Forget](context-forget-v1.md). Source Forget and native upgrade
 execution remain unavailable.

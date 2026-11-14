@@ -125,7 +125,7 @@ struct LiveCoreTests {
         model.openContext("memo"); await model.waitForOperation()
         model.requestForget(); let approved = try #require(model.pendingForget)
         model.confirmForget(approved); model.confirmForget(approved); await model.waitForOperation()
-        #expect(model.lastError == nil && !model.forgetRequiresRefresh && model.contextEditorRevision == 2)
+        #expect(model.lastError == nil && !model.forgetRequiresRefresh && model.contextEditorRevision == 4)
         #expect(model.history == nil && model.forgottenMarkers?.forgotten.map(\.id) == ["memo"])
         #expect(model.contexts.map(\.id) == ["other"] && model.originalDraft == "Unrelated original — never rewrite")
         _ = try await adapter.perform(.index("alpha"))

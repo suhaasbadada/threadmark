@@ -4,6 +4,59 @@ import Darwin
 
 let args = Array(CommandLine.arguments.dropFirst())
 let mode = args.count > 1 ? URL(fileURLWithPath: args[1]).lastPathComponent : "invalid"
+if mode.hasPrefix("mutation-bound-") {
+    let binding = ["--expected-root", "/synthetic/alpha", "--expected-root-identity", "r1", "--expected-incarnation", "0123456789abcdef0123456789abcdef"]
+    let command = Array(args.dropFirst(2))
+    let input = FileHandle.standardInput.readDataToEndOfFile()
+    switch mode {
+    case "mutation-bound-sources":
+        guard command == ["project", "sources", "alpha"] + binding + ["--expected-sources", "a.rs", "--new-sources", "b.rs"], input.isEmpty else { exit(1) }
+    case "mutation-bound-empty":
+        guard command == ["project", "sources", "alpha"] + binding + ["--expected-sources", "--new-sources"], input.isEmpty else { exit(1) }
+    case "mutation-bound-write":
+        guard command == ["context", "update", "alpha", "memo", "note"] + binding,
+              input == Data("Synthetic original human text é\n".utf8), !args.contains("Synthetic original human text é\n") else { exit(1) }
+    case "mutation-bound-retire":
+        guard command == ["context", "retire", "alpha", "memo"] + binding, input.isEmpty else { exit(1) }
+    default: exit(1)
+    }
+    print("{}"); exit(0)
+}
+if mode.hasPrefix("source-forget-") {
+    guard Array(args.dropFirst(2)) == ["source", "forget", "alpha", "a.rs", "--confirm-forget-source", "--expected-root", "/synthetic/alpha", "--expected-root-identity", "r1", "--expected-incarnation", "0123456789abcdef0123456789abcdef", "--expected-sources", "a.rs", "b.rs"],
+          FileHandle.standardInput.readDataToEndOfFile().isEmpty else { exit(1) }
+    if mode == "source-forget-ack" { print("{}"); exit(0) }
+    if mode == "source-forget-large" { print(String(repeating: "x", count: 1025)); exit(0) }
+    var response: [String: Any] = ["project": "alpha", "path": "a.rs", "forgotten": true,
+        "source_authorization": "revoked", "snapshot": "invalidated", "human_context": "unchanged",
+        "retention_limits": "Active source-derivative removal and same-scope suppression only; not forensic erasure. Source files and human context are untouched. SQLite free pages, journals, backups, earlier exports and displayed copies may retain bytes."]
+    if mode == "source-forget-project" { response["project"] = "beta" }
+    if mode == "source-forget-path" { response["path"] = "b.rs" }
+    if mode == "source-forget-false" { response["forgotten"] = false }
+    if mode == "source-forget-number" { response["forgotten"] = 1 }
+    if mode == "source-forget-limits" { response["retention_limits"] = "erased forever" }
+    if mode == "source-forget-content" { response["text"] = "synthetic unexpected content" }
+    if mode == "source-forget-authorization" { response["source_authorization"] = "approved" }
+    if mode == "source-forget-snapshot" { response["snapshot"] = "unchanged" }
+    if mode == "source-forget-human" { response["human_context"] = "removed" }
+    FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject: response)); exit(0)
+}
+if mode.hasPrefix("source-markers-") {
+    guard Array(args.dropFirst(2)) == ["source", "forgotten", "alpha"],
+          FileHandle.standardInput.readDataToEndOfFile().isEmpty else { exit(1) }
+    if mode == "source-markers-large" { print(String(repeating: "x", count: 1_048_577)); exit(0) }
+    var response: [String: Any] = ["project": "alpha", "forgotten": [["path": "a.rs"], ["path": "b.rs"]]]
+    if mode == "source-markers-project" { response["project"] = "beta" }
+    if mode == "source-markers-bad" { response["forgotten"] = [["path": "../a.rs"]] }
+    if mode == "source-markers-duplicate" { response["forgotten"] = [["path": "a.rs"], ["path": "a.rs"]] }
+    if mode == "source-markers-order" { response["forgotten"] = [["path": "b.rs"], ["path": "a.rs"]] }
+    if mode == "source-markers-content" { response["forgotten"] = [["path": "a.rs", "text": "unexpected synthetic"]] }
+    if mode == "source-markers-extra" { response["text"] = "unexpected synthetic" }
+    if mode == "source-markers-over" { response["forgotten"] = (0...64).map { ["path": String(format: "f%02d.rs", $0)] } }
+    if mode == "source-markers-long" { response["forgotten"] = [["path": String(repeating: "x", count: 238) + ".rs"]] }
+    if mode == "source-markers-type" { response["forgotten"] = [["path": 1]] }
+    FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject: response)); exit(0)
+}
 if mode.hasPrefix("forget-") {
     guard Array(args.dropFirst(2)) == ["context", "forget", "alpha", "memo", "--confirm-forget-local-history", "--expected-root", "/synthetic/alpha", "--expected-root-identity", "r1", "--expected-incarnation", "0123456789abcdef0123456789abcdef", "--expected-revision", "2"],
           FileHandle.standardInput.readDataToEndOfFile().isEmpty else { exit(1) }

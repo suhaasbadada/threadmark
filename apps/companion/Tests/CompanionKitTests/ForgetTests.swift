@@ -105,7 +105,7 @@ private actor ForgetCore: CoreService {
         model.requestForget(); let prompt = try #require(model.pendingForget)
         model.confirmForget(prompt); model.confirmForget(prompt)
         #expect(model.history == nil && model.contexts.isEmpty && model.forgottenMarkers == nil)
-        #expect(model.contextEditorRevision == 1 && model.originalDraft == "Unrelated original request")
+        #expect(model.contextEditorRevision == 2 && model.originalDraft == "Unrelated original request")
         await model.waitForOperation()
         #expect(await service.forgetCalls == 1)
         #expect(model.lastError == nil && !model.forgetRequiresRefresh)
@@ -132,7 +132,7 @@ private actor ForgetCore: CoreService {
         }
         model.confirmForget(prompt); await model.waitForOperation()
         #expect(await service.forgetCalls == 0)
-        #expect(model.contextEditorRevision == 0 && model.pendingForget == nil)
+        #expect(model.contextEditorRevision == (["project", "config", "refresh"].contains(event) ? 2 : 1) && model.pendingForget == nil)
     }
     @Test(arguments: ["ack", "project", "id", "false", "count", "limits", "still-present", "marker-missing", "marker-project", "marker-invalid", "replace-before", "replace-after", "followup-failure", "failure"])
     func receiptAndAuthoritativeFollowupRequired(mode: String) async throws {

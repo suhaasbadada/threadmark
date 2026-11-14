@@ -80,6 +80,7 @@ public struct ProcessService: CoreService {
         if case .prepareContext = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .removeProject = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 1024) }
         if case .forgetContext = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 1024) }
+        if case .forgetSource = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 1024) }
         let boundedLimits = operationLimits
         let data = try await withTaskCancellationHandler {
             guard !Task.isCancelled else { throw ServiceError.canceled }
@@ -93,6 +94,22 @@ public struct ProcessService: CoreService {
         do {
             let decoder = JSONDecoder()
             switch operation {
+            case .forgetSource(let project, let path, _, _, _, _):
+                guard data.count <= 1024 else { throw ServiceError.outputLimit }
+                guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      Set(object.keys) == ["project", "path", "forgotten", "source_authorization", "snapshot", "human_context", "retention_limits"] else { throw ServiceError.invalid }
+                let result = try decoder.decode(ForgottenSource.self, from: data)
+                try result.validate(project: project, path: path)
+                return .forgottenSource(result)
+            case .forgottenSources(let project):
+                guard data.count <= 1_048_576 else { throw ServiceError.outputLimit }
+                guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      Set(object.keys) == ["project", "forgotten"],
+                      let markers = object["forgotten"] as? [[String: Any]],
+                      markers.allSatisfy({ Set($0.keys) == ["path"] }) else { throw ServiceError.invalid }
+                let result = try decoder.decode(ForgottenSources.self, from: data)
+                try result.validate(project: project)
+                return .forgottenSources(result)
             case .forgetContext(let project, let id, _, _, _, let revision):
                 guard data.count <= 1024 else { throw ServiceError.outputLimit }
                 guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -175,6 +192,29 @@ public struct ProcessService: CoreService {
         var args: [String]
         var input = Data()
         switch operation {
+        case .setSourcesBound(let p, let root, let identity, let token, let old, let new):
+            guard InputPolicy.removal(root: root, identity: identity), InputPolicy.incarnation(token),
+                  !old.contains(where: { $0.hasPrefix("--") }), !new.contains(where: { $0.hasPrefix("--") }) else { throw ServiceError.invalid }
+            args = ["project", "sources", try id(p), "--expected-root", root, "--expected-root-identity", identity,
+                    "--expected-incarnation", token, "--expected-sources"] + (try sources(old)) + ["--new-sources"] + (try sources(new))
+        case .writeContextBound(let p, let c, let kind, let text, let update, let root, let identity, let token):
+            guard InputPolicy.removal(root: root, identity: identity), InputPolicy.incarnation(token),
+                  InputPolicy.contextKinds.contains(kind), !text.isEmpty, text.utf8.count <= 4096, !text.contains("\0") else { throw ServiceError.invalid }
+            args = ["context", update ? "update" : "add", try id(p), try id(c), kind,
+                    "--expected-root", root, "--expected-root-identity", identity, "--expected-incarnation", token]
+            input = Data(text.utf8) // Human text is ONLY stdin, never argv.
+        case .retireContextBound(let p, let c, let root, let identity, let token):
+            guard InputPolicy.removal(root: root, identity: identity), InputPolicy.incarnation(token) else { throw ServiceError.invalid }
+            args = ["context", "retire", try id(p), try id(c), "--expected-root", root,
+                    "--expected-root-identity", identity, "--expected-incarnation", token]
+        case .forgetSource(let p, let path, let root, let identity, let token, let files):
+            guard InputPolicy.removal(root: root, identity: identity), InputPolicy.incarnation(token),
+                  InputPolicy.sourceMarker(path), files.contains(path), !files.isEmpty,
+                  files.allSatisfy(InputPolicy.sourceMarker) else { throw ServiceError.invalid }
+            args = ["source", "forget", try id(p), path, "--confirm-forget-source",
+                    "--expected-root", root, "--expected-root-identity", identity,
+                    "--expected-incarnation", token, "--expected-sources"] + (try sources(files))
+        case .forgottenSources(let p): args = ["source", "forgotten", try id(p)]
         case .forgetContext(let p, let c, let root, let identity, let token, let revision):
             guard InputPolicy.removal(root: root, identity: identity), InputPolicy.incarnation(token),
                   (1...32).contains(revision) else { throw ServiceError.invalid }

@@ -87,7 +87,11 @@ evidence-insert and project-removal SQL guards. Older binaries cannot open schem
 no automatic downgrade. Native-safe callers must bind all of `--expected-root ROOT
 --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-sources FILE ...`
 to the exact displayed policy. Unbound CLI repetition is idempotent; stale bound
-approval is rejected. No source Forget UI is implemented yet.
+approval is rejected. The source-built native shell offers **Forget source…** in
+Projects only after explicit v4 suppression-marker inspection, with a Cancel-default
+exact-policy confirmation. It preserves human history, unsaved notes and original
+request drafts; uncertain outcomes require Refresh. GUI/accessibility acceptance
+remains open; see the [native shell boundary](apps/companion/README.md).
 
 Active source-derivative removal and same-scope suppression are not forensic erasure.
 SQLite free pages, journals, backups, earlier exports and displayed copies may retain

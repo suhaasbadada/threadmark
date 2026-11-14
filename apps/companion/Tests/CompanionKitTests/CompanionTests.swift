@@ -22,6 +22,8 @@ private actor ExplicitFakeCoreService: CoreService {
     var revisions: [String: [ContextRevision]] = [:]
     var nextFailure: ServiceError?
     var mismatch = false
+    var replaceDuringHistory = false
+    func replaceOnNextHistory() { replaceDuringHistory = true }
     var holdIndex = false
     var holdPreview = false
     var holdRemoval = false
@@ -31,6 +33,10 @@ private actor ExplicitFakeCoreService: CoreService {
     func replaceAlphaIncarnation(_ token: String?) {
         let p = projects[0]
         projects[0] = Project(id: p.id, root: p.root, sources: p.sources, snapshot: p.snapshot, rootIdentity: p.root_identity, incarnation: token)
+    }
+    func replaceAlpha(root: String) {
+        projects[0] = Project(id: "alpha", root: root, sources: ["a.rs"], rootIdentity: .string("r1"), incarnation: String(repeating: "f", count: 32))
+        revisions = [:]
     }
     func holdNextRemoval() { holdRemoval = true }
     func finishRemoval() {
@@ -83,7 +89,7 @@ private actor ExplicitFakeCoreService: CoreService {
         calls += 1
         if let error = nextFailure { nextFailure = nil; throw error }
         switch operation {
-        case .forgetContext, .forgottenContexts: throw ServiceError.unavailable
+        case .forgetContext, .forgottenContexts, .forgetSource, .forgottenSources: throw ServiceError.unavailable
         case .removeProject(let id, let root, let identity, let token):
             removalCalls += 1
             guard projects.contains(where: { $0.id == id && $0.root == root && $0.root_identity == .string(identity) && $0.incarnation == token }) else { throw ServiceError.scopeMismatch }
@@ -110,8 +116,8 @@ private actor ExplicitFakeCoreService: CoreService {
             guard let project = projects.first(where: { $0.id == p }) else { throw ServiceError.invalid }
             return .project(mismatch ? projects[1] : project)
         case .addProject(let id, let root, let sources):
-            projects.append(Project(id: id, root: root, sources: sources, incarnation: "fedcba9876543210fedcba9876543210")); return .acknowledged
-        case .setSources(let id, let sources):
+            projects.append(Project(id: id, root: root, sources: sources, rootIdentity: .string("r1"), incarnation: "fedcba9876543210fedcba9876543210")); return .acknowledged
+        case .setSources(let id, let sources), .setSourcesBound(let id, _, _, _, _, let sources):
             sourceEvents.append("begin:" + sources.joined(separator: ","))
             if holdSources {
                 holdSources = false; sourceStarted = true; sourceObserver?.resume(); sourceObserver = nil
@@ -119,6 +125,10 @@ private actor ExplicitFakeCoreService: CoreService {
                 await withCheckedContinuation { sourceRelease = $0 }
             }
             guard let i = projects.firstIndex(where: { $0.id == id }) else { throw ServiceError.invalid }
+            if case .setSourcesBound(_, let root, let identity, let token, let old, _) = operation {
+                guard projects[i].root == root, projects[i].root_identity == .string(identity),
+                      projects[i].incarnation == token, projects[i].sources == old else { throw ServiceError.scopeMismatch }
+            }
             projects[i] = Project(id: id, root: projects[i].root, sources: sources, rootIdentity: projects[i].root_identity, incarnation: projects[i].incarnation)
             sourceEvents.append("commit:" + sources.joined(separator: ",")); return .acknowledged
         case .indexBound(let p, let root, let identity, let files, let token):
@@ -141,12 +151,19 @@ private actor ExplicitFakeCoreService: CoreService {
             """))
         case .contexts(let p): return .contexts(metadata(p))
         case .context(let p, let id):
+            if replaceDuringHistory { replaceDuringHistory = false; replaceAlpha(root: "/synthetic/replacement") }
             return .context(ContextHistory(project: p, id: id, producer: "human-authored", authority: .string("human-declared"), history: revisions[id] ?? []))
-        case .writeContext(_, let id, let kind, let text, let update):
+        case .writeContext(_, let id, let kind, let text, let update), .writeContextBound(_, let id, let kind, let text, let update, _, _, _):
+            if case .writeContextBound(let p, _, _, _, _, let root, let identity, let token) = operation {
+                guard projects.contains(where: { $0.id == p && $0.root == root && $0.root_identity == .string(identity) && $0.incarnation == token }) else { throw ServiceError.scopeMismatch }
+            }
             guard update == (revisions[id] != nil) else { throw ServiceError.invalid }
             let revision = ContextRevision(revision: (revisions[id]?.count ?? 0) + 1, kind: kind, text: text, retired: false)
             revisions[id, default: []].append(revision); return .acknowledged
-        case .retireContext(_, let id):
+        case .retireContext(_, let id), .retireContextBound(_, let id, _, _, _):
+            if case .retireContextBound(let p, _, let root, let identity, let token) = operation {
+                guard projects.contains(where: { $0.id == p && $0.root == root && $0.root_identity == .string(identity) && $0.incarnation == token }) else { throw ServiceError.scopeMismatch }
+            }
             guard let last = revisions[id]?.last else { throw ServiceError.invalid }
             revisions[id]?.append(ContextRevision(revision: last.revision + 1, kind: last.kind, text: last.text, retired: true))
             return .acknowledged
@@ -156,6 +173,66 @@ private actor ExplicitFakeCoreService: CoreService {
 
 @Suite("Explicit fake-service model acceptance") @MainActor
 struct ModelTests {
+    @Test func historyReadRejectsReplacementBetweenBracketingInspections() async {
+        let (model, service) = await selected()
+        model.editPreparation(query: "q", original: "Synthetic unsaved original")
+        let revision = model.contextEditorRevision
+        await service.replaceOnNextHistory()
+        model.openContext("memo"); await model.waitForOperation()
+        #expect(model.project == nil && model.history == nil && model.contexts.isEmpty)
+        #expect(model.originalDraft.isEmpty && model.contextEditorRevision > revision && model.sourceRequiresRefresh)
+    }
+    @Test(arguments: [false, true]) func sourceConflictOrPermissionFailurePreservesUnadoptedDrafts(conflict: Bool) async throws {
+        let (model, service) = await selected()
+        model.editPreparation(query: "q", original: "Synthetic unsaved original")
+        let captured = model.project, revision = model.contextEditorRevision
+        model.stageSources(["new.rs"])
+        if conflict { _ = try await service.perform(.setSources("alpha", [])) }
+        else { await service.failNext(.failed) }
+        model.applySources(); await model.waitForOperation()
+        #expect(model.project == captured && model.originalDraft == "Synthetic unsaved original")
+        #expect(model.contextEditorRevision == revision && model.sourceRequiresRefresh && model.policyDirty)
+        #expect(await service.projects[0].sources == (conflict ? [] : ["a.rs"]))
+        let calls = await service.calls
+        model.writeContext(id: "memo", kind: "note", text: "Synthetic unsaved human note", update: false)
+        #expect(await service.calls == calls)
+    }
+    @Test(arguments: [false, true], [false, true]) func sourceApplyRejectsReplacement(rootChanged: Bool, during: Bool) async {
+        let (model, service) = await selected()
+        model.editPreparation(query: "q", original: "Synthetic unsaved original")
+        let revision = model.contextEditorRevision
+        model.stageSources(["new.rs"])
+        if during { await service.holdNextSources(); model.applySources(); await service.waitForSources() }
+        await service.replaceAlpha(root: rootChanged ? "/synthetic/replacement" : "/synthetic/alpha")
+        if during { await service.finishSources() } else { model.applySources() }
+        await model.waitForOperation()
+        #expect(model.project == nil && model.contexts.isEmpty && model.history == nil)
+        #expect(model.originalDraft.isEmpty && model.contextEditorRevision > revision)
+        #expect(model.sourceRequiresRefresh && model.lastError == .namespaceChanged)
+        #expect(await service.projects[0].sources == ["a.rs"])
+        model.writeContext(id: "memo", kind: "note", text: "Synthetic stale note", update: false)
+        #expect(await service.revisions.isEmpty)
+    }
+    @Test(arguments: [false, true]) func cachedHumanMutationRejectsReplacement(retire: Bool) async {
+        let (model, service) = await selected()
+        model.writeContext(id: "memo", kind: "note", text: "Synthetic old note", update: false)
+        await model.waitForOperation()
+        let revision = model.contextEditorRevision
+        await service.replaceAlpha(root: "/synthetic/alpha")
+        if retire { model.retireContext("memo") }
+        else { model.writeContext(id: "memo", kind: "note", text: "Synthetic stale note", update: true) }
+        await model.waitForOperation()
+        #expect(model.project == nil && model.history == nil && model.contextEditorRevision > revision)
+        #expect(await service.revisions.isEmpty)
+    }
+    @Test func sourceOnlyChangePreservesDraftsAndEditorRevision() async {
+        let (model, _) = await selected()
+        model.editPreparation(query: "q", original: "Synthetic unsaved request")
+        let revision = model.contextEditorRevision
+        model.stageSources([]); model.applySources(); await model.waitForOperation()
+        #expect(model.project?.sources == [] && model.originalDraft == "Synthetic unsaved request")
+        #expect(model.contextEditorRevision == revision && !model.sourceRequiresRefresh)
+    }
     @Test func legacyProjectRequiresExplicitUpgradeWithoutDispatchingCachedActions() async throws {
         let service = ExplicitFakeCoreService()
         await service.replaceAlphaIncarnation(nil)
@@ -166,6 +243,9 @@ struct ModelTests {
         let calls = await service.calls
         model.requestRemoval()
         #expect(model.pendingRemoval == nil)
+        model.stageSources([]); model.applySources()
+        model.writeContext(id: "memo", kind: "note", text: "Synthetic human note", update: false)
+        model.retireContext("memo")
         #expect(await service.calls == calls)
     }
     @Test func sameRootReplacementInvalidatesDelayedRemovalAndRefreshConsent() async throws {
@@ -512,7 +592,7 @@ struct ModelTests {
         #expect(model.lastError == .scopeMismatch && model.evidence == nil)
         await service.setMismatch()
         model.refreshSelected(); await model.waitForOperation()
-        #expect(model.project == nil && model.lastError == .scopeMismatch)
+        #expect(model.project == nil && model.lastError == .namespaceChanged)
     }
     @Test func noteAddEditHistoryRetireAndRebuild() async {
         let (model, _) = await selected()
@@ -606,14 +686,16 @@ struct ModelTests {
         #expect(await service.calls == before)
         #expect(model.busy && model.indexReport == nil && model.evidence == nil)
         await service.finishSources(); await model.waitForOperation()
-        #expect(model.project?.sources == (refresh ? ["old.rs"] : ["new.rs"]))
+        #expect(model.project?.sources == (refresh ? ["old.rs"] : ["a.rs"]))
         let persisted = await service.projects
-        #expect(persisted.first(where: { $0.id == "alpha" })?.sources == (refresh ? ["old.rs"] : ["new.rs"]))
-        #expect(!model.policyDirty && !model.busy)
+        #expect(persisted.first(where: { $0.id == "alpha" })?.sources == ["old.rs"])
+        #expect(!model.busy && (refresh ? !model.policyDirty : model.sourceRequiresRefresh))
         let events = await service.sourceEvents
-        #expect(events.prefix(3) == ["show", "begin:old.rs", "commit:old.rs"])
+        #expect(events.prefix(4) == ["show", "show", "begin:old.rs", "commit:old.rs"])
         if !refresh {
-            #expect(events == ["show", "begin:old.rs", "commit:old.rs", "show", "begin:new.rs", "commit:new.rs", "show"])
+            // Ownership is still joined. Its intervening commit now correctly
+            // conflicts with the queued operation's captured old source policy.
+            #expect(events == ["show", "show", "begin:old.rs", "commit:old.rs", "show", "begin:new.rs", "show"])
         }
     }
     @Test func waitAfterCancelJoinsOutstandingMutation() async {
@@ -648,12 +730,27 @@ struct ModelTests {
         #expect(model.quitting && model.project == nil && !model.busy)
         // Only the canceled mutation's own follow-up read is allowed; the
         // queued replacement refresh must never enter the service after Quit.
-        #expect(await service.sourceEvents == ["show", "begin:old.rs", "commit:old.rs", "show"])
+        #expect(await service.sourceEvents == ["show", "show", "begin:old.rs", "commit:old.rs", "show"])
     }
 }
 
 @Suite("Owned synthetic subprocess adapter")
 struct AdapterTests {
+    @Test func strictBoundMutationArgumentsAndHumanTextOnlyOnStdin() async throws {
+        let syntheticIncarnation = "0123456789abcdef0123456789abcdef"
+        try await withAdapter("mutation-bound-sources") { adapter in
+            _ = try await adapter.perform(.setSourcesBound("alpha", "/synthetic/alpha", "r1", syntheticIncarnation, ["a.rs"], ["b.rs"]))
+        }
+        try await withAdapter("mutation-bound-empty") { adapter in
+            _ = try await adapter.perform(.setSourcesBound("alpha", "/synthetic/alpha", "r1", syntheticIncarnation, [], []))
+        }
+        try await withAdapter("mutation-bound-write") { adapter in
+            _ = try await adapter.perform(.writeContextBound("alpha", "memo", "note", "Synthetic original human text é\n", true, "/synthetic/alpha", "r1", syntheticIncarnation))
+        }
+        try await withAdapter("mutation-bound-retire") { adapter in
+            _ = try await adapter.perform(.retireContextBound("alpha", "memo", "/synthetic/alpha", "r1", syntheticIncarnation))
+        }
+    }
     @Test func incarnationBoundIndexMapsExactScopeAndChecksResponse() async throws {
         try await withAdapter("index-bound-valid") { adapter in
             guard case .indexed(let report) = try await adapter.perform(.indexBound("alpha", "/synthetic/alpha", "r1", ["a.rs"], "0123456789abcdef0123456789abcdef")) else { throw ServiceError.invalid }

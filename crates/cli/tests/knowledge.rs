@@ -18,6 +18,48 @@ const FORGET: [&str; 5] = [
 const UPGRADE: [&str; 3] = ["store", "upgrade", "--confirm-local-schema-upgrade"];
 
 #[test]
+fn cached_mutation_bindings_are_complete_and_valid_before_store_creation() {
+    let f = Fixture::new();
+    let binding = [
+        "--expected-root",
+        "/synthetic/root",
+        "--expected-root-identity",
+        "r1",
+        "--expected-incarnation",
+        "0123456789abcdef0123456789abcdef",
+    ];
+    for prefix in [
+        vec!["project", "sources", "a"],
+        vec!["context", "add", "a", "memo", "note"],
+        vec!["context", "update", "a", "memo", "note"],
+        vec!["context", "retire", "a", "memo"],
+    ] {
+        for count in 1..binding.len() {
+            let mut args = prefix.clone();
+            args.extend_from_slice(&binding[..count]);
+            let out = f.run(&args, Some(b"Synthetic private note"));
+            assert!(!out.status.success() && out.stdout.is_empty());
+            assert!(!f.0.join("store").exists());
+        }
+    }
+    for suffix in [
+        vec![],
+        vec!["--expected-sources"],
+        vec!["--expected-sources", "--new-sources", "--new-sources"],
+        vec!["--expected-sources", "../bad.rs", "--new-sources"],
+        vec!["--expected-sources", "--bad.rs", "--new-sources"],
+        vec!["--expected-sources", "--new-sources", "../bad.rs"],
+    ] {
+        let mut args = vec!["project", "sources", "a"];
+        args.extend(binding);
+        args.extend(suffix);
+        let out = f.run(&args, None);
+        assert!(!out.status.success() && out.stdout.is_empty());
+        assert!(!f.0.join("store").exists());
+    }
+}
+
+#[test]
 fn source_forget_confirmation_and_complete_bindings_precede_any_store_creation() {
     let f = Fixture::new();
     let prefix = [

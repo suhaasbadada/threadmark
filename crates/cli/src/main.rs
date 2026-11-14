@@ -38,6 +38,9 @@ fn usage() -> std::process::ExitCode {
         "bound lexical reconciliation: index PROJECT --expected-root ROOT --expected-root-identity IDENTITY --expected-sources FILE ... (exact nonempty registered policy; not credentials)"
     );
     eprintln!(
+        "cached mutations: project sources ID --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-sources OLD ... --new-sources NEW ... (each list may be empty; at most 64 files); context add/update PROJECT ID KIND and context retire PROJECT ID accept the same three registration flags. Unbound forms remain explicit operator commands; bindings are not credentials."
+    );
+    eprintln!(
         "local sensitive-content export: --data-dir EXISTING_STORE project export PROJECT --confirm-export-local-content (stdout only; no delivery)"
     );
     eprintln!(
@@ -218,7 +221,40 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
             "--expected-root-identity",
             identity,
         ] => Command::RemoveProjectBound((*id).into(), (*root).into(), (*identity).into()),
-        ["project", "sources", id, files @ ..] => {
+        [
+            "project",
+            "sources",
+            id,
+            "--expected-root",
+            root,
+            "--expected-root-identity",
+            identity,
+            "--expected-incarnation",
+            token,
+            "--expected-sources",
+            files @ ..,
+        ] => {
+            let Some(split) = files.iter().position(|p| *p == "--new-sources") else {
+                return usage();
+            };
+            let (old, rest) = files.split_at(split);
+            let new = &rest[1..];
+            if old.len() > 64
+                || new.len() > 64
+                || old.iter().chain(new).any(|p| p.starts_with("--"))
+            {
+                return usage();
+            }
+            Command::SourcesBound(
+                (*id).into(),
+                (*root).into(),
+                (*identity).into(),
+                (*token).into(),
+                old.iter().map(|s| (*s).into()).collect(),
+                new.iter().map(|s| (*s).into()).collect(),
+            )
+        }
+        ["project", "sources", id, files @ ..] if !files.iter().any(|p| p.starts_with("--")) => {
             Command::Sources((*id).into(), files.iter().map(|s| (*s).into()).collect())
         }
         ["index", id] => Command::Index((*id).into()),
@@ -248,7 +284,38 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
             };
             Command::PrepareContext((*project).into(), (*query).into(), original)
         }
-        ["context", op @ ("add" | "update"), project, id, kind] => {
+        [
+            "context",
+            op @ ("add" | "update"),
+            project,
+            id,
+            kind,
+            binding @ ..,
+        ] => {
+            let bound = match binding {
+                [] => None,
+                [
+                    "--expected-root",
+                    root,
+                    "--expected-root-identity",
+                    identity,
+                    "--expected-incarnation",
+                    token,
+                ] => {
+                    if threadmark_core::knowledge::validate_removal_binding(project, root, identity)
+                        .is_err()
+                        || threadmark_core::knowledge::validate_incarnation(token).is_err()
+                    {
+                        return usage();
+                    }
+                    Some((
+                        (*root).to_owned(),
+                        (*identity).to_owned(),
+                        (*token).to_owned(),
+                    ))
+                }
+                _ => return usage(),
+            };
             let mut bytes = Vec::new();
             if std::io::stdin().take(4097).read_to_end(&mut bytes).is_err() || bytes.len() > 4096 {
                 return failure();
@@ -256,14 +323,45 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
             let Ok(text) = String::from_utf8(bytes) else {
                 return failure();
             };
-            Command::WriteContext(
-                (*project).into(),
-                (*id).into(),
-                (*kind).into(),
-                text,
-                *op == "update",
-            )
+            if let Some((root, identity, token)) = bound {
+                Command::WriteContextBound(
+                    (*project).into(),
+                    (*id).into(),
+                    (*kind).into(),
+                    text,
+                    *op == "update",
+                    root,
+                    identity,
+                    token,
+                )
+            } else {
+                Command::WriteContext(
+                    (*project).into(),
+                    (*id).into(),
+                    (*kind).into(),
+                    text,
+                    *op == "update",
+                )
+            }
         }
+        [
+            "context",
+            "retire",
+            project,
+            id,
+            "--expected-root",
+            root,
+            "--expected-root-identity",
+            identity,
+            "--expected-incarnation",
+            token,
+        ] => Command::RetireContextBound(
+            (*project).into(),
+            (*id).into(),
+            (*root).into(),
+            (*identity).into(),
+            (*token).into(),
+        ),
         ["context", "retire", project, id] => {
             Command::RetireContext((*project).into(), (*id).into())
         }
