@@ -21,7 +21,7 @@ public struct HumanContextSearchView: View {
                 : "Any terms: 256 UTF-8 query bytes; 1–8 first-seen distinct Unicode-lowercase whitespace terms, at most 64 UTF-8 bytes each. Rank distinct matched terms before frequency, then ID byte order. No normalization, stemming or semantic quality claim.")
                 .font(.caption)
             HStack {
-                TextField("Human note text (256 UTF-8 bytes maximum)", text: Binding(get: { query }, set: setQuery))
+                TextField("Human note text (256 UTF-8 bytes maximum)", text: Binding(get: { query }, set: { value in setQuery(value) }))
                     .accessibilityLabel("Human context search query")
                 Button("Search notes", action: search)
                     .disabled(!model.canSearchHumanNotes(query))
