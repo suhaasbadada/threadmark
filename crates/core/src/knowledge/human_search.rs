@@ -1,6 +1,13 @@
 //! Human context is an overlay, never verified source evidence or authorization.
 use super::*;
 
+// An explicit validated mode at the shared traversal boundary preserves literal
+// admission/suppression/validation ordering and its existing wire envelope.
+pub(super) enum SearchMode<'a> {
+    Literal(&'a str, Option<&'a HumanSearchKinds>),
+    Ranked(&'a HumanRankedQuery),
+}
+
 /// Validated nonempty unique human-kind selection in deterministic wire order.
 #[derive(Clone, Debug)]
 pub struct HumanSearchKinds(Vec<String>);
@@ -107,6 +114,23 @@ impl Store {
         query: &str,
         kinds: Option<&HumanSearchKinds>,
         cancel: &AtomicBool,
+        boundary: impl FnMut(),
+    ) -> Result<Value> {
+        self.search_context_mode_in(
+            tx,
+            registration,
+            SearchMode::Literal(query, kinds),
+            cancel,
+            boundary,
+        )
+    }
+
+    pub(super) fn search_context_mode_in(
+        &self,
+        tx: &rusqlite::Transaction<'_>,
+        registration: &Project,
+        mode: SearchMode<'_>,
+        cancel: &AtomicBool,
         mut boundary: impl FnMut(),
     ) -> Result<Value> {
         let project = registration.id.as_str();
@@ -125,7 +149,23 @@ impl Store {
         if !(0..=4096).contains(&count) {
             return Err(invalid());
         }
-        let needle = query.trim().to_lowercase();
+        let (terms, kinds, ranked) = match mode {
+            SearchMode::Literal(query, kinds) => (
+                vec![query.trim().to_lowercase()],
+                kinds.map(HumanSearchKinds::kinds),
+                false,
+            ),
+            SearchMode::Ranked(query) => (query.terms().to_vec(), Some(query.kinds()), true),
+        };
+        if ranked {
+            let excessive: bool = tx.query_row(
+                "SELECT EXISTS(SELECT 1 FROM context WHERE project=?1 GROUP BY id HAVING count(*)>32)",
+                [project], |r| r.get(0),
+            ).map_err(unavailable)?;
+            if excessive {
+                return Err(invalid());
+            }
+        }
         let mut stmt = tx.prepare(
             "SELECT id,revision,kind,text,retired FROM context c WHERE project=?1 AND revision=(SELECT max(revision) FROM context WHERE project=c.project AND id=c.id) ORDER BY id LIMIT 4097",
         ).map_err(unavailable)?;
@@ -162,16 +202,30 @@ impl Store {
                 return Err(invalid());
             }
             // Validate all scoped latest rows before filtering, never hide corruption.
-            if retired != 0 || kinds.is_some_and(|selected| !selected.0.contains(&kind)) {
+            if retired != 0 || kinds.is_some_and(|selected| !selected.contains(&kind)) {
                 continue;
             }
-            let score = text.to_lowercase().matches(&needle).count();
+            let lowered = text.to_lowercase();
+            let mut matched_terms = Vec::new();
+            let mut score = 0;
+            for term in &terms {
+                let occurrences = lowered.matches(term.as_str()).count();
+                if occurrences != 0 {
+                    score += occurrences;
+                    matched_terms.push(term.clone());
+                }
+            }
             if score > 0 {
-                candidates.push((score, id, revision, kind, text));
+                candidates.push((score, id, revision, kind, text, matched_terms));
             }
         }
         drop(stmt);
-        candidates.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| a.1.cmp(&b.1)));
+        candidates.sort_by(|a, b| {
+            b.5.len()
+                .cmp(&a.5.len())
+                .then_with(|| b.0.cmp(&a.0))
+                .then_with(|| a.1.cmp(&b.1))
+        });
         let matched = candidates.len();
         let mut reply = json!({
             "project": project, "root_identity": registration.root_identity,
@@ -185,9 +239,25 @@ impl Store {
         });
         if let Some(kinds) = kinds {
             reply["version"] = json!("human-search-kind-filter-v1");
-            reply["selected_kinds"] = json!(kinds.kinds());
+            reply["selected_kinds"] = json!(kinds);
         }
-        for (_, id, revision, kind, text) in candidates {
+        if ranked {
+            reply["version"] = json!("human-search-ranked-v1");
+            reply["terms"] = json!(terms);
+            reply["coverage"] = json!(
+                "human-text-only; any distinct Unicode-lowercase whitespace term; no normalization, source, semantic or historical search"
+            );
+            reply["selection"] = json!(
+                "distinct-matched-terms-descending-occurrences-descending-id-byte-order-ascending; max-8; max-8192-JSON-bytes-including-newline; whole-entry-omission; later-fitting-candidates-allowed"
+            );
+            reply["limitations"] = json!(
+                "Human declarations, not observed truth or authorization; per-term nonoverlapping occurrences; distinct-term overlaps counted independently; no relevance-quality claim; current-at-read registration, not atomic revocation."
+            );
+        }
+        if ranked && serde_json::to_vec(&reply).map_err(unavailable)?.len() + 1 > 8192 {
+            return Err(invalid());
+        }
+        for (score, id, revision, kind, text, matched_terms) in candidates {
             canceled(cancel)?;
             let results = reply["results"].as_array_mut().ok_or(invalid())?;
             if results.len() >= 8 {
@@ -195,6 +265,11 @@ impl Store {
             }
             results.push(json!({"id":id,"revision":revision,"kind":kind,"text":text,
                 "producer":"human-authored","status":"active"}));
+            if ranked {
+                let entry = results.last_mut().ok_or(invalid())?;
+                entry["matched_terms"] = json!(matched_terms);
+                entry["occurrences"] = json!(score);
+            }
             let selected = results.len();
             reply["omitted_entries"] = json!(matched - selected);
             reply["truncated"] = json!(matched != selected);

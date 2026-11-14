@@ -10,7 +10,7 @@ pub fn validate_query_terms(id: &str, query: &str) -> Result<()> {
     terms(query).map(|_| ())
 }
 
-fn terms(query: &str) -> Result<Vec<String>> {
+pub(super) fn terms(query: &str) -> Result<Vec<String>> {
     if query.len() > 256 || query.chars().any(char::is_control) {
         return Err(invalid());
     }

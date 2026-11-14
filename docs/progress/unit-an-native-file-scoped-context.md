@@ -1,5 +1,35 @@
 # Unit AN — mounted native file-scoped Context
 
+## Primary integration and independent review
+
+Owned child implementation committed as `c5c3d25`, then cleanly applied on
+merged AO as **`5f0ad07c5087de62cd7bcc3a1db958abc10771da`**, exact integrated tested
+runtime. Only the owned diff was applied; no baseline/site merge replay, conflict
+repair or unrelated edit was included. Fifteen-file payload fingerprint reproduced
+after integration, identical to
+**`236e37961fe87cd959d4b478fcb4c9642d880b4f00300449d863fa87aae6c423`**.
+
+Joffrey independently reviewed **CLEAR**, verified baseline/inventory/fingerprint,
+and checked independent Query/Context/Refine scopes, exact full binding, strict
+wire/adoption validation, joined lifecycle, human preservation and batch uncertainty.
+He reran strict targeted Debug **60 tests** (one batch C test skipped without its
+variable), targeted Release **59 tests with none skipped**, new API and whitespace.
+No full Rust/native/security/bundle/remote/GUI proof was claimed by that review.
+
+Primary full offline workspace gate **419 tests/doctests PASS** against merged AO;
+strict serial full Debug and Release each **309 tests/50 suites PASS**, actual CLI
+and all eight C-fixture families enabled. All nine ordinary-import API gates,
+offline locked deny, secrets/whitespace and bundle/Info.plist **PASS**. No runtime
+changes were made after these tests; publication-head CI remains separate.
+Two inherited long-deadline fixtures remain ignored. Swift 6.1.2 CI, GUI/AX,
+live inference, host delivery and phase closure remain unverified by local runs.
+
+AO #89 exact post-merge integrated run `43603445495` passed at
+`1a6b8387074240261bcefacbe8343ad24e01ff31`; CI `43603445471` was still running at
+the initial integration read, not claimed green. AP native ranked-note search
+continues independently. Nine inherited progress edits, earlier local merge
+receipts, worktrees and parent continuation reminders are preserved.
+
 ## Predeclared scope and acceptance
 
 TM-01–TM-07, TM-10; partial P2-A1–A6, P3-A3/A4/A5/A6, P4-A1/A2/A3.
