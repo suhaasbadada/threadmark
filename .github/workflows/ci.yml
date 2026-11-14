@@ -52,6 +52,7 @@ jobs:
           sh apps/companion/scripts/check-retained-api.sh
           sh apps/companion/Tests/SourceInspectionFixtures/check-api.sh
           sh apps/companion/Tests/ComparisonAPIFixtures/check-api.sh
+          sh apps/companion/Tests/HumanSearchFilterAPIFixtures/check-api.sh
           sh apps/companion/scripts/bundle.sh
           plutil -lint apps/companion/dist/Threadmark.app/Contents/Info.plist
 
