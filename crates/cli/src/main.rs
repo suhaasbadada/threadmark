@@ -41,7 +41,7 @@ fn usage() -> std::process::ExitCode {
         "usage: threadmark --version | status | smoke; or --data-dir ABSOLUTE_NEW_PRIVATE_DIR project add ID ROOT [FILE ...] | project list | project show ID | project sources ID [FILE ...] | project remove ID --confirm-remove-local-data (local policy/evidence/context only; sources untouched; not Forget or forensic erasure) | index PROJECT | query PROJECT TEXT | context prepare PROJECT QUERY (original on stdin) | context add/update PROJECT ID KIND (stdin) | context retire/show PROJECT ID | context list PROJECT"
     );
     eprintln!(
-        "human-only lexical retrieval: context search PROJECT QUERY (active latest human revisions, not source-backed facts; max 256 query UTF-8 bytes, 8 whole entries, 8192 JSON bytes including newline)"
+        "human-only lexical retrieval: context search PROJECT QUERY (active latest human revisions, not source-backed facts; max 256 query UTF-8 bytes, 8 whole entries, 8192 JSON bytes including newline). Opt-in kind filter: --kinds KIND... --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN; 1-5 unique constraint/correction/decision/note/pitfall kinds, existing storage only, no unbound filtered form."
     );
     eprintln!(
         "optional exact removal approval binding: --expected-root ROOT --expected-root-identity IDENTITY (both required together; not credentials)"
@@ -458,7 +458,29 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
             }
         }
         ["context", "search", project, query, flags @ ..] => {
-            if flags.is_empty() {
+            if let Some(rest) = flags.strip_prefix(&["--kinds"]) {
+                let Some(end) = rest.iter().position(|s| s.starts_with("--")) else {
+                    return usage();
+                };
+                let kinds: Vec<String> = rest[..end].iter().map(|s| (*s).into()).collect();
+                let Ok(kinds) = threadmark_core::knowledge::HumanSearchKinds::new(&kinds) else {
+                    return usage();
+                };
+                let Some(bound) = human_read_binding(project, &rest[end..]) else {
+                    return usage();
+                };
+                if threadmark_core::knowledge::validate_human_search(project, query).is_err() {
+                    return usage();
+                }
+                Command::SearchContextKindsBound(
+                    (*project).into(),
+                    (*query).into(),
+                    kinds.kinds().to_vec(),
+                    bound.root.into(),
+                    bound.root_identity.into(),
+                    bound.incarnation.into(),
+                )
+            } else if flags.is_empty() {
                 Command::SearchContext((*project).into(), (*query).into())
             } else {
                 let Some(bound) = human_read_binding(project, flags) else {

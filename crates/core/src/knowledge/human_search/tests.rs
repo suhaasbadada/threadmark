@@ -1,5 +1,6 @@
 //! Synthetic real-SQLite human-only retrieval acceptance; no external content.
 use super::*;
+mod kind_filter;
 
 struct Fixture(PathBuf);
 impl Fixture {

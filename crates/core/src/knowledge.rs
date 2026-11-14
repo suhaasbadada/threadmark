@@ -36,7 +36,7 @@ pub use context_revision::{ContextRevisionBinding, validate_context_kind, valida
 pub use coverage::validate_coverage_binding;
 pub use forget::{ForgetBinding, ForgetStage};
 pub use human_read::ContextReadBinding;
-pub use human_search::validate_human_search;
+pub use human_search::{HumanSearchKinds, validate_human_search};
 pub use ranked_query::validate_query_terms;
 pub use schema::UpgradeStage;
 pub use source_forget::{SourceForgetBinding, SourceForgetStage, validate_source_forget};

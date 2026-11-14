@@ -19,6 +19,10 @@ public final class CompanionModel: ObservableObject {
     @Published public private(set) var project: Project?
     @Published public private(set) var contexts: [ContextEntry] = []
     @Published public private(set) var humanSearch: HumanContextSearch?
+    @Published public private(set) var humanSearchKindFilter: [String]?
+    @Published public private(set) var humanSearchSelectedKinds: [String]?
+    private var humanSearchGeneration: UInt64 = 0
+    private var humanSearchConflict = false
     private var humanSearchScope: Project?
     private var humanSearchTicket: UInt64?
     private var humanSearchCancellationTicket: UInt64?
@@ -282,6 +286,9 @@ public final class CompanionModel: ObservableObject {
     nonisolated private static func checkedHumanRead(_ service: any CoreService, _ operation: Operation, _ captured: Project, prechecked: Bool = false) async throws -> Reply {
         let binding = try HumanContextReadBinding(project: captured) // Legacy fails before service I/O.
         switch operation {
+        case .searchHumanContextKindsBound(let request):
+            try request.validate()
+            guard request.binding == binding else { throw ServiceError.invalid }
         case .compareHumanContextBound(let request):
             guard request.binding == binding else { throw ServiceError.invalid }
         case .contextsBound(let supplied), .contextBound(let supplied, _), .searchHumanContextBound(let supplied, _):
@@ -850,6 +857,10 @@ public final class CompanionModel: ObservableObject {
     public func searchHumanContext(_ query: String) {
         humanSearchQueryChanged()
         guard canSearchHumanContext, let target = project, InputPolicy.humanSearch(query) else { fail(.invalid); return }
+        if let kinds = humanSearchKindFilter {
+            searchHumanContextKinds(query, kinds: kinds, target: target)
+            return
+        }
         start(status: "Searching human-authored context — no source reads or inference", preserveHistory: true) { service in
             let reply = try await Self.checkedHumanRead(service, .searchHumanContextBound(HumanContextReadBinding(project: target), query), target)
             return [reply]
@@ -862,8 +873,34 @@ public final class CompanionModel: ObservableObject {
         humanSearchTicket = generation
     }
     public func humanSearchQueryChanged() {
+        humanSearchGeneration &+= 1
         if humanSearchTicket != nil { cancel() }
         clearHumanSearch()
+    }
+    /// Pure local choice. Even an empty explicit choice performs no service I/O.
+    public func setHumanSearchKindFilter(_ kinds: [String]?) {
+        humanSearchQueryChanged()
+        humanSearchKindFilter = kinds?.sorted()
+    }
+    private func searchHumanContextKinds(_ query: String, kinds: [String], target: Project) {
+        guard let binding = try? HumanContextReadBinding(project: target),
+              let request = try? HumanSearchKindRequest(binding: binding, query: query, kinds: kinds) else { fail(.invalid); return }
+        let searchGeneration = humanSearchGeneration, config = configurationGeneration
+        let preserveConflict = lastError == .contextConflict
+        start(status: "Searching selected human kinds — no source reads or inference", preserveHistory: true) { service in
+            [try await Self.checkedHumanRead(service, .searchHumanContextKindsBound(request), target)]
+        } apply: { replies in
+            guard self.humanSearchGeneration == searchGeneration, self.configurationGeneration == config,
+                  self.humanSearchKindFilter == request.kinds,
+                  case .filteredHumanSearch(let result) = replies[0] else { throw ServiceError.invalid }
+            try result.validate(request: request, scope: target)
+            self.humanSearch = result.search; self.humanSearchSelectedKinds = result.selectedKinds; self.humanSearchScope = target
+            self.status = "Selected human kinds only — latest active at read, not source evidence or authorization"
+            if preserveConflict { self.fail(.contextConflict) }
+        }
+        humanSearchTicket = generation
+        humanSearchConflict = preserveConflict
+        if preserveConflict { lastError = .contextConflict }
     }
     /// Loads the existing history pane; never copies text into an editor or approves a rule.
     public func inspectHumanSearchEntry(_ id: String) {
@@ -871,7 +908,7 @@ public final class CompanionModel: ObservableObject {
               humanSearch?.results.contains(where: { $0.id == id }) == true else { return }
         openContext(id)
     }
-    private func clearHumanSearch() { humanSearch = nil; humanSearchScope = nil }
+    private func clearHumanSearch() { humanSearch = nil; humanSearchScope = nil; humanSearchSelectedKinds = nil }
     public func editPreparation(query: String, original: String) {
         guard !preparationQuery.utf8.elementsEqual(query.utf8) || !originalDraft.utf8.elementsEqual(original.utf8) else { return }
         cancelOperation(); preparationQuery = query; originalDraft = original
@@ -1300,7 +1337,8 @@ public final class CompanionModel: ObservableObject {
     }
     private func cancelOperation() {
         let preserveQuery = inspectionOperation
-        let preserveComparisonConflict = comparisonActive && lastError == .contextConflict
+        let preserveComparisonConflict = (comparisonActive || (humanSearchTicket != nil && humanSearchConflict)) && lastError == .contextConflict
+        humanSearchConflict = false
         sourceQueryOperation = false
         inspectionOperation = false; sourceInspection = nil
         inspectionQueryGeneration = nil; inspectionQueryScope = nil
@@ -1391,7 +1429,7 @@ public final class CompanionModel: ObservableObject {
         job = Task { [weak self] in
             defer {
                 self?.ownedOperations.removeValue(forKey: operationID)
-                if self?.humanSearchTicket == ticket { self?.humanSearchTicket = nil }
+                if self?.humanSearchTicket == ticket { self?.humanSearchTicket = nil; self?.humanSearchConflict = false }
                 if self?.humanSearchCancellationTicket == ticket {
                     self?.humanSearchCancellationTicket = nil
                     if self?.generation == ticket &+ 1, self?.job == nil, self?.quitting == false,
@@ -1434,6 +1472,9 @@ public final class CompanionModel: ObservableObject {
                 self.sourceQueryOperation = false
                 self.busy = false; self.job = nil
                 self.fail(error as? ServiceError ?? (error is CancellationError ? .canceled : .failed))
+                if self.humanSearchTicket == ticket, self.humanSearchConflict, error as? ServiceError != .namespaceChanged {
+                    self.fail(.contextConflict)
+                }
                 if preserveQuery { self.status += " Source inspection discarded; explicitly Query again before Inspect source. No automatic retry." }
                 self.automaticTicket = nil
                 if automatic {
