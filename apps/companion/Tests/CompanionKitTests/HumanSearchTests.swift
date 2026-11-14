@@ -207,17 +207,28 @@ struct HumanSearchTests {
             try Data(("#!/usr/bin/python3\nimport sys\nsys.stdout.write(" + String(reflecting: output) + ")\n").utf8).write(to: executable)
             await #expect(throws: (any Error).self) { try await service.perform(.searchHumanContext("alpha", "needle")) }
         }
-        try Data("#!/usr/bin/python3\nimport os,time\nopen('child.pid','w').write(str(os.getpid()))\ntime.sleep(10)\n".utf8).write(to: executable)
-        var limits = ProcessLimits(); limits.seconds = 0.05
+        // Publish a complete marker atomically; Python startup is not bounded to 50 ms.
+        try Data("#!/usr/bin/python3\nimport os,time\nwith open('child.pid.tmp','w') as marker: marker.write(str(os.getpid()))\nos.replace('child.pid.tmp','child.pid')\ntime.sleep(30)\n".utf8).write(to: executable)
+        let marker = fixture.root.appendingPathComponent("child.pid")
+        var limits = ProcessLimits(); limits.seconds = 3
         await #expect(throws: ServiceError.timedOut) {
             try await ProcessService(executable: executable, dataDirectory: fixture.root, limits: limits).perform(.searchHumanContext("alpha", "needle"))
         }
-        let timedOutPID = try #require(Int32(String(contentsOf: fixture.root.appendingPathComponent("child.pid"), encoding: .utf8)))
+        let timedOutPID = try #require(Int32(String(contentsOf: marker, encoding: .utf8)))
+        try #require(timedOutPID > 0)
         #expect(kill(timedOutPID, 0) == -1 && errno == ESRCH)
+        try FileManager.default.removeItem(at: marker)
         let task = Task { try await service.perform(.searchHumanContext("alpha", "needle")) }
-        try await Task.sleep(for: .milliseconds(50)); task.cancel()
+        defer { task.cancel() }
+        for _ in 0..<500 {
+            if FileManager.default.fileExists(atPath: marker.path) { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        // Always cancel and join, including when fixture readiness failed.
+        task.cancel()
         await #expect(throws: ServiceError.canceled) { try await task.value }
-        let canceledPID = try #require(Int32(String(contentsOf: fixture.root.appendingPathComponent("child.pid"), encoding: .utf8)))
+        let canceledPID = try #require(Int32(String(contentsOf: marker, encoding: .utf8)))
+        try #require(canceledPID > 0)
         #expect(kill(canceledPID, 0) == -1 && errno == ESRCH)
     }
 }
