@@ -22,6 +22,7 @@ const FLAGS: OFlags = OFlags::RDONLY
 
 mod context_comparison;
 mod context_revision;
+mod coverage;
 mod export;
 mod forget;
 mod human_read;
@@ -32,6 +33,7 @@ mod source_forget;
 mod source_inspection;
 pub use context_comparison::validate_context_comparison;
 pub use context_revision::{ContextRevisionBinding, validate_context_kind, validate_context_text};
+pub use coverage::validate_coverage_binding;
 pub use forget::{ForgetBinding, ForgetStage};
 pub use human_read::ContextReadBinding;
 pub use human_search::validate_human_search;
@@ -212,6 +214,135 @@ fn walk_directory(path: &Path, trusted_store: bool) -> Result<File> {
 fn file_identity(file: &File) -> Result<String> {
     let m = file.metadata().map_err(unavailable)?;
     Ok(format!("{}:{}", m.dev(), m.ino()))
+}
+
+// One descriptor walker for all source consumers. Only coverage may downgrade
+// File errors; cancellation and resource accounting are never local refusals.
+enum SourceReadError {
+    File(Error),
+    Observed(Error, Source, usize),
+    Whole(Error),
+}
+
+// Logical-line count does not require valid UTF-8. Keep observed resource usage
+// available even when text admission or a later read fails. Like str::lines(),
+// a terminal LF does not create an extra empty line; CRLF has the same count.
+fn observed_source_lines(bytes: &[u8]) -> usize {
+    bytes.iter().filter(|&&byte| byte == b'\n').count()
+        + usize::from(!bytes.is_empty() && bytes.last() != Some(&b'\n'))
+}
+
+fn read_source(
+    root: &File,
+    path: &str,
+    cancel: &AtomicBool,
+    total: &mut usize,
+) -> std::result::Result<(Source, String), SourceReadError> {
+    use SourceReadError::{File as Local, Observed, Whole};
+    canceled(cancel).map_err(Whole)?;
+    let prepare = || -> Result<File> {
+        let mut parent = root.try_clone().map_err(unavailable)?;
+        let components: Vec<_> = path.split('/').collect();
+        for part in &components[..components.len() - 1] {
+            parent = File::from(
+                openat(&parent, *part, FLAGS | OFlags::DIRECTORY, Mode::empty())
+                    .map_err(unavailable)?,
+            );
+            if rustix::fs::statat(&parent, ".git", rustix::fs::AtFlags::SYMLINK_NOFOLLOW).is_ok()
+                || parent.metadata().map_err(unavailable)?.dev()
+                    != root.metadata().map_err(unavailable)?.dev()
+            {
+                return Err(Error::ScopeMismatch);
+            }
+        }
+        Ok(File::from(
+            openat(
+                &parent,
+                components[components.len() - 1],
+                FLAGS | OFlags::NONBLOCK,
+                Mode::empty(),
+            )
+            .map_err(unavailable)?,
+        ))
+    };
+    let mut file = prepare().map_err(Local)?;
+    let metadata = file.metadata().map_err(|e| Local(unavailable(e)))?;
+    if !metadata.is_file()
+        || metadata.dev() != root.metadata().map_err(|e| Local(unavailable(e)))?.dev()
+        || metadata.nlink() != 1
+    {
+        // Internal-only fingerprint: unsafe metadata is never admitted as current
+        // report metadata, but an observed change must still fence publication.
+        return Err(Observed(
+            invalid(),
+            Source {
+                path: path.into(),
+                identity: format!("{}:{}", metadata.dev(), metadata.ino()),
+                hash: sha256(
+                    format!(
+                        "{}:{}:{}:{}:{}:{}:{}",
+                        metadata.mode(),
+                        metadata.nlink(),
+                        metadata.len(),
+                        metadata.mtime(),
+                        metadata.mtime_nsec(),
+                        metadata.ctime(),
+                        metadata.ctime_nsec()
+                    )
+                    .as_bytes(),
+                ),
+            },
+            0,
+        ));
+    }
+    if metadata.len() > MAX_FILE as u64 {
+        return Err(Whole(invalid()));
+    }
+    let file_id = file_identity(&file).map_err(Local)?;
+    let mut bytes = Vec::new();
+    // Account each successful chunk before any later I/O/UTF-8 refusal. Never
+    // reset total on a failed file: otherwise 64 failed files bypass 1 MiB.
+    loop {
+        canceled(cancel).map_err(Whole)?;
+        let mut chunk = [0_u8; 4096];
+        let remaining = (MAX_FILE + 1 - bytes.len()).min(chunk.len());
+        let n = file.read(&mut chunk[..remaining]).map_err(|e| {
+            Observed(
+                unavailable(e),
+                Source {
+                    path: path.into(),
+                    identity: file_id.clone(),
+                    hash: sha256(&bytes),
+                },
+                observed_source_lines(&bytes),
+            )
+        })?;
+        *total += n;
+        if bytes.len() + n > MAX_FILE || *total > MAX_TOTAL {
+            return Err(Whole(invalid()));
+        }
+        bytes.extend_from_slice(&chunk[..n]);
+        #[cfg(test)]
+        coverage::observe_chunk(cancel);
+        canceled(cancel).map_err(Whole)?;
+        if n == 0 {
+            break;
+        }
+    }
+    let hash = sha256(&bytes);
+    let source = Source {
+        path: path.into(),
+        hash,
+        identity: file_id,
+    };
+    if bytes.contains(&0) {
+        return Err(Observed(invalid(), source, observed_source_lines(&bytes)));
+    }
+    let text = String::from_utf8(bytes).map_err(|e| {
+        let lines = observed_source_lines(e.as_bytes());
+        Observed(unavailable(e), source.clone(), lines)
+    })?;
+    Ok((source, text))
 }
 
 fn validate_paths(paths: &[String]) -> Result<()> {
@@ -888,62 +1019,13 @@ impl Store {
         let mut result = Vec::new();
         let mut total = 0;
         for path in &p.sources {
-            canceled(cancel)?;
-            let mut parent = root.try_clone().map_err(unavailable)?;
-            let components: Vec<_> = path.split('/').collect();
-            for part in &components[..components.len() - 1] {
-                parent = File::from(
-                    openat(&parent, *part, FLAGS | OFlags::DIRECTORY, Mode::empty())
-                        .map_err(unavailable)?,
-                );
-                // Nested repositories/submodules require their own explicit project root.
-                if rustix::fs::statat(&parent, ".git", rustix::fs::AtFlags::SYMLINK_NOFOLLOW)
-                    .is_ok()
-                {
-                    return Err(Error::ScopeMismatch);
-                }
-                if parent.metadata().map_err(unavailable)?.dev()
-                    != root.metadata().map_err(unavailable)?.dev()
-                {
-                    return Err(Error::ScopeMismatch);
-                }
-            }
-            let file = File::from(
-                openat(
-                    &parent,
-                    components[components.len() - 1],
-                    FLAGS | OFlags::NONBLOCK,
-                    Mode::empty(),
-                )
-                .map_err(unavailable)?,
+            result.push(
+                read_source(&root, path, cancel, &mut total).map_err(|e| match e {
+                    SourceReadError::File(e)
+                    | SourceReadError::Observed(e, _, _)
+                    | SourceReadError::Whole(e) => e,
+                })?,
             );
-            let metadata = file.metadata().map_err(unavailable)?;
-            if !metadata.is_file()
-                || metadata.len() > MAX_FILE as u64
-                || metadata.dev() != root.metadata().map_err(unavailable)?.dev()
-                || metadata.nlink() != 1
-            {
-                return Err(invalid());
-            }
-            let file_id = file_identity(&file)?;
-            let mut bytes = Vec::new();
-            file.take((MAX_FILE + 1) as u64)
-                .read_to_end(&mut bytes)
-                .map_err(unavailable)?;
-            total += bytes.len();
-            if bytes.len() > MAX_FILE || total > MAX_TOTAL || bytes.contains(&0) {
-                return Err(invalid());
-            }
-            let hash = sha256(&bytes);
-            let text = String::from_utf8(bytes).map_err(unavailable)?;
-            result.push((
-                Source {
-                    path: path.clone(),
-                    hash,
-                    identity: file_id,
-                },
-                text,
-            ));
         }
         // Detect a replaced/renamed approved root even though the open descriptor stayed valid.
         if file_identity(&directory(Path::new(&p.root))?)? != p.root_identity {
