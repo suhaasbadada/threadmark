@@ -1,6 +1,7 @@
 //! Actual core-backed preparation. Context never invokes a provider; retained
 //! review sessions require explicit provider access and never perform delivery.
 
+pub mod file_scoped;
 pub(crate) mod ranked;
 mod session;
 pub use session::{CaptureBinding, ReviewSession};
@@ -262,22 +263,7 @@ fn context_scoped(
     let selected = context_selection(store, expected, query, cancel, retrieval)?;
     let coverage = selected.coverage.clone();
     let needs_input = selected.snapshot.is_none() || selected.evidence.is_empty();
-    let request = Request::new_with_retrieval(
-        RequestData {
-            request_id: "local-context-preview".into(),
-            project: project.into(),
-            snapshot: selected.snapshot,
-            original,
-            constraints: vec![],
-            attachments: vec![],
-            destination: "local-review-only".into(),
-            mode: Mode::Context,
-            evidence: selected.evidence,
-            output_budget: 8192,
-        },
-        retrieval,
-    )
-    .map_err(engine_error)?;
+    let request = context_request(project, &selected, original, retrieval, 8192)?;
     let mut engine = Engine::new(
         request,
         Control::new(Instant::now() + Duration::from_secs(30)),
@@ -315,4 +301,30 @@ fn context_scoped(
         return Err(Error::InvalidExtraction);
     }
     Ok(value)
+}
+
+// Shared Context engine capture only; existing serializers/authority paths stay intact.
+fn context_request(
+    project: &str,
+    selected: &AuthorizedSnapshot,
+    original: String,
+    retrieval: RetrievalMode,
+    output_budget: usize,
+) -> Result<Request, Error> {
+    Request::new_with_retrieval(
+        RequestData {
+            request_id: "local-context-preview".into(),
+            project: project.into(),
+            snapshot: selected.snapshot.clone(),
+            original,
+            constraints: vec![],
+            attachments: vec![],
+            destination: "local-review-only".into(),
+            mode: Mode::Context,
+            evidence: selected.evidence.clone(),
+            output_budget,
+        },
+        retrieval,
+    )
+    .map_err(engine_error)
 }
