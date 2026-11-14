@@ -1,5 +1,30 @@
 # Unit AA — explicit bounded human revision comparison
 
+## Primary integration and independent review
+
+Primary committed only the eight owned files as `ba31e5b`, applied as
+**`96e31699acaeeeebb6a3333fbd87e69391edfb11`**, the exact combined tested runtime.
+One module/export insertion conflict was resolved by retaining both Z's source
+inspection module and AA's comparison validator; no baseline/site history replay.
+CLI comparison parser/dispatch and Z's inspection-only read-only opener/cap remain
+separate and unchanged. No implicit authentication or source authority introduced.
+
+Joffrey independently reproduced the fingerprint and reviewed **CLEAR**, passed
+seven AA core tests, five actual CLI/daemon tests, all 138 lane core tests plus
+doctest and whitespace. He did not rerun full pipeline/lint/deny/secrets. Primary
+combined full workspace gate **PASS**, 294 Rust tests + two doctests; strict
+serial actual-CLI/retained/export-C-fixture Swift **PASS**, 214 tests/30 suites.
+API gate, offline locked deny, staged secrets and whitespace **PASS**. Normal
+long-deadline fixtures stayed ignored. Exact publication-head CI remains later.
+
+PR #75 passed all five checks at `b2f86f4fbf91002eac769488057078956bf7fd6a`
+(CI `43582611536`, integrated `43582611570`); fresh exact-head/main/check/review/
+approval/discussion/rules gates preceded merge
+`b590caabba494ae33ba95736ce42d5b7c0261e81`. Watch removed after merge; separate
+exact post-merge CI remains unverified. Native source inspection remains active
+in its existing lane. Nine inherited progress edits/worktrees/parent reminders
+preserved; GUI/AX, live-model quality, host delivery and phase closure remain open.
+
 ## Scope and baseline
 
 Implements TM-01–TM-04, TM-07, TM-10; partial P2-A1/A3/A5/A6 and P3-A4.
