@@ -15,6 +15,7 @@ private actor ForgetCore: CoreService {
     var waiter: CheckedContinuation<Void, Never>?
     var pending: CheckedContinuation<Reply, any Error>?
     var indexStarted = false
+    var holdIndex = false
     var indexWaiter: CheckedContinuation<Void, Never>?
     var indexPending: CheckedContinuation<Reply, any Error>?
     var events: [String] = []
@@ -30,6 +31,7 @@ private actor ForgetCore: CoreService {
     func setMode(_ value: String) { mode = value }
     func edit() { revision += 1 }
     func holdReceipt() { hold = true }
+    func holdNextIndex() { holdIndex = true }
     func waitUntilForget() async {
         if forgetCalls > 0 { return }
         await withCheckedContinuation { waiter = $0 }
@@ -45,8 +47,12 @@ private actor ForgetCore: CoreService {
         calls += 1
         switch operation {
         case .indexBound:
-            events.append("index-started"); indexStarted = true; indexWaiter?.resume(); indexWaiter = nil
-            return try await withCheckedThrowingContinuation { indexPending = $0 }
+            if holdIndex {
+                holdIndex = false
+                events.append("index-started"); indexStarted = true; indexWaiter?.resume(); indexWaiter = nil
+                return try await withCheckedThrowingContinuation { indexPending = $0 }
+            }
+            return .indexed(IndexReport(project: "alpha", snapshot: .string("s1"), files: 1, anchors: 1, coverage: .string("lexical"), empty: false))
         case .project(let id):
             if forgetCalls > 0 { projectReadsAfterForget += 1 }
             let replace = mode == "replace-before" && projectReadsAfterForget == 1 ||
@@ -155,6 +161,7 @@ private actor ForgetCore: CoreService {
         let model = CompanionModel(service: service, configured: true, refreshDriver: driver)
         model.select("alpha"); await model.waitForOperation()
         model.openContext("memo"); await model.waitForOperation()
+        await service.holdNextIndex()
         model.enableAutomaticRefresh(try #require(model.automaticRefreshProposal))
         driver.fire(); await service.waitUntilIndex()
         model.requestForget(); let prompt = try #require(model.pendingForget)

@@ -10,18 +10,29 @@ private actor SourceReadPeer: CoreService {
     let adapter: ProcessService
     let replacementRoot: String
     let change: String
+    let interceptBuild: Bool
     var boundCalls = 0
     var rejected = false
     var providerCalls = 0
     var capturedSnapshot: JSONValue?
-    init(_ adapter: ProcessService, replacementRoot: String, change: String) {
-        self.adapter = adapter; self.replacementRoot = replacementRoot; self.change = change
+    var unboundBuilds = 0
+    init(_ adapter: ProcessService, replacementRoot: String, change: String, interceptBuild: Bool = false) {
+        self.adapter = adapter; self.replacementRoot = replacementRoot; self.change = change; self.interceptBuild = interceptBuild
     }
     func perform(_ operation: CompanionKit.Operation) async throws -> Reply {
         if case .refinePreview = operation { providerCalls += 1; throw ServiceError.invalid }
         let captured: Project?
+        var build = false
         switch operation {
         case .queryBound(let p, _), .prepareContextBound(let p, _, _): captured = p
+        case .indexBound(let id, let root, let identity, let sources, let token):
+            build = true
+            captured = interceptBuild ? Project(id: id, root: root, sources: sources, rootIdentity: .string(identity), incarnation: token) : nil
+        case .index(let id):
+            build = true; unboundBuilds += 1
+            if !interceptBuild { return try await adapter.perform(operation) }
+            guard case .project(let p) = try await adapter.perform(.project(id)) else { throw ServiceError.invalid }
+            captured = p
         default: captured = nil
         }
         if let p = captured, boundCalls == 0 {
@@ -30,12 +41,12 @@ private actor SourceReadPeer: CoreService {
             if change == "policy" { _ = try await adapter.perform(.setSources(p.id, [])) }
             else if change == "snapshot" {
                 try Data("// synthetic changed SQL snapshot\n".utf8).write(to: URL(fileURLWithPath: p.root).appendingPathComponent("a.rs"))
-                _ = try await adapter.perform(.index(p.id))
+                if !build { _ = try await adapter.perform(.index(p.id)) }
             } else {
                 guard case .string(let identity) = p.root_identity, let token = p.incarnation else { throw ServiceError.invalid }
                 _ = try await adapter.perform(.removeProject(p.id, p.root, identity, token))
                 _ = try await adapter.perform(.addProject(p.id, change == "same-root" ? p.root : replacementRoot, p.sources))
-                _ = try await adapter.perform(.index(p.id))
+                if !build { _ = try await adapter.perform(.index(p.id)) }
             }
             do { return try await adapter.perform(operation) }
             catch { rejected = true; throw error }
@@ -50,7 +61,7 @@ private actor LegacySourceCore: CoreService {
         switch operation {
         case .project(let id): return .project(Project(id: id, root: "/synthetic/legacy", sources: ["a.rs"], rootIdentity: .string("r1")))
         case .contexts(let id): return .contexts(ContextList(project: id, contexts: []))
-        case .query, .queryBound, .prepareContext, .prepareContextBound, .refinePreview:
+        case .query, .queryBound, .prepareContext, .prepareContextBound, .refinePreview, .index, .indexBound:
             sourceReads += 1; throw ServiceError.invalid
         default: throw ServiceError.unavailable
         }
@@ -59,6 +70,39 @@ private actor LegacySourceCore: CoreService {
 
 @Suite("Cached native source reads bind before core traversal")
 struct BoundSourceReadTests {
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"] != nil),
+          arguments: ["same-root", "different-root", "policy"])
+    @MainActor func manualBuildCannotPublishIntoReplacementRegistration(change: String) async throws {
+        let binary = try #require(ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"])
+        let fixture = try ApprovedWatchFixture(); defer { fixture.remove() }
+        let other = fixture.root.appendingPathComponent("replacement")
+        try FileManager.default.createDirectory(at: other, withIntermediateDirectories: false)
+        try Data("// synthetic replacement not authorized by old Build\n".utf8).write(to: other.appendingPathComponent("a.rs"))
+        let adapter = ProcessService(executable: URL(fileURLWithPath: binary),
+            dataDirectory: try StoreSelection.newDirectory(parent: fixture.root, name: "bound-build-store"))
+        _ = try await adapter.perform(.addProject("alpha", fixture.root.path, ["a.rs"]))
+        _ = try await adapter.perform(.writeContext("alpha", "memo", "note", "Synthetic retained human history", update: false))
+        let peer = SourceReadPeer(adapter, replacementRoot: other.path, change: change, interceptBuild: true)
+        let model = CompanionModel(service: peer, configured: true)
+        model.select("alpha"); await model.waitForOperation()
+        model.openContext("memo"); await model.waitForOperation()
+        model.editPreparation(query: "synthetic", original: "Synthetic original; do NOT send")
+        let editor = model.contextEditorRevision
+        model.build(); await model.waitForOperation()
+        let calls = await peer.boundCalls, unbound = await peer.unboundBuilds, rejected = await peer.rejected
+        #expect(calls == 1 && unbound == 0 && rejected)
+        #expect(model.indexReport == nil && model.sourceRequiresRefresh)
+        guard case .project(let current) = try await adapter.perform(.project("alpha")) else { throw ServiceError.invalid }
+        #expect(current.snapshot == nil) // Old unbound Build would index replacement B.
+        if change == "policy" {
+            #expect(model.lastError == .readRequiresRefresh && model.project != nil)
+            #expect(model.originalDraft == "Synthetic original; do NOT send")
+            #expect(model.contextEditorRevision == editor && model.history?.history.last?.text == "Synthetic retained human history")
+        } else {
+            #expect(model.lastError == .namespaceChanged && model.project == nil && model.originalDraft.isEmpty)
+        }
+        await model.shutdown()
+    }
     @Test(.enabled(if: ProcessInfo.processInfo.environment["THREADMARK_CORE_TEST_BINARY"] != nil), arguments: ["same-root", "policy", "snapshot"])
     @MainActor func automaticPostIndexQueryBindsActualFreshSnapshot(change: String) async throws {
         let fixture = try ApprovedWatchFixture(); defer { fixture.remove() }
@@ -83,7 +127,7 @@ struct BoundSourceReadTests {
         else { #expect(model.sourceRequiresRefresh && model.lastError == .readRequiresRefresh && model.originalDraft == "Synthetic automatic unsaved original") }
         await model.shutdown()
     }
-    @Test(arguments: ["query", "context", "refine"])
+    @Test(arguments: ["query", "context", "refine", "build"])
     @MainActor func legacyScopeRequiresRefreshWithoutUnboundFallback(operation: String) async throws {
         let service = LegacySourceCore()
         let model = CompanionModel(service: service, configured: true)
@@ -92,6 +136,7 @@ struct BoundSourceReadTests {
         switch operation {
         case "query": model.query("synthetic")
         case "context": model.prepareContext()
+        case "build": model.build()
         default: model.requestRefinement(settings: try refinementSettings())
         }
         await model.waitForOperation()

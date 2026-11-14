@@ -396,20 +396,44 @@ public final class CompanionModel: ObservableObject {
         }
     }
     public var manualActionsAvailable: Bool { !busy || automaticTicket != nil }
-    public var canBuild: Bool { configured && project != nil && !policyDirty && !sourceRequiresRefresh && !sourceDraft.isEmpty && manualActionsAvailable && !quitting && pendingSourceForget == nil }
+    public var canBuild: Bool { canRemoveProject && !policyDirty && !sourceRequiresRefresh && !sourceDraft.isEmpty && pendingSourceForget == nil }
     public func build() {
         pendingSourceForget = nil
         guard !sourceRequiresRefresh else { fail(refreshRequiredError); return }
-        guard canBuild, let id = selectedID, let target = project else { fail(.invalid); return }
-        clearResults()
-        start(status: "Updating — bounded local source-evidence Build; Cancel available") { service in
-            [try await service.perform(.index(id)), try await service.perform(.project(id))]
+        guard let target = project, target.id == selectedID,
+              case .string(let identity) = target.root_identity,
+              let token = target.incarnation, InputPolicy.incarnation(token),
+              InputPolicy.removal(root: target.root, identity: identity) else {
+            sourceRequiresRefresh = true; mutationRefreshError = .readRequiresRefresh
+            fail(.readRequiresRefresh); return
+        }
+        guard canBuild else { fail(.invalid); return }
+        let id = target.id
+        clearResults(preserveHistory: true)
+        start(status: "Updating — bounded local source-evidence Build; Cancel available", preserveHistory: true) { service in
+            do {
+                // Snapshot may legitimately change during Build; registration
+                // and exact approved sources may not. Core rechecks both before
+                // reading files and transactionally before publishing its index.
+                let indexed = try await service.perform(.indexBound(id, target.root, identity, target.sources, token))
+                let fresh = try await Self.checkNamespace(service, target)
+                guard fresh.sources == target.sources else { throw ServiceError.readRequiresRefresh }
+                return [indexed, .project(fresh)]
+            } catch {
+                if error as? ServiceError == .namespaceChanged || error is CancellationError || error as? ServiceError == .canceled { throw error }
+                if let reply = try? await service.perform(.project(id)), case .project(let current) = reply {
+                    guard Self.sameNamespace(current, target) else { throw ServiceError.namespaceChanged }
+                    guard current.sources == target.sources else { throw ServiceError.readRequiresRefresh }
+                    throw error
+                }
+                throw ServiceError.readRequiresRefresh
+            }
         } apply: { replies in
             guard case .indexed(let report) = replies[0], report.project == id else { throw ServiceError.scopeMismatch }
-            self.indexReport = report
             guard case .project(let fresh) = replies[1] else { throw ServiceError.invalid }
             guard Self.sameNamespace(fresh, target) else { throw ServiceError.namespaceChanged }
             guard fresh.sources == target.sources else { throw ServiceError.readRequiresRefresh }
+            self.indexReport = report
             self.project = fresh
             self.status = report.empty ? "Partial — empty snapshot; inspect coverage" : "Build completed — inspect coverage; currentness not checked"
         }
