@@ -1,5 +1,37 @@
 # Unit AE — explicit kind-filtered saved human context search
 
+## Required CI failure and deterministic fixture repair
+
+PR #80 first head `d8010cc3c6d978ad86fda442c1838b15913013ee` failed CI
+[`43588766553`](https://github.com/suhaasbadada/threadmark/actions/runs/43588766553),
+Ubuntu job `132428811737`: existing knowledge regression
+`rejected_child_may_close_stdin_before_the_fixture_writes` required `BrokenPipe`
+after waiting for one rejected child, but the nine-byte write returned `Ok(())`.
+Primary retained/read its complete job trace in ignored
+`target/unit-ae-ci-ubuntu-failure.log`. Inspected every job: this was the only
+failed job; macOS/security and integrated run `43588766554` passed at that old
+head. They are not evidence for the repair head. No retry or failure waiver.
+
+Sherlock independently established the test's insufficient synchronization:
+waiting for one child does not establish that every pipe-reader reference closed.
+Transient reader inheritance by concurrently spawning processes is credible, not
+proven by the trace; no Linux descriptor reproduction is claimed from macOS.
+
+Primary repaired only the private fixture/test: default `finish` still performs
+real writes; shared `finish_with_writer` retains the original Ok/BrokenPipe/error
+classification, drops stdin before waiting, and permits BrokenPipe only for a
+failed child. Real argument-rejection/empty-stdout/no-store behavior remains
+tested. Injection deterministically exercises BrokenPipe with a real failed child;
+a real successful `--version` child must trigger the specific early-close guard.
+No sleep, polling, retry, global serialization or runtime behavior changed.
+
+Repair tested runtime **`c82473e76c55e3072b22e02987931fa62a2b5c7f`**:
+21 knowledge integration cases **PASS**, full workspace **328 Rust tests + two
+doctests PASS**, offline locked deny, secrets and whitespace **PASS**. Prior native
+source is unchanged; no fresh native run is inferred from this test-only repair.
+Joffrey independently reviewed **CLEAR**, ran all 21 knowledge tests/whitespace;
+did not rerun full pipeline or CI. Fresh pushed-head CI remains required.
+
 ## Primary integration and independent review
 
 The preliminary child handoff explicitly had native verification still running;
