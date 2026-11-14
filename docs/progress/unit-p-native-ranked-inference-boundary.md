@@ -37,8 +37,8 @@ Owned files:
   No Query/Context mode implicitly selects Refine mode. No common model, view,
   app, existing test or source-mode enum change; concurrent Unit O remains owner
   of literal mounting and coordinator owns later explicit selection capture.
-- Ranked consent validates query byte/control/whitespace/term bounds, per-scalar
-  Unicode lowercase and byte-exact deduplication before store access/spawn. It
+- Ranked consent validates query byte/control/whitespace/term bounds, contextual
+  whole-term lowercase and byte-exact deduplication before store access/spawn. It
   requires exact ordered terms, ranked selection/coverage and truncation metadata.
   Literal rejects a ranked selection. Existing provider/settings/root/identity/
   incarnation/snapshot/source/currentness/producer/evidence count/8192-byte gates
@@ -117,3 +117,42 @@ remain intentionally ignored; their paths/budgets are unchanged, and short nativ
 deadline/cancellation/hostile-child coverage passes. No inferred quality or
 phase closure. Plum thread lookup returned `thread_not_found`; no coordination
 message, watcher, scheduled follow-up or automatic title-change claim.
+# Primary integration and substantive review corrections
+
+Exact combined tested correction:
+`1f8104671db9057f05b8b9e81c33c79a5eb4334d`. Primary committed only the seven owned
+files in the completed lane and applied them as `61c1ae4`, preserving Unit O's
+current disclosure and internal model controller. No baseline/site merges were
+replayed. Mounted Refine is still literal until explicit model/UI selection work.
+
+Joffrey found two medium defects in the initial unit: scalar lowercase disagreed
+with Rust's contextual final-sigma mapping, and synthesized Swift project equality
+treated canonically equivalent but byte-distinct roots/policies as equal. Primary
+repaired both before publication:
+
+- Explicit Unicode root-locale contextual whole-term lowercase matches six actual
+  Rust CLI queries, including final sigma, combining marks and deduplication.
+  A first plain Swift whole-string lowercase attempt also failed those new tests;
+  that failure was retained, diagnosed and fixed, not waived. No user locale or
+  normalization is applied.
+- Stable project encoding compares original UTF-8 scope bytes and ordered policy,
+  including opaque identity/snapshot metadata. New regressions distinguish
+  canonically equivalent root, policy and identity and prove unused-consent
+  invalidation plus change-back replay rejection before spawning.
+
+Independent recheck **CLEAR**, both findings closed; Joffrey independently passed
+the complete strict native suite, 162 tests/21 suites with actual CLI/C fixtures.
+Primary combined full workspace gate (224 Rust/two doctests), strict serial native
+suite, ordinary-import model API compile gate, dependency policy, staged secrets
+and whitespace **PASS**. Release results above belong to the original lane, not
+a claimed new exact-correction release pass.
+
+PR #64 passed all five new-head checks at
+`67055c31b885dc28a2e42882c84491af512d9b24` (CI `43568673603`, integrated
+`43568673605`); fresh exact head/main/rules/review/discussion checks preceded merge
+`42c89b879f108799c00c76b0178187219803926d`. Separate post-merge CI remains a later
+gate. PR #63's exact post-merge runs `43568158847`/`43568158849` both passed.
+Unit Q independently reviewed **CLEAR** and awaits primary integration.
+
+No GUI/AX, live inference quality, host delivery or phase closure is claimed.
+Nine inherited progress edits and all worktrees/reminders remain preserved.
