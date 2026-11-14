@@ -29,8 +29,8 @@ private actor HumanRevisionCore: CoreService {
     func perform(_ operation: CompanionKit.Operation) async throws -> Reply {
         switch operation {
         case .project: events.append("project"); return .project(project)
-        case .contexts: return .contexts(ContextList(project: "alpha", contexts: []))
-        case .context:
+        case .contextsBound: return .contexts(ContextList(project: "alpha", contexts: []))
+        case .contextBound:
             if failHistory { throw ServiceError.failed }
             return .context(syntheticHumanHistory(count))
         case .updateContextRevisionBound(let binding, _, _), .retireContextRevisionBound(let binding):

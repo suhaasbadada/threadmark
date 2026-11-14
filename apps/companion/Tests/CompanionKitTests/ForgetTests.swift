@@ -59,11 +59,13 @@ private actor ForgetCore: CoreService {
                 mode == "replace-after" && projectReadsAfterForget == 2
             return .project(Project(id: id, root: "/synthetic/alpha", sources: ["a.rs"], rootIdentity: .string("r1"),
                 incarnation: mode == "legacy" ? nil : (replace ? String(repeating: "f", count: 32) : syntheticIncarnation)))
-        case .contexts(let id):
+        case .contextsBound(let b):
+            let id = b.project
             let entries = deleted && mode != "still-present" ? [] : [ContextEntry(id: "memo", revision: revision,
                 kind: "note", retired: false, producer: "human-authored", authority: .string("human-declared"))]
             return .contexts(ContextList(project: id, contexts: entries))
-        case .context(let id, let context):
+        case .contextBound(let b, let context):
+            let id = b.project
             return .context(ContextHistory(project: id, id: context, producer: "human-authored", authority: .string("human-declared"),
                 history: (1...revision).map { ContextRevision(revision: $0, kind: "note", text: "Synthetic human revision \($0)", retired: false) }))
         case .forgottenContexts(let id):

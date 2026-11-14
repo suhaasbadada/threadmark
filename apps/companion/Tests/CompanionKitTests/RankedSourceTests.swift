@@ -18,7 +18,7 @@ private actor HeldSourceSelection: CoreService {
         let original: String?
         switch operation {
         case .project: return .project(project)
-        case .contexts: return .contexts(ContextList(project: project.id, contexts: []))
+        case .contextsBound: return .contexts(ContextList(project: project.id, contexts: []))
         case .queryBound, .queryTermsBound:
             original = nil
             if case .queryTermsBound = operation { modes.append("ranked-query") } else { modes.append("literal-query") }

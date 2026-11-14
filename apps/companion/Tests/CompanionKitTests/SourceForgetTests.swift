@@ -74,9 +74,11 @@ private actor SourceForgetCore: CoreService {
             let changedPolicy = mode == "followup-policy" && committed
             return .project(Project(id: id, root: root, sources: changedPolicy ? ["c.rs"] : sources,
                 rootIdentity: .string("r1"), incarnation: replaced ? String(repeating: "e", count: 32) : token))
-        case .contexts(let id):
+        case .contextsBound(let b):
+            let id = b.project
             return .contexts(ContextList(project: id, contexts: [.init(id: "memo", revision: 1, kind: "note", retired: false, producer: "human-authored", authority: .string("human-declared"))]))
-        case .context(let id, let context):
+        case .contextBound(let b, let context):
+            let id = b.project
             return .context(ContextHistory(project: id, id: context, producer: "human-authored", authority: .string("human-declared"),
                 history: [.init(revision: 1, kind: "note", text: "Synthetic retained history", retired: false)]))
         case .forgottenSources(let id):
@@ -191,8 +193,11 @@ struct SourceForgetTests {
         let editor = model.contextEditorRevision
         await service.replace(root: "/synthetic/new-root")
         model.refreshSelected()
-        #expect(model.contextEditorRevision == editor + 1 && model.originalDraft.isEmpty && model.history == nil)
         await model.waitForOperation()
+        #expect(model.contextEditorRevision == editor + 1 && model.originalDraft.isEmpty && model.history == nil)
+        #expect(model.lastError == .namespaceChanged && model.project == nil)
+        // Cached Refresh rejects replacement; only explicit selection may adopt it.
+        model.select("alpha"); await model.waitForOperation()
         #expect(model.project?.root == "/synthetic/new-root" && model.pendingSourceForget == nil && model.sourceMarkers == nil)
     }
     @Test(arguments: ["ack", "project", "path", "false", "authorization", "snapshot", "human", "limits", "marker-missing", "marker-project", "marker-invalid", "marker-failure", "replace-before", "replace-after", "followup-policy", "failure"])

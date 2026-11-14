@@ -10,7 +10,8 @@ private actor SearchReplacementPeer: CoreService {
     func arm() { armed = true }
     func perform(_ operation: CompanionKit.Operation) async throws -> Reply {
         let reply = try await adapter.perform(operation)
-        if case .searchHumanContext(let id, _) = operation, armed {
+        if case .searchHumanContextBound(let b, _) = operation, armed {
+            let id = b.project
             armed = false
             guard case .project(let p) = try await adapter.perform(.project(id)),
                   case .string(let identity) = p.root_identity, let token = p.incarnation else { throw ServiceError.invalid }

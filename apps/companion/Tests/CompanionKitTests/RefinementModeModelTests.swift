@@ -126,6 +126,12 @@ private actor ModePreflightCore: CoreService {
     func waitForQuery() async { if queries > 0 { return }; await withCheckedContinuation { entered = $0 } }
     func release() { hold = false; held?.resume(); held = nil }
     func perform(_ operation: CompanionKit.Operation) async throws -> Reply {
+        // This adversarial fixture projects a synthetic metadata root solely
+        // for the Refine byte-equality gate. Supply its synthetic empty human
+        // list too; forwarding that invented binding to real SQL must reject.
+        if scopeAlias, case .contextsBound(let binding) = operation {
+            return .contexts(ContextList(project: binding.project, contexts: []))
+        }
         let reply = try await service.perform(operation)
         switch operation {
         case .queryBound, .queryTermsBound:
