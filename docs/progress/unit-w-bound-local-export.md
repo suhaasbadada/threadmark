@@ -1,5 +1,30 @@
 # Unit W — captured local sensitive-content export backend
 
+## Primary integration and review
+
+Primary committed only the nine owned files as `f2cfbb8` in the completed lane
+and applied them as `a15ae00f0f674adb872f45e71ce9f07d75b2cd24`, the exact combined
+tested runtime. No baseline/site merges or native read changes were replayed.
+Joffrey independently reviewed the source fingerprint **CLEAR** and passed 19
+existing compiled core export fixtures plus three bound-export CLI/daemon cases.
+He did not rebuild artifacts or rerun the full pipeline/long deadlines.
+
+Primary combined normal workspace gate **PASS**, 255 Rust tests/two doctests;
+strict serial actual-CLI/C-fixture native suite **PASS**, 188 tests/26 suites.
+The ordinary-import model API compiler gate, dependency policy, staged secrets
+and whitespace passed. Original separate 300s/30s tests completed through native
+notification, exit zero, two passed in 300.34s; primary read their final log. That
+is separately attributed lane evidence, not a repeated exact-integration deadline
+run. Source fingerprint remained unchanged. Their teardown/preservation and
+fixture cleanup assertions passed; no restart or broad cleanup was performed.
+
+PR #70 merged as `3e538259ba3478cee85471aa3c122e6742037ba5`; its separate exact
+post-merge runs `43574865898`/`43574866000` both passed. Native human-read migration
+is independently active. This backend only returns confirmed local stdout data;
+native consent/private-file UX and publication exact-head CI remain separate
+gates. Nine inherited progress edits, all worktrees and parent reminders remain
+preserved. No GUI/AX, live model, network upload, host delivery or phase closure.
+
 Requirements TM-01–TM-04, TM-07, TM-10; partial P2-A1/P2-A5/P2-A6.
 Implementation sub-agent: Bob product unit W. Synthetic local fixtures only.
 No phase completion, certified host support or native export acceptance claim.
