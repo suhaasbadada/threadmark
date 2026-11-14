@@ -60,6 +60,8 @@ pub enum Command {
         threadmark_core::knowledge::Project,
         threadmark_core::knowledge::SourceAnchorInspection,
     ),
+    /// Coherent all-or-nothing inspection, requiring an admitted immutable plan.
+    InspectSourceSet(threadmark_core::knowledge::SourceInspectionSet),
     /// Bounded human-only active latest context search; never source evidence.
     SearchContext(String, String),
     /// Opt-in human search scoped before human SQL reads (root, identity, nonce).
@@ -325,7 +327,9 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
     }
     let mut store = if matches!(
         &command,
-        Command::InspectSourceAnchor(..) | Command::CoverageReport(..)
+        Command::InspectSourceAnchor(..)
+            | Command::InspectSourceSet(..)
+            | Command::CoverageReport(..)
     ) {
         Store::open_existing_for_inspection(data_dir)?
     } else if let Command::ExportProject(id) = &command {
@@ -616,6 +620,7 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         Command::InspectSourceAnchor(expected, anchor) => {
             store.inspect_source_anchor(&expected, &anchor, cancel)?
         }
+        Command::InspectSourceSet(plan) => store.inspect_source_set(&plan, cancel)?,
         Command::PrepareContextBound(expected, query, original) => {
             crate::preparation::context_bound(&store, &expected, &query, original, cancel)?
         }
