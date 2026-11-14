@@ -1,5 +1,32 @@
 # Unit V — native registration-bound human reads
 
+## Primary integration and independent review
+
+Primary committed only the eighteen owned files as `a22cb89` in the completed
+lane and applied them without conflicts as
+`f0f976c1a7ee126744605cab64aa6cd6ed18c36d`, the exact combined tested runtime.
+No baseline/site merges or native export changes were replayed. Joffrey reviewed
+the exact fingerprint **CLEAR** and independently passed full strict Debug
+(194 tests/27 suites), targeted Debug (136 tests/15 suites), the API compiler
+gate and six actual-CLI invented-root rejection checks without content stdout.
+He did not rerun Release/full Rust/security gates or rebuild artifacts.
+
+Primary combined full workspace gate (255 Rust/two doctests), strict serial
+actual-CLI/C-fixture suite (194 tests/27 suites), ordinary-import model API gate,
+dependency policy, staged secrets and whitespace **PASS**. Original lane Release
+evidence remains separate from this primary exact integrated Debug pass. Bound
+export backend semantics remain unchanged; human reads gain no source authority
+and no provider call. Marker-only endpoints remain explicitly excluded below.
+
+PR #71 passed all five checks at
+`bbacab839171d144cba8cce4e66ea3d59de7d320` (CI `43575937765`, integrated
+`43575937838`); fresh main/exact-head/check/review/approval/discussion/rules gates
+preceded merge `914152042f23ec8948cf66306f07605b4229fd4c`. Separate exact post-
+merge CI and this unit's publication CI remain later gates. Native explicit
+private-file export is independently active. Nine inherited progress edits,
+all worktrees and parent reminders remain preserved; GUI/AX/live-quality/host-
+delivery/phase closure remain unverified.
+
 Requirements: TM-01–TM-04, TM-07, TM-10; partial **P2-A1/A3/A6, P3-A4**.
 Specs: [Phase 2](../spec/phase-2-knowledge-core.md),
 [Phase 3](../spec/phase-3-background-experience.md).
