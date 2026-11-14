@@ -79,6 +79,7 @@ public struct ProcessService: CoreService {
         if case .query = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .prepareContext = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .removeProject = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 1024) }
+        if case .forgetContext = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 1024) }
         let boundedLimits = operationLimits
         let data = try await withTaskCancellationHandler {
             guard !Task.isCancelled else { throw ServiceError.canceled }
@@ -92,6 +93,22 @@ public struct ProcessService: CoreService {
         do {
             let decoder = JSONDecoder()
             switch operation {
+            case .forgetContext(let project, let id, _, _, _, let revision):
+                guard data.count <= 1024 else { throw ServiceError.outputLimit }
+                guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      Set(object.keys) == ["project", "id", "forgotten", "removed_revisions", "retention_limits"] else { throw ServiceError.invalid }
+                let result = try decoder.decode(ForgottenContext.self, from: data)
+                try result.validate(project: project, id: id, revision: revision)
+                return .forgotten(result)
+            case .forgottenContexts(let project):
+                guard data.count <= 1_048_576 else { throw ServiceError.outputLimit }
+                guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      Set(object.keys) == ["project", "forgotten"],
+                      let markers = object["forgotten"] as? [[String: Any]],
+                      markers.allSatisfy({ Set($0.keys) == ["id"] }) else { throw ServiceError.invalid }
+                let result = try decoder.decode(ForgottenContexts.self, from: data)
+                try result.validate(project: project)
+                return .forgottenContexts(result)
             case .removeProject(let id, _, _, _):
                 guard data.count <= 1024 else { throw ServiceError.outputLimit }
                 guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -158,6 +175,13 @@ public struct ProcessService: CoreService {
         var args: [String]
         var input = Data()
         switch operation {
+        case .forgetContext(let p, let c, let root, let identity, let token, let revision):
+            guard InputPolicy.removal(root: root, identity: identity), InputPolicy.incarnation(token),
+                  (1...32).contains(revision) else { throw ServiceError.invalid }
+            args = ["context", "forget", try id(p), try id(c), "--confirm-forget-local-history",
+                    "--expected-root", root, "--expected-root-identity", identity,
+                    "--expected-incarnation", token, "--expected-revision", String(revision)]
+        case .forgottenContexts(let p): args = ["context", "forgotten", try id(p)]
         case .removeProject(let p, let root, let identity, let token):
             guard InputPolicy.removal(root: root, identity: identity), InputPolicy.incarnation(token) else { throw ServiceError.invalid }
             args = ["project", "remove", try id(p), "--confirm-remove-local-data", "--expected-root", root, "--expected-root-identity", identity, "--expected-incarnation", token]

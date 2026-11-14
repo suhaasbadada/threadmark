@@ -14,6 +14,31 @@ pub enum ForgetStage {
     ReadyToCommit,
 }
 
+/// Immutable displayed approval, not authentication or source authority.
+pub struct ForgetBinding<'a> {
+    /// Displayed registered root.
+    pub root: &'a str,
+    /// Displayed filesystem identity.
+    pub root_identity: &'a str,
+    /// Displayed schema-v3 registration incarnation.
+    pub incarnation: &'a str,
+    /// Displayed latest revision and complete history count.
+    pub revision: u32,
+}
+
+impl ForgetBinding<'_> {
+    /// Validate before opening storage.
+    pub fn validate(&self, project: &str, id: &str) -> Result<()> {
+        validate_removal_binding(project, self.root, self.root_identity)?;
+        identity(id)?;
+        validate_incarnation(self.incarnation)?;
+        if !(1..=32).contains(&self.revision) {
+            return Err(invalid());
+        }
+        Ok(())
+    }
+}
+
 // Consult the live schema in the operation's transaction, not an open-time cache.
 pub(super) fn markers(
     db: &Connection,
@@ -49,6 +74,26 @@ pub(super) fn require_unmarked(db: &Connection, project: &str, id: &str) -> Resu
 }
 
 impl Store {
+    /// Forget only the exact live history approved by an incarnation-aware caller.
+    pub fn forget_context_bound(
+        &mut self,
+        project: &str,
+        id: &str,
+        binding: &ForgetBinding<'_>,
+        cancel: &AtomicBool,
+        progress: impl FnMut(ForgetStage),
+    ) -> Result<Value> {
+        binding.validate(project, id)?;
+        canceled(cancel)?;
+        let project = self.project(project)?;
+        if project.root != binding.root
+            || project.root_identity != binding.root_identity
+            || project.incarnation.as_deref() != Some(binding.incarnation)
+        {
+            return Err(Error::ScopeMismatch);
+        }
+        self.forget_for_policy_bound(&project, id, Some(binding.revision), cancel, progress)
+    }
     /// Remove all revisions and suppress same-scope recreation, not forensic erasure.
     pub fn forget_context(
         &mut self,
@@ -78,6 +123,17 @@ impl Store {
         project: &Project,
         id: &str,
         cancel: &AtomicBool,
+        progress: impl FnMut(ForgetStage),
+    ) -> Result<Value> {
+        self.forget_for_policy_bound(project, id, None, cancel, progress)
+    }
+
+    fn forget_for_policy_bound(
+        &mut self,
+        project: &Project,
+        id: &str,
+        revision: Option<u32>,
+        cancel: &AtomicBool,
         mut progress: impl FnMut(ForgetStage),
     ) -> Result<Value> {
         self.healthy()?;
@@ -99,6 +155,22 @@ impl Store {
                 |r| r.get(0),
             )
             .map_err(unavailable)?;
+        if let Some(revision) = revision {
+            let (first, latest): (Option<i64>, Option<i64>) = tx
+                .query_row(
+                    "SELECT min(revision),max(revision) FROM context WHERE project=?1 AND id=?2",
+                    params![project.id, id],
+                    |r| Ok((r.get(0)?, r.get(1)?)),
+                )
+                .map_err(unavailable)?;
+            if marked.contains(id)
+                || count != i64::from(revision)
+                || first != Some(1)
+                || latest != Some(i64::from(revision))
+            {
+                return Err(Error::ScopeMismatch);
+            }
+        }
         if !(0..=32).contains(&count)
             || (!marked.contains(id) && (count == 0 || marked.len() == 4096))
         {

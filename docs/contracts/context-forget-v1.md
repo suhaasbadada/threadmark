@@ -75,8 +75,8 @@ present. Capacity failure rejects the whole operation without deleting history.
 Native confirmation requires a registration incarnation as well as displayed
 root and revision: `--expected-root ROOT --expected-root-identity IDENTITY
 --expected-incarnation TOKEN --expected-revision N`. See
-[registration incarnations](registration-incarnation-v1.md); native Forget is
-not implemented by this contract alone. All four bindings are required together;
+[registration incarnations](registration-incarnation-v1.md); native human Forget
+uses this bound variant exclusively. All four bindings are required together;
 `N` is an integer 1–32. Invalid bindings fail
 before opening/creating storage. In the deletion transaction, root/root identity
 and registration incarnation and target's latest revision must still match. A newly edited or reused entry

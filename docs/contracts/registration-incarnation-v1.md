@@ -66,7 +66,9 @@ remain available but must not be used as incarnation-bound native approvals.
 Malformed token/binding shape fails before opening or creating storage. V1/v2
 native clients show truthful explicit-upgrade guidance; they neither invent a token
 nor migrate automatically. Project/config/policy changes still clear approvals.
-Native Forget remains a subsequent unit; it must also bind latest human revision.
+Native human Forget additionally binds the latest human revision, as specified
+in [Human-context Forget](context-forget-v1.md). Source Forget and native upgrade
+execution remain unavailable.
 
 ## Acceptance and limits
 

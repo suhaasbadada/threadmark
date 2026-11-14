@@ -78,6 +78,24 @@ the real adapter, and removes its data. It does not launch an app GUI or host.
   indexing is lexical source-line evidence, not AST/semantic understanding.
 - Human context add/edit/retire routes to core, with content only on stdin and
   inspectable revision history. The shell never implements a second database.
+- **Forget entry…** requires loaded human history and a valid schema-v3
+  incarnation. Its cancel-default immutable prompt displays project/context,
+  root/identity/incarnation, latest revision and total revisions to remove.
+  Only confirmation clears the human editor/history and prepared previews;
+  the unrelated original request draft is preserved. Edits, scope/configuration
+  changes, rebuild, pause, cancel, removal and Quit invalidate approval.
+  Native calls always bind all four expected values, including latest revision;
+  core rechecks them inside the immediate deletion transaction. No note text or
+  original request is passed in Forget argv or stdin. A strict 1 KiB receipt alone
+  is insufficient: fresh context absence and marker presence must be bracketed
+  by project inspections of the same root/identity/incarnation before UI use.
+  Cancellation, malformed receipts and uncertain follow-up require Refresh, not
+  a claim of rollback. An explicit action inspects only bounded non-content
+  suppression IDs, never an archive. Active removal/same-scope suppression is not
+  forensic erasure or recall of backups, earlier exports or displayed copies.
+  Source Forget, restore and unforget remain unavailable. Synthetic model,
+  subprocess and opt-in live SQLite tests cover partial P2-A3/P2-A5/P3-A4;
+  native walkthrough/accessibility acceptance and full Phase 2/3 remain open.
 - Source evidence is scoped to the selected registered project and its approved
   file list. Project/source-policy changes and cancel reject late UI results.
   A host-project mismatch stops rather than selecting another project's context.
@@ -104,12 +122,12 @@ the real adapter, and removes its data. It does not launch an app GUI or host.
   Successful reconciliation updates the snapshot report and invalidates prepared
   evidence, but never changes the original draft, query, human notes or editor scope.
   This is not a watcher, debounce/incremental symbol index or full phase acceptance.
-- Legacy v1/v2 projects show explicit v3 upgrade guidance and disable cached
-  removal/automatic refresh; noncached manual actions remain available. Stop
+- Legacy v1/v2 projects show explicit v3 upgrade guidance and disable native
+  Forget/cached removal/automatic refresh; noncached manual actions remain available. Stop
   older companions/workers and let pending work terminate, then explicitly run
   `store upgrade --to-version 3 --confirm-local-schema-upgrade --confirm-legacy-workers-stopped`.
   This is operator attestation, not machine proof or fencing of old pending
-  workers. No implicit migration, upgrade panel or native Forget is introduced.
+  workers. No implicit migration or native upgrade panel is introduced.
   Explicit Build remains manual and available while paused.
 - Closing Manage retains the window/model and owned job. A one-time close
   explanation distinguishes it from Quit. Quit cancels **all** outstanding owned

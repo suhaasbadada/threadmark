@@ -44,6 +44,9 @@ fn usage() -> std::process::ExitCode {
         "human-history removal: context forget PROJECT ID --confirm-forget-local-history; context forgotten PROJECT (active removal/suppression only, not forensic erasure; sources untouched)"
     );
     eprintln!(
+        "optional exact Forget approval: --expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-revision N (all four required together; N=1..32; native always binds; not credentials)"
+    );
+    eprintln!(
         "explicit compatibility change: store upgrade --confirm-local-schema-upgrade (existing store only; older binaries cannot open schema v2; no automatic downgrade)"
     );
     eprintln!(
@@ -120,6 +123,33 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
             files.iter().map(|s| (*s).into()).collect(),
             (*token).into(),
         ),
+        [
+            "context",
+            "forget",
+            project,
+            id,
+            "--confirm-forget-local-history",
+            "--expected-root",
+            root,
+            "--expected-root-identity",
+            identity,
+            "--expected-incarnation",
+            token,
+            "--expected-revision",
+            revision,
+        ] => {
+            let Ok(revision) = revision.parse::<u32>() else {
+                return usage();
+            };
+            Command::ForgetContextBound(
+                (*project).into(),
+                (*id).into(),
+                (*root).into(),
+                (*identity).into(),
+                (*token).into(),
+                revision,
+            )
+        }
         [
             "context",
             "forget",

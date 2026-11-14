@@ -48,6 +48,8 @@ pub enum Command {
     UpgradeStoreV3,
     /// Confirmed removal of all human revisions and same-scope suppression.
     ForgetContext(String, String),
+    /// Exact root, identity, incarnation and latest-revision approval.
+    ForgetContextBound(String, String, String, String, String, u32),
     /// Inspect non-content suppression markers.
     ForgottenContexts(String),
 }
@@ -72,6 +74,15 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         threadmark_core::knowledge::validate_index_binding(id, root, identity, sources)?;
         threadmark_core::knowledge::validate_incarnation(token)?;
     }
+    if let Command::ForgetContextBound(project, id, root, identity, token, revision) = &command {
+        threadmark_core::knowledge::ForgetBinding {
+            root,
+            root_identity: identity,
+            incarnation: token,
+            revision: *revision,
+        }
+        .validate(project, id)?;
+    }
     let mut store = if let Command::ExportProject(id) = &command {
         threadmark_core::knowledge::validate_export_project(id)?;
         Store::open_existing(data_dir)?
@@ -83,6 +94,7 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
             | Command::UpgradeStore
             | Command::UpgradeStoreV3
             | Command::ForgetContext(..)
+            | Command::ForgetContextBound(..)
             | Command::ForgottenContexts(..)
     ) {
         // Reconciliation and explicit lifecycle operations require existing
@@ -97,6 +109,20 @@ pub fn run(data_dir: &Path, command: Command, cancel: &AtomicBool) -> Result<Val
         Command::UpgradeStore => return store.upgrade(cancel),
         Command::UpgradeStoreV3 => return store.upgrade_to_v3(cancel),
         Command::ForgetContext(project, id) => return store.forget_context(&project, &id, cancel),
+        Command::ForgetContextBound(project, id, root, identity, token, revision) => {
+            return store.forget_context_bound(
+                &project,
+                &id,
+                &threadmark_core::knowledge::ForgetBinding {
+                    root: &root,
+                    root_identity: &identity,
+                    incarnation: &token,
+                    revision,
+                },
+                cancel,
+                |_| {},
+            );
+        }
         Command::ForgottenContexts(project) => store.forgotten_contexts(&project)?,
         Command::AddProject(id, root, sources) => {
             store.add_project(&id, &root, sources)?;

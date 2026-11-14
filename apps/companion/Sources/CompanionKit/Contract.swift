@@ -59,6 +59,38 @@ public struct RemovalConfirmation: Identifiable, Equatable, Sendable {
     let generation: UInt64
     let scopeRevision: UInt64
 }
+public struct ForgetConfirmation: Identifiable, Equatable, Sendable {
+    public let id: UUID
+    public let project: Project
+    public let contextID: String
+    public let revision: Int
+    let generation: UInt64
+    let scopeRevision: UInt64
+}
+public struct ForgottenContext: Codable, Sendable {
+    public let project: String
+    public let id: String
+    public let forgotten: Bool
+    public let removed_revisions: Int
+    public let retention_limits: String
+    public static let retentionLimits = "Active human-history removal and same-scope suppression only; not forensic erasure. SQLite free pages, journals, backups, earlier exports and displayed copies may retain bytes. Source files are untouched."
+    public func validate(project target: String, id contextID: String, revision: Int) throws {
+        guard project == target, id == contextID else { throw ServiceError.scopeMismatch }
+        guard forgotten, (1...32).contains(revision), removed_revisions == revision,
+              retention_limits == Self.retentionLimits else { throw ServiceError.invalid }
+    }
+}
+public struct ForgottenContexts: Codable, Sendable {
+    public struct Marker: Codable, Sendable { public let id: String }
+    public let project: String
+    public let forgotten: [Marker]
+    public func validate(project target: String) throws {
+        guard project == target else { throw ServiceError.scopeMismatch }
+        let ids = forgotten.map(\.id)
+        guard ids.count <= 4096, ids.allSatisfy(InputPolicy.identifier),
+              Set(ids).count == ids.count, ids == ids.sorted() else { throw ServiceError.invalid }
+    }
+}
 public struct IndexReport: Codable, Sendable {
     public let project: String
     public let snapshot: JSONValue
@@ -143,7 +175,7 @@ public struct ContextPreview: Codable, Equatable, Sendable {
 }
 
 public enum ServiceError: String, Error, Sendable, LocalizedError {
-    case invalid, unavailable, canceled, scopeMismatch, stale, timedOut, outputLimit, failed, removalUncertain
+    case invalid, unavailable, canceled, scopeMismatch, stale, timedOut, outputLimit, failed, removalUncertain, forgetUncertain
     public var errorDescription: String? {
         switch self {
         case .invalid: "Invalid input or core response. Review the selected configuration."
@@ -155,11 +187,14 @@ public enum ServiceError: String, Error, Sendable, LocalizedError {
         case .outputLimit: "Core response exceeded the output limit."
         case .failed: "Core operation failed. Check permissions and refresh to recover."
         case .removalUncertain: "Removal outcome not confirmed. Refresh projects before trusting persisted state or retrying."
+        case .forgetUncertain: "Requires Refresh — Forget outcome not confirmed. History may already be removed; no rollback is claimed. Refresh and inspect suppression markers before retrying."
         }
     }
 }
 
 public enum Operation: Sendable {
+    case forgetContext(String, String, String, String, String, Int)
+    case forgottenContexts(String)
     case indexBound(String, String, String, [String], String)
     case removeProject(String, String, String, String)
     case projects, project(String), addProject(String, String, [String]), setSources(String, [String])
@@ -168,6 +203,7 @@ public enum Operation: Sendable {
     case writeContext(String, String, String, String, update: Bool), retireContext(String, String)
 }
 public enum Reply: Sendable {
+    case forgotten(ForgottenContext), forgottenContexts(ForgottenContexts)
     case removed(RemovedProject)
     case projects([Project]), project(Project), indexed(IndexReport), query(QueryReport)
     case contexts(ContextList), context(ContextHistory), acknowledged

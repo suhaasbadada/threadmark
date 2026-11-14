@@ -16,6 +16,54 @@ const FORGET: [&str; 5] = [
     "--confirm-forget-local-history",
 ];
 const UPGRADE: [&str; 3] = ["store", "upgrade", "--confirm-local-schema-upgrade"];
+
+#[test]
+fn bound_forget_binding_shapes_and_revisions_fail_before_store_creation() {
+    let f = Fixture::new();
+    let pairs = [
+        ("--expected-root", "/synthetic"),
+        ("--expected-root-identity", "1:2"),
+        ("--expected-incarnation", "0123456789abcdef0123456789abcdef"),
+        ("--expected-revision", "1"),
+    ];
+    for mask in 1..16 {
+        let mut args = FORGET.to_vec();
+        for (i, (key, value)) in pairs.iter().enumerate() {
+            if mask & (1 << i) != 0 {
+                args.extend([*key, *value]);
+            }
+        }
+        let out = f.run(&args, None);
+        assert!(!out.status.success() && out.stdout.is_empty());
+        assert!(!f.0.join("store").exists());
+    }
+    for (field, values) in [
+        (0, vec!["", "relative"]),
+        (1, vec![""]),
+        (2, vec!["", "bad", "0123456789ABCDEF0123456789abcdef"]),
+        (3, vec!["", "0", "33", "-1", "1.0", "NaN", "4294967296"]),
+    ] {
+        for bad in values {
+            let mut args = FORGET.to_vec();
+            for (i, (key, value)) in pairs.iter().enumerate() {
+                args.extend([*key, if i == field { bad } else { *value }]);
+            }
+            let out = f.run(&args, None);
+            assert!(!out.status.success() && out.stdout.is_empty());
+            assert!(!f.0.join("store").exists());
+        }
+    }
+    for field in [2, 3] {
+        let mut args = FORGET.to_vec();
+        args[field] = "../invalid";
+        for (key, value) in pairs {
+            args.extend([key, value]);
+        }
+        let out = f.run(&args, None);
+        assert!(!out.status.success() && out.stdout.is_empty());
+        assert!(!f.0.join("store").exists());
+    }
+}
 const UPGRADE_V3: [&str; 6] = [
     "store",
     "upgrade",

@@ -60,3 +60,17 @@ Remote exact-head CI/PR outcome remains subsequent. No dependency or generated
 lock changed. Native Forget, source-derived Forget, GUI/accessibility runtime,
 event watching, live providers/hosts and phase closure remain open. All inherited
 progress appends, user work, worktrees and orchestration reminders were preserved.
+
+## Publication outcome
+
+PR [#47](https://github.com/suhaasbadada/threadmark/pull/47) passed all five
+checks on `8a4f3729066213a1cc26ea3df00ab8ea5fcfa508`: CI
+[43532659164](https://github.com/suhaasbadada/threadmark/actions/runs/43532659164)
+and integrated [43532659189](https://github.com/suhaasbadada/threadmark/actions/runs/43532659189).
+Fresh exact-head/main/discussion/rules checks found no blocker; independent review
+and repaired malformed-token acceptance above applied. It merged at
+`2026-11-14T00:17:44Z` as `ddaaac5ad17db063ab133f2ac3258746c1b1eda8`;
+the PR watch was removed. Post-merge CI
+[43533220054](https://github.com/suhaasbadada/threadmark/actions/runs/43533220054)
+and integrated [43533220108](https://github.com/suhaasbadada/threadmark/actions/runs/43533220108)
+both passed on that exact merge. No real user v3 upgrade was performed.
