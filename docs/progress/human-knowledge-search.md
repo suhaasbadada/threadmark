@@ -152,3 +152,18 @@ output/provenance/privacy contract and local evidence; no inherited progress
 document was changed. Remaining gates: primary independent review, integration,
 authorization to publish and exact integrated-head CI. Representative scale and
 quality evaluation, native UI/handoff and complete phase acceptance remain open.
+
+## Primary integration and review
+
+Joffrey independently reviewed the completed lane and found no substantive issues,
+passing all six core and three CLI search tests offline. The primary integrated
+the owned commits onto PR #55 merge `8b04317dc21e748d7bcd75cf931138b8c56f2e47`.
+Exact integrated runtime `0fa5776b89aa647c5eb8d283ae4ceb998b833b90` passed the
+full workspace gate: 172 Rust tests plus two doctests. Dependency policy, staged
+secrets and whitespace checks passed. No schema/dependency/lock changed.
+
+This is the human-only CLI/API unit. The separately completed native search and
+Refine consent/preview work still needs repair/integration/review and is not
+certified by these results. Publication adds evidence only; exact remote head/CI,
+native/GUI acceptance and whole-phase closure remain subsequent gates. All nine
+inherited progress appends and user work remain untouched and excluded.
