@@ -27,6 +27,15 @@ public final class CompanionModel: ObservableObject {
     @Published public private(set) var preview: ContextPreview?
     @Published public private(set) var pendingRefinement: RefinementConsent?
     @Published public private(set) var refinementPreview: RefinementPreview?
+    public let retainedReview = RetainedReviewController()
+    @Published public private(set) var retainedReviewVisible = false
+    @Published public private(set) var retainedActionBusy = false
+    private var retainedLifetime: RetainedReviewLifetime?
+    private var retainedOperationActive = false
+    private var retainedPreparation: Task<Void, Never>?
+    private var retainedActionTask: Task<Void, Never>?
+    private var configurationGeneration: UInt64 = 0
+    private var refinementSettings: ProviderSettings?
     private var refinementOperation = false
     @Published public private(set) var originalDraft = ""
     @Published public private(set) var preparationQuery = ""
@@ -49,7 +58,7 @@ public final class CompanionModel: ObservableObject {
     public let notificationPolicy = "No OS notifications or content history are recorded."
     private var service: any CoreService
     private var job: Task<Void, Never>?
-    private var ownedOperations: [UInt64: Task<Void, Never>] = [:]
+    private var ownedOperations: [UUID: Task<Void, Never>] = [:]
     private var generation: UInt64 = 0
 
     public init(service: any CoreService = ProcessService(), configured: Bool = false,
@@ -58,8 +67,13 @@ public final class CompanionModel: ObservableObject {
         self.service = service; self.configured = configured
         if configured { status = "Not refreshed — explicit actions only" }
     }
+    deinit {
+        retainedLifetime?.cancel()
+        for operation in ownedOperations.values { operation.cancel() }
+    }
     public func configure(executable: URL, dataDirectory: URL) {
         invalidate(clearProject: true)
+        configurationGeneration &+= 1
         service = ProcessService(executable: executable, dataDirectory: dataDirectory)
         configured = true; projects = []; selectedID = nil
         status = "Configured, not tested — Refresh projects to connect"
@@ -510,6 +524,7 @@ public final class CompanionModel: ObservableObject {
     }
     /// Preflight is provider-free. Enabling a saved profile never grants this consent.
     public func requestRefinement(settings: ProviderSettings) {
+        refinementSettingsChanged(settings)
         guard canPrepareContext, !forgetRequiresRefresh, let target = project,
               pendingRemoval == nil, pendingForget == nil else { cancel(); fail(.invalid); return }
         let profile: ProviderProfile
@@ -519,7 +534,7 @@ public final class CompanionModel: ObservableObject {
         } catch { cancel(); fail(.invalid); return }
         let query = preparationQuery, original = originalDraft, revision = scopeRevision
         disableAutomaticRefresh()
-        start(status: "Inspecting exact local inference data — no provider call", preserveHistory: true) { service in
+        start(status: "Inspecting exact local inference data — no provider call", joinRefreshDriver: true, preserveHistory: true) { service in
             let selection = try await Self.checkedSourceRead(service, .queryBound(target, query), target)
             return [.project(target), selection]
         } apply: { replies in
@@ -532,6 +547,102 @@ public final class CompanionModel: ObservableObject {
         }
     }
     public func cancelRefinement() { cancel() }
+    /// All app profile mutations, including disable/load, revoke old actions now.
+    public func refinementSettingsChanged(_ settings: ProviderSettings) {
+        guard refinementSettings != settings else { return }
+        cancel(); refinementSettings = settings
+    }
+    /// Mounted human confirmation uses the retained engine, never the finite path.
+    public func confirmRetainedRefinement(_ consent: RefinementConsent, settings: ProviderSettings) {
+        guard !quitting, !busy, pendingRefinement == consent, refinementSettings == settings,
+              consent.settings == settings, consent.generation == generation,
+              consent.scopeRevision == scopeRevision, let project, consent.project == project,
+              sourceDraft == project.sources, !policyDirty, !sourceRequiresRefresh, !forgetRequiresRefresh,
+              pendingRemoval == nil, pendingForget == nil, pendingSourceForget == nil,
+              selectedID == project.id, originalDraft.utf8.elementsEqual(consent.original.utf8),
+              preparationQuery.utf8.elementsEqual(consent.query.utf8) else { cancel(); return }
+        guard let transport = service as? ProcessService,
+              let executable = transport.executable, let store = transport.dataDirectory else {
+            cancel(); fail(.unavailable); return
+        }
+        do { try consent.validate() } catch { cancel(); fail(.invalid); return }
+        let binding = RetainedReviewBinding(consentID: consent.id, project: project,
+            original: originalDraft, query: preparationQuery, settings: settings, generation: generation,
+            scopeRevision: scopeRevision, configurationGeneration: configurationGeneration)
+        let ticket = generation, controller = retainedReview
+        let prior = Array(ownedOperations.values)
+        pendingRefinement = nil; refinementPreview = nil; retainedReviewVisible = false; retainedOperationActive = true
+        refinementOperation = true; busy = true; lastError = nil
+        status = "Preparing retained literal review — one local call; delivery not attempted"
+        let startID = UUID(), ownerID = UUID()
+        let preparation = Task { [weak self] in
+            defer { self?.ownedOperations.removeValue(forKey: startID) }
+            for operation in prior { await operation.value }
+            guard self?.generation == ticket, !Task.isCancelled else { return }
+            await controller.synchronize(binding)
+            guard self?.generation == ticket, !Task.isCancelled else { return }
+            await controller.start(consent: consent, executable: executable, store: store)
+            guard self?.generation == ticket, !Task.isCancelled else { return }
+            self?.retainedLifetime = controller.ownedLifetime
+            self?.retainedReviewVisible = true
+            self?.busy = false
+            self?.status = "Retained engine review — inspect questions and choose explicitly; nothing delivered"
+        }
+        retainedPreparation = preparation
+        ownedOperations[startID] = preparation
+        // This owner survives the first preview and is joined by every successor.
+        ownedOperations[ownerID] = Task { [weak self] in
+            defer { self?.ownedOperations.removeValue(forKey: ownerID) }
+            await withTaskCancellationHandler {
+                await preparation.value
+                if let lifetime = controller.ownedLifetime {
+                    await withTaskCancellationHandler {
+                        if Task.isCancelled { lifetime.cancel() }
+                        await lifetime.join()
+                    } onCancel: { lifetime.cancel() }
+                }
+            } onCancel: { preparation.cancel() }
+        }
+    }
+    /// Wait only for initial preparation, not the deliberately idle review owner.
+    public func waitForRetainedPreparation() async { await retainedPreparation?.value }
+    func waitForRetainedAction() async { await retainedActionTask?.value }
+    public var retainedActionsAvailable: Bool {
+        guard retainedReviewVisible, !quitting, !busy, !retainedActionBusy, !retainedReview.busy,
+              retainedReview.challenge != nil, let consent = retainedReview.consent, let project,
+              let settings = refinementSettings, !policyDirty, !sourceRequiresRefresh, !forgetRequiresRefresh,
+              pendingRemoval == nil, pendingForget == nil, pendingSourceForget == nil,
+              selectedID == project.id, sourceDraft == project.sources,
+              originalDraft.utf8.elementsEqual(consent.original.utf8),
+              preparationQuery.utf8.elementsEqual(consent.query.utf8) else { return false }
+        return retainedReview.binding == RetainedReviewBinding(consentID: consent.id, project: project,
+            original: originalDraft, query: preparationQuery, settings: settings, generation: generation,
+            scopeRevision: scopeRevision, configurationGeneration: configurationGeneration)
+    }
+    public func editRetainedReview(_ challenge: RetainedReviewChallenge, objective: String, outputExpectations: String) {
+        retainedAction { await $0.edit(challenge, objective: objective, outputExpectations: outputExpectations) }
+    }
+    public func useRetainedPrepared(_ challenge: RetainedReviewChallenge) {
+        retainedAction { await $0.usePrepared(challenge) }
+    }
+    public func useRetainedOriginal(_ challenge: RetainedReviewChallenge) {
+        retainedAction { await $0.useOriginal(challenge) }
+    }
+    private func retainedAction(_ action: @escaping @MainActor (RetainedReviewController) async -> Void) {
+        guard retainedActionsAvailable else { return }
+        retainedActionBusy = true
+        let id = UUID(), ticket = generation, controller = retainedReview
+        let operation = Task { [weak self] in
+            defer { self?.ownedOperations.removeValue(forKey: id) }
+            guard self?.generation == ticket, !Task.isCancelled else { return }
+            await action(controller)
+            guard self?.generation == ticket, !Task.isCancelled else { return }
+            self?.retainedActionBusy = false
+            self?.status = "Retained review updated — delivery not attempted; original and human history unchanged"
+        }
+        retainedActionTask = operation
+        ownedOperations[id] = operation
+    }
     public func confirmRefinement(_ consent: RefinementConsent, settings: ProviderSettings) {
         guard pendingRefinement == consent, consent.settings == settings, consent.generation == generation,
               consent.scopeRevision == scopeRevision, consent.project == project, !policyDirty,
@@ -626,7 +737,7 @@ public final class CompanionModel: ObservableObject {
         return true // No host transport or delivery is implemented.
     }
     public var automaticRefreshProposal: AutomaticRefreshConsent? {
-        guard configured, !quitting, !policyDirty, !sourceRequiresRefresh,
+        guard configured, !quitting, !policyDirty, !sourceRequiresRefresh, !retainedOperationActive, pendingRefinement == nil,
               pendingSourceForget == nil, pendingForget == nil, pendingRemoval == nil,
               let project, project.id == selectedID,
               InputPolicy.identifier(project.id), !sourceDraft.isEmpty, InputPolicy.sources(sourceDraft),
@@ -641,7 +752,7 @@ public final class CompanionModel: ObservableObject {
             ? "Automatic refresh: off (no consent)" : "File-event + periodic refresh: approved")
     }
     public func enableAutomaticRefresh(_ consent: AutomaticRefreshConsent) {
-        guard !busy, consent == automaticRefreshProposal else { return }
+        guard !busy, ownedOperations.isEmpty, consent == automaticRefreshProposal else { return }
         automaticRefreshConsent = consent
         paused = false
         updateRefreshDriver()
@@ -723,12 +834,14 @@ public final class CompanionModel: ObservableObject {
         status = "Quitting — owned work canceled"
     }
     public func shutdown() async {
-        let pending = Array(ownedOperations.values)
         quit()
+        let pending = Array(ownedOperations.values)
         await refreshDriver.shutdown()
         for operation in pending { await operation.value }
+        await retainedReview.cancelAndJoin()
     }
-    /// Also useful to embed the model without observing its UI. Never starts work.
+    /// Joins all currently owned work, including an idle retained review. Cancel
+    /// first for teardown; use waitForRetainedPreparation for the first preview.
     public func waitForOperation() async {
         let pending = Array(ownedOperations.values)
         for operation in pending { await operation.value }
@@ -740,7 +853,23 @@ public final class CompanionModel: ObservableObject {
         cancelOperation()
     }
     private func cancelOperation() {
-        let preserveHistory = refinementOperation
+        let preserveHistory = refinementOperation || retainedOperationActive
+        let revokeReview = retainedOperationActive
+        retainedOperationActive = false
+        retainedReviewVisible = false; retainedActionBusy = false
+        retainedLifetime?.cancel(); retainedLifetime = nil; retainedPreparation = nil
+        let previous = Array(ownedOperations.values)
+        for operation in previous { operation.cancel() }
+        if revokeReview {
+            let id = UUID(), controller = retainedReview
+            // Owned serialized boundary: synchronous setters revoke actions now;
+            // successors await cancellation AND join before any service/spawn.
+            ownedOperations[id] = Task { [weak self] in
+                defer { self?.ownedOperations.removeValue(forKey: id) }
+                for operation in previous { await operation.value }
+                await controller.synchronize(nil)
+            }
+        }
         refinementOperation = false
         pendingRefinement = nil; refinementPreview = nil
         let cancelingSearch = humanSearchTicket
@@ -788,7 +917,7 @@ public final class CompanionModel: ObservableObject {
     private func start(status: String = "Working — bounded local core operation", automatic: Bool = false, joinRefreshDriver: Bool = false, preserveHistory: Bool = false, work: @escaping @Sendable (any CoreService) async throws -> [Reply],
                        apply: @escaping @MainActor ([Reply]) throws -> Void) {
         guard !quitting else { return }
-        cancelOperation(); let ticket = generation; let service = service
+        cancelOperation(); let ticket = generation; let service = service; let operationID = UUID()
         refinementOperation = preserveHistory
         automaticTicket = automatic ? ticket : nil
         let prior = Array(ownedOperations.values)
@@ -796,7 +925,7 @@ public final class CompanionModel: ObservableObject {
         busy = true; lastError = nil; self.status = status
         job = Task { [weak self] in
             defer {
-                self?.ownedOperations.removeValue(forKey: ticket)
+                self?.ownedOperations.removeValue(forKey: operationID)
                 if self?.humanSearchTicket == ticket { self?.humanSearchTicket = nil }
                 if self?.humanSearchCancellationTicket == ticket {
                     self?.humanSearchCancellationTicket = nil
@@ -842,6 +971,6 @@ public final class CompanionModel: ObservableObject {
                 }
             }
         }
-        ownedOperations[ticket] = job
+        ownedOperations[operationID] = job
     }
 }

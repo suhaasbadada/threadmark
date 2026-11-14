@@ -15,7 +15,10 @@ final class WindowNavigation: ObservableObject {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let model = CompanionModel()
-    private lazy var providers = CompanionProviderSession { [weak self] in self?.model.dismissPreview() }
+    private lazy var providers: CompanionProviderSession = CompanionProviderSession { [weak self] in
+        guard let self else { return }
+        self.model.refinementSettingsChanged(self.providers.settings)
+    }
     let launch: LaunchConfiguration
     private var item: NSStatusItem!
     private var window: NSWindow?
@@ -488,7 +491,7 @@ struct ConnectionsView: View {
             Text(providers.status).accessibilityIdentifier("provider-profile-file-status")
             Text("Changing, enabling, disabling or loading settings clears the current preview and cancels owned work through the existing app cancellation boundary. Original request and note editor text remain intact; automatic lexical refresh must be approved again if canceled.").font(.caption)
             Text("Save writes only nonsecret profiles/selection, never drafts or consent, at most 64 KiB. Use a new filename in an existing owned 0700 folder (no ACLs); files must be owned regular 0600 files, without ACLs, links or symlink parents. Existing destinations are never overwritten. Load accepts only Threadmark's canonical JSON format and always leaves inference off. No automatic loading or global configuration.").font(.caption)
-            Text("Transport capability: numeric-loopback HTTP only. Settings and Context never call a provider. Refine preview sends the exact original request and selected source evidence to the chosen local HTTP provider only after separate per-request confirmation. A local server may forward data elsewhere. Remote HTTPS profiles may be saved, but remote inference is NOT ready. No approval or host delivery follows a preview.").font(.caption)
+            Text("Transport capability: numeric-loopback HTTP only. Settings and Context never call a provider. Retained literal Refine sends the exact original request and selected source evidence to the chosen local HTTP provider only after separate per-request confirmation. A local server may forward data elsewhere. Remote HTTPS profiles may be saved, but remote inference is NOT ready. Explicit engine review can return an approved in-memory value only: delivery not attempted, no copy/send/host admission.").font(.caption)
             Text("Coding-client adapters: unavailable / not certified").font(.headline)
             Text("No host is installed, modified, launched, or connected. No send operation exists. Version, trust test and uninstall: not applicable.")
             Spacer()
@@ -508,7 +511,7 @@ struct PrivacyView: View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Privacy and background behavior").font(.headline)
             Text("Local storage is owned by core in your explicitly selected data directory. Source scope is an exact file allowlist; source files are never changed by this shell. IDs are not credentials.")
-            Text("Search results, note drafts and previews are not archived by this shell. Explicitly confirmed Refine preview sends the original request and selected source evidence to the chosen local HTTP provider; a local server may forward data elsewhere. Context, settings and automatic lexical refresh make no provider calls. Nonsecret profiles are saved only to an explicitly chosen private file; loading never enables inference. No shell telemetry, OS notifications, clipboard write, host draft or Send. Core history retention is separate; Retire preserves history.")
+            Text("Search results, note drafts and previews are not archived by this shell. Explicitly confirmed retained Refine sends the original request and selected source evidence to the chosen local HTTP provider; a local server may forward data elsewhere. Separate engine review may return an approved in-memory value with delivery not attempted. Context, settings and automatic lexical refresh make no provider calls. Nonsecret profiles are saved only to an explicitly chosen private file; loading never enables inference. No shell telemetry, OS notifications, clipboard write, host draft, Send or admission. Core history retention is separate; Retire preserves history.")
             Text(model.notificationPolicy)
             Button(model.paused ? "Resume automatic scheduling" : "Pause automatic scheduling", action: model.togglePause)
             Text("File-event + periodic lexical refresh is off by default. Projects offers exact-scope session-only consent to file metadata watches and automatic approved-content reconciliation, with a 60-second fallback for missed/busy events. Pause closes watches, stops debounce/timer and cancels automatic work; Resume never grants consent. Manual Build remains available while paused. Disable, scope/configuration changes and Quit stop automatic work. Closing Manage does not stop opted-in refresh. No directory discovery or automatic inference.")
