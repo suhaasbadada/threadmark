@@ -106,7 +106,7 @@ public struct RefinementPreview: Codable, Equatable, Sendable {
 
 /// Preview-only duplicate-member gate, including escaped key aliases. Foundation
 /// otherwise silently keeps one value. JSONDecoder still owns syntax/type checks.
-private struct PreviewJSON {
+struct PreviewJSON {
     let bytes: [UInt8]
     var position = 0
     init(_ data: Data) { bytes = Array(data) }
