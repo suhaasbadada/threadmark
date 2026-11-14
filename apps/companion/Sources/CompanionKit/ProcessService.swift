@@ -82,6 +82,7 @@ public struct ProcessService: CoreService {
         var operationLimits = limits
         if batch != nil { operationLimits.inputBytes = 65536; operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .queryFilesBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
+        if case .prepareContextFilesBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
         if case .indexIncrementalBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 65536) }
         if case .coverageBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 65536) }
         if case .inspectSourceAnchorBound = operation { operationLimits.stdoutBytes = min(limits.stdoutBytes, 8192) }
@@ -128,6 +129,8 @@ public struct ProcessService: CoreService {
             default: responseOperation = operation
             }
             switch responseOperation {
+            case .prepareContextFilesBound(let request):
+                return .fileContext(try FileContextDocument.decode(data, request: request))
             case .editContextBatchBound:
                 guard let batch else { throw ServiceError.invalid }
                 return .batchReceipt(try BatchReceipt.decode(data, plan: batch))
@@ -272,6 +275,14 @@ public struct ProcessService: CoreService {
         var args: [String]
         var input = Data()
         switch operation {
+        case .prepareContextFilesBound(let request):
+            try request.validate()
+            let p = request.project
+            guard case .string(let identity) = p.root_identity, let token = p.incarnation else { throw ServiceError.invalid }
+            args = ["context", "prepare-files", p.id, request.query, "--mode", request.wireMode, "--selected-files"] + request.selectedPaths +
+                ["--expected-root", p.root, "--expected-root-identity", identity, "--expected-incarnation", token,
+                 "--expected-snapshot", try ProjectExportDocument.snapshotArgument(p), "--expected-sources"] + p.sources
+            input = Data(request.original.utf8)
         case .editContextBatchBound:
             guard let batch else { throw ServiceError.invalid }
             input = try batch.encoded()

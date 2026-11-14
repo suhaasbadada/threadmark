@@ -17,7 +17,7 @@ public struct RefinementPreviewView: View {
             Text("Changing mode cancels pending/preparing/idle Refine and requires fresh inspection and consent, even when changed back. At most 8 source lines and 8192 serialized selection bytes; lexical evidence is not semantic understanding.").font(.caption)
             HStack {
                 Button("Inspect data for Refine…") { model.requestRefinement(settings: settings) }
-                    .disabled(!model.canPrepareContext)
+                    .disabled(!model.canInspectRefinement)
                     .accessibilityIdentifier("refine-inspect")
                 Button("Cancel / dismiss Refine", action: model.cancelRefinement)
                     .accessibilityIdentifier("refine-dismiss")
