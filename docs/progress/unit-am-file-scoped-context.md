@@ -1,5 +1,32 @@
 # Unit AM — Explicit file-scoped Context preparation
 
+## Primary integration and independent review
+
+Only the eight owned paths were committed as `af61875` and applied cleanly to
+primary as **`ebe9f71eee0ed128962634765c872f924a335c5c`**, exact tested integrated
+runtime. No baseline/site merge replay or conflict resolution was needed. The
+ordered seven-path binary-diff fingerprint was reproduced after integration,
+identical to **`4cebc0e2c93179d9de0189292140a8c1ae60b7a00f4c9b75878098b524f374c0`**.
+
+Joffrey independently reviewed **CLEAR**, verified baseline/inventory/fingerprint,
+and reran all 16 new tests, the complete offline workspace check (**403 Rust tests
++ two doctests**), offline locked deny, secrets and both whitespace checks. His
+workspace run included inherited synthetic loopback HTTP fixtures, not external
+provider/network traffic. No native/AL inspection or remote CI was claimed.
+
+Primary reran full offline check at the exact integrated runtime: **403 Rust tests
++ two doctests PASS**, offline locked deny, secrets and whitespace **PASS**. Full
+strict serial native Debug and Release each **296 tests/47 suites PASS**, with
+actual CLI and all seven C-fixture families enabled, confirm the unchanged default
+Context/Refine paths against the new Rust binary. AL's eight API gates and bundle
+had passed separately before the backend-only integration; native code was not
+modified by AM. Two inherited long deadlines remain ignored. No GUI/AX/live
+provider/host/phase closure claim. Publication-head CI is separate and pending.
+
+AL is a separate publication with no AM changes in its PR head. Its pending
+macOS check is not evidence for AM; any stacked PR must retain separate exact
+head/CI and merge gates. Nine inherited progress edits and all worktrees preserved.
+
 TM-01–TM-07, TM-10; partial P2-A1/A2/A3/A4/A5/A6, P3-A3/A4,
 P4-A1/A2/A3. Contract and stable AM IDs were written **before** implementation in
 [file-scoped-context-v1](../contracts/file-scoped-context-v1.md). This is an explicit
