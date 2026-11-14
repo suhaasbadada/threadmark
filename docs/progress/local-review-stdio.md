@@ -97,8 +97,47 @@ published-evidence F integration `919b620` were merged in place, without branch
 switch, reset/discard or extra worktree. Required reviewed local
 `5bfca96bbb9a6e5cc70303d7f66931de68c65857` is an ancestor.
 
-Final tested SHA/check counts and limitations will be appended after the gate.
 Remote CI/head/run and independent review: **not run by this child**. Primary owns
 review, publication and integration/CI. No push, PR, merge-to-main, scheduler,
 watcher or subdelegation. Plum thread lookup was unavailable; no coordination
 message or automatic follow-up is claimed.
+
+## Final implementation verification
+
+Full tested runtime SHA: `7e98e764969893064187dee6fe7abb368a3932fa`.
+The final evidence-only follow-up does not change runtime or tests.
+
+- `CARGO_NET_OFFLINE=true python3 scripts/check.py`: **PASS** on that clean commit;
+  format, build, strict all-target Clippy, **176 Rust tests + two doctests**,
+  rustdoc, finite diagnostics, local documentation links and intentional
+  failing-test gate. The two production-duration deadline tests are excluded from
+  this ordinary fast gate and exercised separately below.
+- `cargo deny --offline --locked check`: **PASS**, advisories/bans/licenses/sources.
+- `python3 scripts/secrets.py`: **PASS**, after staging owned new files only,
+  before each implementation commit and again on the clean tested runtime.
+  Synthetic secret rejection also passed.
+- `git diff --check`: **PASS**; tested runtime commit status **clean**.
+- No Swift/native files changed. Strict Swift, GUI, host and live-model tests were
+  **not run** by this lane; existing one-shot CLI preview tests pass in the full
+  gate. Primary owns native adapter review/integration and exact integrated-head CI.
+
+The first complete private-stdio implementation
+`bd8c84fbd6c865e435cbc5bdbab8d2653db93d43` passed all eleven dedicated actual CLI
+tests including both real production-duration deadlines in 300.23 seconds.
+The final write-error hardening adds one owned broken-pipe regression; its final
+`cargo test --offline --test local_review -- --include-ignored` rerun on exact
+`7e98e764969893064187dee6fe7abb368a3932fa` **PASS**: all twelve actual CLI tests,
+zero ignored/failed, in 300.23 seconds. This includes the real 300-second idle
+deadline with stdin open and real 30-second provider deadline, prompt cancellation
+and EOF during provider/idle waits, parent kill/reap, broken output, finite frame
+limits, exact edited handoff and both explicit choices' actual-core invalidation.
+No timeout override, unbounded worker, second provider call or silent fallback.
+
+Local ignored logs: `target/local-review-tested-head.log` and
+`target/local-review-deadlines.log`; no sensitive public evidence artifacts.
+For integration, cherry-pick only the two owned runtime commits above and the
+evidence-only follow-up identified at handoff. Do not cherry-pick the base merges
+`6713c7b23543abb0490ae0166908d2389eed2eb0` or
+`a32ea0e0f837902f68f983936efe0444702d4976`; primary already owns those bases.
+No publication, review or remote CI on this lane's exact head is inferred from
+PR #54/55 or the supplied successful post-merge runs.
