@@ -103,7 +103,46 @@ empty-evidence fixture exposed the legitimate needs-input-without-questions stat
 Both were repaired rather than waived: empty selection admission now matches F,
 and live evidence tests explicitly create matching synthetic source. Query selection
 truncation metadata is retained so F's bounded-selection coverage matches exactly.
-Final verification and full tested SHA will be recorded below after the local gate.
+The first launch-validation invocation omitted its required executable argument;
+the documented validation mode was rerun with the actual rebuilt companion and
+all seven cases passed, without opening a window or creating a store.
+
+## Exact tested implementation and local gate
+
+Full tested implementation SHA:
+`b013ea80a76f3ef5aaf54bdf4b1f843c162ed921`.
+This is lane H's own implementation commit (ten native/test/progress files);
+dependency merges and primary-authored `0aee2f3` are excluded from its own work.
+The followup evidence commit changes only this progress document.
+
+Passed against that implementation:
+
+- `python3 scripts/check.py`: workspace build, fmt, Clippy, **172 Rust tests plus
+  two doctests**, rustdoc, finite smokes, local documentation links and intentional
+  negative assertion gate.
+- `cargo deny --locked --offline check`: advisories, bans, licenses and sources.
+  Offline was explicit to honor the no-egress restriction; advisory data was
+  already cached, not freshly fetched.
+- `python3 scripts/secrets.py` after staging only owned new files: tracked-file
+  scan and synthetic-secret negative control.
+- `THREADMARK_CORE_TEST_BINARY="$PWD/target/debug/threadmark" sh
+  apps/companion/scripts/swift.sh test --disable-xctest --enable-swift-testing
+  -Xswiftc -warnings-as-errors -Xswiftc -strict-concurrency=complete`: **133 tests
+  in 16 suites**, including all six new refinement tests. Actual core was rebuilt
+  after applying the primary's bound-query repair. The strict wrapper also built
+  the actual companion target. No plain Swift invocation was used.
+- `python3 apps/companion/scripts/test-launch-configuration.py
+  apps/companion/.build/debug/ThreadmarkCompanion`: seven validation cases, no
+  GUI/core invocation or storage creation.
+- Whitespace check and conflict-marker inspection passed. All owned HTTP workers
+  joined and sockets closed through asserted fixture teardown; no Docker resources.
+
+SwiftPM still reports its inherited native-build-system deprecation warning and
+the test linker reports the existing Testing framework deployment-target warning;
+neither is represented as GUI/platform certification. Exact remote CI run/head:
+**not run by this child**. Independent review: **not run by this child**. Primary
+owns publication, integrated-head review and CI. No push, PR, merge-to-main or
+deployment was performed by this lane.
 
 ## Explicit exclusions
 
