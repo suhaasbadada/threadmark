@@ -9,6 +9,9 @@ pub mod knowledge;
 /// explicit provider access only, never delivery.
 pub mod preparation;
 
+/// Explicit one-shot numeric-loopback refinement preview, never approval/delivery.
+pub mod local_refinement;
+
 /// Metadata-only successful check; not a persisted knowledge snapshot.
 #[derive(Debug, PartialEq, Eq)]
 pub struct CheckReceipt {

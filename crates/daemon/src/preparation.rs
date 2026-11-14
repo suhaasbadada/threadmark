@@ -2,7 +2,7 @@
 //! review sessions require explicit provider access and never perform delivery.
 
 mod session;
-pub use session::ReviewSession;
+pub use session::{CaptureBinding, ReviewSession};
 
 use serde_json::{Value, json};
 use std::sync::atomic::{AtomicBool, Ordering};

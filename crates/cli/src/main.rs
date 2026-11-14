@@ -1,5 +1,7 @@
 //! Manual local knowledge commands and offline diagnostics; never a service probe.
 
+mod local_refinement;
+
 fn main() -> std::process::ExitCode {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
     if args.first().is_some_and(|s| s == "--data-dir") {
@@ -58,6 +60,7 @@ fn usage() -> std::process::ExitCode {
     eprintln!(
         "source forget PROJECT PATH --confirm-forget-source [--expected-root ROOT --expected-root-identity IDENTITY --expected-incarnation TOKEN --expected-sources FILE ...]; source forgotten PROJECT; requires existing schema v4; source files and human context untouched; no forensic erasure. Upgrade with store upgrade --to-version 4 --confirm-local-schema-upgrade --confirm-legacy-workers-stopped (stop all legacy workers first; not universal worker fencing)."
     );
+    eprintln!("{}", local_refinement::USAGE);
     std::process::ExitCode::from(2)
 }
 
@@ -79,6 +82,9 @@ fn knowledge(args: &[std::ffi::OsString]) -> std::process::ExitCode {
     else {
         return usage();
     };
+    if words.first().is_some_and(|word| word == "refine") {
+        return local_refinement::run(data_dir, &words);
+    }
     let command = match words
         .iter()
         .map(String::as_str)
